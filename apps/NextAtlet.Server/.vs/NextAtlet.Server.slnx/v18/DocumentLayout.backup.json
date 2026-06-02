@@ -1,0 +1,79 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\Lukas\\Desktop\\nextatlet\\apps\\NextAtlet.Server\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{0061BFD3-6F1C-4931-B0F7-DA377352FB50}|NextAtlet.Domain\\NextAtlet.Domain.csproj|c:\\users\\lukas\\desktop\\nextatlet\\apps\\nextatlet.server\\nextatlet.domain\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0061BFD3-6F1C-4931-B0F7-DA377352FB50}|NextAtlet.Domain\\NextAtlet.Domain.csproj|solutionrelative:nextatlet.domain\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C9022EF2-33A1-4A74-8C3F-E6627E1870D9}|NextAtlet.Application\\NextAtlet.Application.csproj|c:\\users\\lukas\\desktop\\nextatlet\\apps\\nextatlet.server\\nextatlet.application\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C9022EF2-33A1-4A74-8C3F-E6627E1870D9}|NextAtlet.Application\\NextAtlet.Application.csproj|solutionrelative:nextatlet.application\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B9E2F0DC-5337-479C-A2CF-A19A4EA0D2C9}|NextAtlet.Infrastructure\\NextAtlet.Infrastructure.csproj|c:\\users\\lukas\\desktop\\nextatlet\\apps\\nextatlet.server\\nextatlet.infrastructure\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B9E2F0DC-5337-479C-A2CF-A19A4EA0D2C9}|NextAtlet.Infrastructure\\NextAtlet.Infrastructure.csproj|solutionrelative:nextatlet.infrastructure\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 2,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:131:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:130:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Class1.cs",
+              "DocumentMoniker": "C:\\Users\\Lukas\\Desktop\\nextatlet\\apps\\NextAtlet.Server\\NextAtlet.Domain\\Class1.cs",
+              "RelativeDocumentMoniker": "NextAtlet.Domain\\Class1.cs",
+              "ToolTip": "C:\\Users\\Lukas\\Desktop\\nextatlet\\apps\\NextAtlet.Server\\NextAtlet.Domain\\Class1.cs",
+              "RelativeToolTip": "NextAtlet.Domain\\Class1.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-02T08:27:12.517Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Class1.cs",
+              "DocumentMoniker": "C:\\Users\\Lukas\\Desktop\\nextatlet\\apps\\NextAtlet.Server\\NextAtlet.Application\\Class1.cs",
+              "RelativeDocumentMoniker": "NextAtlet.Application\\Class1.cs",
+              "ToolTip": "C:\\Users\\Lukas\\Desktop\\nextatlet\\apps\\NextAtlet.Server\\NextAtlet.Application\\Class1.cs",
+              "RelativeToolTip": "NextAtlet.Application\\Class1.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-02T08:26:30.957Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Class1.cs",
+              "DocumentMoniker": "C:\\Users\\Lukas\\Desktop\\nextatlet\\apps\\NextAtlet.Server\\NextAtlet.Infrastructure\\Class1.cs",
+              "RelativeDocumentMoniker": "NextAtlet.Infrastructure\\Class1.cs",
+              "ToolTip": "C:\\Users\\Lukas\\Desktop\\nextatlet\\apps\\NextAtlet.Server\\NextAtlet.Infrastructure\\Class1.cs",
+              "RelativeToolTip": "NextAtlet.Infrastructure\\Class1.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-02T08:25:18.314Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

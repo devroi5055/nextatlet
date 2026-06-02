@@ -1,0 +1,6 @@
+@NextAtlet.Api_HostAddress = http://localhost:5278
+
+GET {{NextAtlet.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

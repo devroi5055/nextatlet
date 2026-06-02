@@ -1,0 +1,11 @@
+C:\Users\Lukas\Desktop\nextatlet\apps\NextAtlet.Server\NextAtlet.Application\bin\Debug\net10.0\NextAtlet.Application.deps.json
+C:\Users\Lukas\Desktop\nextatlet\apps\NextAtlet.Server\NextAtlet.Application\bin\Debug\net10.0\NextAtlet.Application.dll
+C:\Users\Lukas\Desktop\nextatlet\apps\NextAtlet.Server\NextAtlet.Application\bin\Debug\net10.0\NextAtlet.Application.pdb
+C:\Users\Lukas\Desktop\nextatlet\apps\NextAtlet.Server\NextAtlet.Application\obj\Debug\net10.0\NextAtlet.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Lukas\Desktop\nextatlet\apps\NextAtlet.Server\NextAtlet.Application\obj\Debug\net10.0\NextAtlet.Application.AssemblyInfoInputs.cache
+C:\Users\Lukas\Desktop\nextatlet\apps\NextAtlet.Server\NextAtlet.Application\obj\Debug\net10.0\NextAtlet.Application.AssemblyInfo.cs
+C:\Users\Lukas\Desktop\nextatlet\apps\NextAtlet.Server\NextAtlet.Application\obj\Debug\net10.0\NextAtlet.Application.csproj.CoreCompileInputs.cache
+C:\Users\Lukas\Desktop\nextatlet\apps\NextAtlet.Server\NextAtlet.Application\obj\Debug\net10.0\NextAtlet.Application.dll
+C:\Users\Lukas\Desktop\nextatlet\apps\NextAtlet.Server\NextAtlet.Application\obj\Debug\net10.0\refint\NextAtlet.Application.dll
+C:\Users\Lukas\Desktop\nextatlet\apps\NextAtlet.Server\NextAtlet.Application\obj\Debug\net10.0\NextAtlet.Application.pdb
+C:\Users\Lukas\Desktop\nextatlet\apps\NextAtlet.Server\NextAtlet.Application\obj\Debug\net10.0\ref\NextAtlet.Application.dll
