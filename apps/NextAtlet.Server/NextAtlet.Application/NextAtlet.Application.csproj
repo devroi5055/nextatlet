@@ -6,4 +6,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\NextAtlet.Domain\NextAtlet.Domain.csproj" />
+    <ProjectReference Include="..\NextAtlet.Infrastructure\NextAtlet.Infrastructure.csproj" />
+  </ItemGroup>
+
 </Project>
