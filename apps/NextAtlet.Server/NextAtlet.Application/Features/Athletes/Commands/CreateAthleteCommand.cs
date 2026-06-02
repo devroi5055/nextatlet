@@ -31,7 +31,7 @@ public class CreateAthleteCommand
         if (reservedSlugs.Contains(slug.ToLower()))
             throw new InvalidOperationException($"Slug '{slug}' is reserved");
 
-        // Determine if minor
+        // Determine if minor: IsMinor = DateOfBirth + 18 years is in the future
         var isMinor = dateOfBirth.AddYears(18) > DateTime.UtcNow;
 
         // If minor, guardian email is required

@@ -139,8 +139,8 @@ public class NextAtletDbContext : DbContext
             Manifest = classicManifest,
             MinimumCapability = new Dictionary<string, object>(),
             IsActive = true,
-            CreatedUtc = DateTime.UtcNow,
-            UpdatedUtc = DateTime.UtcNow
+            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            UpdatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc)
         });
     }
 }

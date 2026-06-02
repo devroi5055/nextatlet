@@ -37,14 +37,15 @@ public class SanitizationService
 
     /// <summary>
     /// Sanitizes all text fields in a layout jsonb object.
+    /// Returns a new dictionary; does NOT mutate the input.
     /// </summary>
-    public Dictionary<string, object>? SanitizeLayout(Dictionary<string, object>? layout)
+    public Dictionary<string, object> SanitizeLayout(Dictionary<string, object> layout)
     {
         if (layout == null || !layout.TryGetValue("sections", out var sectionsObj))
-            return layout;
+            return new Dictionary<string, object>(layout ?? new Dictionary<string, object>());
 
         if (sectionsObj is not System.Collections.IEnumerable sections)
-            return layout;
+            return new Dictionary<string, object>(layout);
 
         var sanitizedSections = new List<object>();
 
@@ -52,17 +53,27 @@ public class SanitizationService
         {
             if (section is Dictionary<string, object> sectionDict)
             {
-                if (sectionDict.TryGetValue("data", out var dataObj) && dataObj is Dictionary<string, object> data)
+                // Create a copy of the section to avoid mutating input
+                var sectionCopy = new Dictionary<string, object>(sectionDict);
+
+                if (sectionCopy.TryGetValue("data", out var dataObj) && dataObj is Dictionary<string, object> data)
                 {
                     var sanitizedData = SanitizeSectionData(data);
-                    sectionDict["data"] = sanitizedData;
+                    sectionCopy["data"] = sanitizedData;
                 }
+
+                sanitizedSections.Add(sectionCopy);
             }
-            sanitizedSections.Add(section);
+            else
+            {
+                sanitizedSections.Add(section);
+            }
         }
 
-        layout["sections"] = sanitizedSections;
-        return layout;
+        // Return a new dictionary with sanitized sections
+        var result = new Dictionary<string, object>(layout);
+        result["sections"] = sanitizedSections;
+        return result;
     }
 
     /// <summary>

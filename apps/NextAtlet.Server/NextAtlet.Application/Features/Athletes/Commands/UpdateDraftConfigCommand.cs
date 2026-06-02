@@ -40,11 +40,14 @@ public class UpdateDraftConfigCommand
         if (theme == null)
             throw new InvalidOperationException($"Theme {siteConfig.ThemeId} not found");
 
-        // Validate the layout
-        ValidateLayout(layout, theme);
+        // Normalize layout (handles JsonElement from json deserialization)
+        var normalizedLayout = JsonElementConverter.NormalizeLayout(layout);
 
-        // Sanitize all text fields
-        var sanitizedLayout = _sanitization.SanitizeLayout(layout);
+        // Validate the layout
+        ValidateLayout(normalizedLayout, theme);
+
+        // Sanitize all text fields (returns new dictionary, doesn't mutate)
+        var sanitizedLayout = _sanitization.SanitizeLayout(normalizedLayout);
 
         // Update config
         siteConfig.Layout = sanitizedLayout;
@@ -54,7 +57,7 @@ public class UpdateDraftConfigCommand
         siteConfig.Version++;
         siteConfig.UpdatedUtc = DateTime.UtcNow;
 
-        _context.SiteConfigs.Update(siteConfig);
+        // Note: do NOT call _context.Update() — EF Core change tracking handles this automatically
         await _context.SaveChangesAsync();
 
         return siteConfig;
@@ -88,11 +91,16 @@ public class UpdateDraftConfigCommand
             if (!_sectionRegistry.IsSupported(sectionType))
                 throw new InvalidOperationException($"Section type '{sectionType}' is not registered");
 
+            // Normalize section data (handles JsonElement from json deserialization)
+            var sectionData = sectionDict.TryGetValue("data", out var dataObj) && dataObj is Dictionary<string, object> dict 
+                ? JsonElementConverter.NormalizeSectionData(dict) 
+                : new Dictionary<string, object>();
+
             // Validate section using the registry
             var sectionToValidate = new Section
             {
                 Type = sectionType,
-                Data = sectionDict.TryGetValue("data", out var dataObj) && dataObj is Dictionary<string, object> dict ? dict : new Dictionary<string, object>()
+                Data = sectionData
             };
 
             var validator = _sectionRegistry.GetValidator(sectionType);
