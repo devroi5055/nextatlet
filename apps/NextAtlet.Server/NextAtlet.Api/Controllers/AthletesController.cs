@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
-using NextAtlet.Application.DTOs;
+using NextAtlet.Application.Common.DTOs;
+using NextAtlet.Application.Common.Extensions;
 using NextAtlet.Application.Features.Athletes.Commands;
 using NextAtlet.Application.Features.Athletes.Queries;
+using NextAtlet.Domain.Enumerations;
 
 namespace NextAtlet.Api.Controllers;
 
@@ -41,7 +43,7 @@ public class AthletesController : ControllerBase
                 request.DisplayName,
                 request.Slug,
                 request.DateOfBirth,
-                request.DefaultLocale,
+                request.DefaultLocale.Id,
                 request.GuardianEmail);
 
             var dto = new AthleteProfileDto
@@ -51,7 +53,7 @@ public class AthletesController : ControllerBase
                 DisplayName = profile.DisplayName,
                 DateOfBirth = profile.DateOfBirth,
                 IsMinor = profile.IsMinor,
-                DefaultLocale = profile.DefaultLocale
+                DefaultLocale = Locale.FromId(request.DefaultLocale.Id).ToDto()
             };
 
             return Created($"/api/athletes/{profile.Id}", dto);
@@ -108,7 +110,7 @@ public class AthletesController : ControllerBase
             {
                 Id = config.Id,
                 AthleteProfileId = config.AthleteProfileId,
-                State = config.State,
+                IsDraft = config.IsDraft,
                 Layout = config.Layout,
                 GlobalSettings = config.GlobalSettings,
                 Version = config.Version

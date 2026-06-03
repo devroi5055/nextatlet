@@ -1,5 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using NextAtlet.Domain.Entities;
+using NextAtlet.Domain.Entities.Athlete;
+using NextAtlet.Domain.Entities.Shared;
+using NextAtlet.Domain.Enumerations;
+using NextAtlet.Domain.ValueObjects;
 
 namespace NextAtlet.Infrastructure.Data;
 
@@ -34,12 +37,12 @@ public class NextAtletDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Slug).IsRequired().HasMaxLength(256);
             entity.Property(e => e.DisplayName).IsRequired().HasMaxLength(256);
-            entity.Property(e => e.Sport).IsRequired().HasMaxLength(50).HasDefaultValue("judo");
+            entity.Property(e => e.SportId).IsRequired().HasMaxLength(50).HasDefaultValue("judo");
             entity.Property(e => e.DateOfBirth).IsRequired();
-            entity.Property(e => e.DefaultLocale).IsRequired().HasMaxLength(2).HasDefaultValue("da");
-            entity.Property(e => e.VisibilityState).IsRequired().HasMaxLength(20).HasDefaultValue("Public");
+            entity.Property(e => e.DefaultLocaleId).IsRequired().HasMaxLength(2).HasDefaultValue("da");
+            entity.Property(e => e.VisibilityStateId).IsRequired().HasMaxLength(20).HasDefaultValue("Public");
             entity.HasIndex(e => e.Slug).IsUnique();
-            entity.HasIndex(e => e.Sport);
+            entity.HasIndex(e => e.SportId);
             entity.HasIndex(e => e.CreatedUtc).IsDescending();
         });
 
@@ -47,8 +50,11 @@ public class NextAtletDbContext : DbContext
         modelBuilder.Entity<ProfileLogin>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.Role).IsRequired().HasMaxLength(50);
-            entity.Property(e => e.Status).IsRequired().HasMaxLength(20).HasDefaultValue("Active");
+            entity.Property(e => e.RoleId).IsRequired().HasMaxLength(50);
+            // Status is an enum — persist as its string name, not the underlying int.
+            entity.Property(e => e.Status).HasConversion<string>().IsRequired().HasMaxLength(20);
+            // Guardian-only permissions VO — stored as jsonb (null for AthleteOwner logins).
+            entity.Property(e => e.Permissions).HasJsonbConversion();
             entity.HasIndex(e => new { e.UserId, e.AthleteProfileId }).IsUnique();
             entity.HasIndex(e => e.UserId);
             entity.HasIndex(e => e.AthleteProfileId);
@@ -70,8 +76,8 @@ public class NextAtletDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Name).IsRequired().HasMaxLength(256);
             entity.Property(e => e.Version).IsRequired().HasDefaultValue(1);
-            entity.Property(e => e.Manifest).IsRequired().HasColumnType("jsonb");
-            entity.Property(e => e.MinimumCapability).HasColumnType("jsonb");
+            entity.Property(e => e.Manifest).HasJsonbConversion().IsRequired();
+            entity.Property(e => e.MinimumCapability).HasJsonbConversion();
             entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
         });
 
@@ -79,12 +85,11 @@ public class NextAtletDbContext : DbContext
         modelBuilder.Entity<SiteConfig>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.State).IsRequired().HasMaxLength(20).HasDefaultValue("Draft");
             entity.Property(e => e.ThemeVersion).IsRequired().HasDefaultValue(1);
-            entity.Property(e => e.Layout).IsRequired().HasColumnType("jsonb");
-            entity.Property(e => e.GlobalSettings).HasColumnType("jsonb");
+            entity.Property(e => e.Layout).HasJsonbConversion().IsRequired();
+            entity.Property(e => e.GlobalSettings).HasJsonbConversion();
             entity.Property(e => e.Version).IsRequired().HasDefaultValue(1);
-            entity.HasIndex(e => new { e.AthleteProfileId, e.State }).IsUnique();
+            entity.HasIndex(e => new { e.AthleteProfileId, e.IsDraft }).IsUnique();
             entity.HasIndex(e => e.UpdatedUtc).IsDescending();
 
             entity.HasOne(e => e.AthleteProfile)
@@ -102,8 +107,11 @@ public class NextAtletDbContext : DbContext
         modelBuilder.Entity<MediaAsset>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.Type).IsRequired().HasMaxLength(20);
-            entity.Property(e => e.Origin).IsRequired().HasMaxLength(50).HasDefaultValue("SelfUpload");
+            // Type is an Enumeration reference type — persist its stable Id, rehydrate via FromId.
+            entity.Property(e => e.Type)
+                .HasConversion(t => t.Id, id => MediaAssetType.FromId(id))
+                .IsRequired().HasMaxLength(20);
+            entity.Property(e => e.OriginId).IsRequired().HasMaxLength(50).HasDefaultValue("self_upload");
             entity.Property(e => e.IsClubBranding).IsRequired().HasDefaultValue(false);
             entity.Property(e => e.StorageKey).IsRequired().HasMaxLength(512);
             entity.Property(e => e.AltText).HasMaxLength(512);
@@ -123,12 +131,11 @@ public class NextAtletDbContext : DbContext
     {
         var classicThemeId = new Guid("11111111-1111-1111-1111-111111111111");
 
-        var classicManifest = new Dictionary<string, object>
+        var classicManifest = new ThemeManifest
         {
-            { "name", "Classic" },
-            { "supportedSections", new[] { "hero", "bio" } },
-            { "colorSlots", new[] { "primary", "secondary", "accent" } },
-            { "fontSlots", new[] { "headingFont", "bodyFont" } }
+            SupportedSectionTypes = ["hero", "bio"],
+            ColorSlots = ["primary", "secondary", "accent"],
+            FontSlots = ["headingFont", "bodyFont"]
         };
 
         modelBuilder.Entity<Theme>().HasData(new Theme
@@ -137,10 +144,8 @@ public class NextAtletDbContext : DbContext
             Name = "Classic",
             Version = 1,
             Manifest = classicManifest,
-            MinimumCapability = new Dictionary<string, object>(),
+            MinimumCapability = null, // free theme — available to all tiers
             IsActive = true,
-            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-            UpdatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc)
         });
     }
 }

@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using NextAtlet.Application.DTOs;
+using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Infrastructure.Data;
 
 namespace NextAtlet.Application.Features.Athletes.Queries;
@@ -16,7 +16,7 @@ public class GetDraftConfigQuery
     public async Task<SiteConfigDto> ExecuteAsync(Guid athleteProfileId)
     {
         var siteConfig = await _context.SiteConfigs
-            .FirstOrDefaultAsync(sc => sc.AthleteProfileId == athleteProfileId && sc.State == "Draft");
+            .FirstOrDefaultAsync(sc => sc.AthleteProfileId == athleteProfileId && sc.IsDraft);
 
         if (siteConfig == null)
             throw new InvalidOperationException($"Draft config not found for profile {athleteProfileId}");
@@ -25,7 +25,7 @@ public class GetDraftConfigQuery
         {
             Id = siteConfig.Id,
             AthleteProfileId = siteConfig.AthleteProfileId,
-            State = siteConfig.State,
+            IsDraft = siteConfig.IsDraft,
             Layout = siteConfig.Layout,
             GlobalSettings = siteConfig.GlobalSettings,
             Version = siteConfig.Version

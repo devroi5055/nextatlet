@@ -1,15 +1,6 @@
-namespace NextAtlet.Infrastructure.Services.SectionRegistry;
+using NextAtlet.Domain.ValueObjects.Sections;
 
-/// <summary>
-/// Represents a section in the Layout jsonb payload.
-/// </summary>
-public class Section
-{
-    public string? Id { get; set; }
-    public required string Type { get; set; }
-    public int Order { get; set; }
-    public Dictionary<string, object>? Data { get; set; }
-}
+namespace NextAtlet.Infrastructure.Services.SectionRegistry;
 
 /// <summary>
 /// Result of section validation.
@@ -22,16 +13,18 @@ public record ValidationResult
 
 /// <summary>
 /// Strategy interface for validating a specific section type.
+/// Receives the already-typed (polymorphically deserialized) payload — validators now
+/// assert business rules, not JSON shape (the type system covers shape).
 /// </summary>
 public interface ISectionValidator
 {
     /// <summary>
-    /// The section type this validator handles (e.g. "hero", "bio").
+    /// The section type this validator handles (e.g. HeroSectionData.TypeId).
     /// </summary>
     string SectionType { get; }
 
     /// <summary>
-    /// Validates a section's data and returns any errors.
+    /// Validates a section's typed data and returns any errors.
     /// </summary>
-    ValidationResult Validate(Section section);
+    ValidationResult Validate(SectionData data);
 }

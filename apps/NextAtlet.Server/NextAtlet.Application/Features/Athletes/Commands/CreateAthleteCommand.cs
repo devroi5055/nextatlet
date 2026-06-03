@@ -1,5 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using NextAtlet.Domain.Entities;
+using NextAtlet.Domain.Entities.Athlete;
+using NextAtlet.Domain.Entities.Shared;
+using NextAtlet.Domain.ValueObjects;
+using NextAtlet.Domain.ValueObjects.Sections;
 using NextAtlet.Infrastructure.Data;
 using NextAtlet.Infrastructure.Services;
 using NextAtlet.Infrastructure.Services.SectionRegistry;
@@ -19,7 +22,7 @@ public class CreateAthleteCommand
         _sanitization = sanitization;
     }
 
-    public async Task<AthleteProfile> ExecuteAsync(string email, string authProviderId, string displayName, string slug, DateTime dateOfBirth, string defaultLocale, string? guardianEmail = null)
+    public async Task<AthleteProfile> ExecuteAsync(string email, string authProviderId, string displayName, string slug, DateTime dateOfBirth, string defaultLocaleId, string? guardianEmail = null)
     {
         // Check if profile already exists
         var existingProfile = await _context.AthleteProfiles.FirstOrDefaultAsync(ap => ap.Slug == slug);
@@ -47,8 +50,6 @@ public class CreateAthleteCommand
                 Id = Guid.NewGuid(),
                 Email = email,
                 AuthProviderId = authProviderId,
-                CreatedUtc = DateTime.UtcNow,
-                UpdatedUtc = DateTime.UtcNow
             };
             _context.Users.Add(user);
         }
@@ -56,29 +57,17 @@ public class CreateAthleteCommand
         // Create profile
         var profile = new AthleteProfile
         {
-            Id = Guid.NewGuid(),
             Slug = slug.ToLower(),
             DisplayName = displayName,
-            Sport = "judo",
-            DateOfBirth = dateOfBirth,
-            DefaultLocale = defaultLocale,
-            VisibilityState = "Public",
-            CreatedUtc = DateTime.UtcNow,
-            UpdatedUtc = DateTime.UtcNow
+            SportId = "judo",
+            DateOfBirth = DateOnly.FromDateTime(dateOfBirth),
+            DefaultLocaleId = defaultLocaleId,
+            VisibilityStateId = "public"
         };
         _context.AthleteProfiles.Add(profile);
 
         // Create AthleteOwner profile login
-        var ownerLogin = new ProfileLogin
-        {
-            Id = Guid.NewGuid(),
-            UserId = user.Id,
-            AthleteProfileId = profile.Id,
-            Role = "AthleteOwner",
-            Status = "Active",
-            CreatedUtc = DateTime.UtcNow,
-            UpdatedUtc = DateTime.UtcNow
-        };
+        var ownerLogin = ProfileLogin.CreateOwner(user.Id, profile.Id);
         _context.ProfileLogins.Add(ownerLogin);
 
         // If minor, create pending guardian link
@@ -91,32 +80,14 @@ public class CreateAthleteCommand
                 guardianUser = new User
                 {
                     Id = Guid.NewGuid(),
-                    Email = guardianEmail,
+                    Email = guardianEmail, // is never null or empty due to validation above
                     AuthProviderId = $"pending-{Guid.NewGuid()}", // Placeholder; will be updated when guardian signs up
-                    CreatedUtc = DateTime.UtcNow,
-                    UpdatedUtc = DateTime.UtcNow
                 };
                 _context.Users.Add(guardianUser);
             }
 
-            var guardianLogin = new ProfileLogin
-            {
-                Id = Guid.NewGuid(),
-                UserId = guardianUser.Id,
-                AthleteProfileId = profile.Id,
-                Role = "Guardian",
-                Permissions = new Dictionary<string, object>
-                {
-                    { "canEditContent", true },
-                    { "canPublish", true },
-                    { "canApproveChanges", true },
-                    { "canManageMedia", true },
-                    { "canManageMemberships", false }
-                },
-                Status = "Pending", // Pending until guardian accepts
-                CreatedUtc = DateTime.UtcNow,
-                UpdatedUtc = DateTime.UtcNow
-            };
+            // Create a pending ProfileLogin for the guardian
+            var guardianLogin = ProfileLogin.CreateGuardian(guardianUser.Id, profile);
             _context.ProfileLogins.Add(guardianLogin);
         }
 
@@ -126,34 +97,19 @@ public class CreateAthleteCommand
             throw new InvalidOperationException("Classic theme not found");
 
         // Create draft SiteConfig with hero + bio sections
-        var layout = CreateDefaultLayout();
         var siteConfig = new SiteConfig
         {
-            Id = Guid.NewGuid(),
             AthleteProfileId = profile.Id,
-            State = "Draft",
+            IsDraft = true,
             ThemeId = theme.Id,
             ThemeVersion = theme.Version,
-            Layout = layout,
-            GlobalSettings = new Dictionary<string, object>
+            Layout = CreateDefaultLayout(),
+            GlobalSettings = new GlobalSettings
             {
-                { "colors", new Dictionary<string, object>
-                    {
-                        { "primary", "#000000" },
-                        { "secondary", "#ffffff" },
-                        { "accent", "#ffd700" }
-                    }
-                },
-                { "fonts", new Dictionary<string, object>
-                    {
-                        { "headingFont", "Inter" },
-                        { "bodyFont", "Inter" }
-                    }
-                }
+                AccentColor = "#ffd700",
+                FontFamily = "Inter"
             },
-            Version = 1,
-            CreatedUtc = DateTime.UtcNow,
-            UpdatedUtc = DateTime.UtcNow
+            Version = 1
         };
         _context.SiteConfigs.Add(siteConfig);
 
@@ -162,35 +118,29 @@ public class CreateAthleteCommand
         return profile;
     }
 
-    private Dictionary<string, object> CreateDefaultLayout()
+    private static SiteLayout CreateDefaultLayout() => new()
     {
-        var sections = new List<object>
-        {
-            new
+        Sections =
+        [
+            new SiteSection
             {
-                id = Guid.NewGuid().ToString(),
-                type = "hero",
-                order = 0,
-                data = new Dictionary<string, object>
+                Id = Guid.NewGuid().ToString(),
+                Order = 0,
+                Data = new HeroSectionData
                 {
-                    { "headline", new Dictionary<string, string> { { "da", "" }, { "en", "" } } },
-                    { "subheading", new Dictionary<string, string> { { "da", "" }, { "en", "" } } },
-                    { "backgroundImageAssetId", (string?)null }
+                    Headline = new LocalizedText(),
+                    Subheading = new LocalizedText()
                 }
             },
-            new
+            new SiteSection
             {
-                id = Guid.NewGuid().ToString(),
-                type = "bio",
-                order = 1,
-                data = new Dictionary<string, object>
+                Id = Guid.NewGuid().ToString(),
+                Order = 1,
+                Data = new BioSectionData
                 {
-                    { "bio", new Dictionary<string, string> { { "da", "" }, { "en", "" } } },
-                    { "highlightItems", new List<object>() }
+                    Bio = new LocalizedText()
                 }
             }
-        };
-
-        return new Dictionary<string, object> { { "sections", sections } };
-    }
+        ]
+    };
 }
