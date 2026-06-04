@@ -15,7 +15,28 @@ A **profile** represents one athlete. A profile has one or more **linked logins*
 | `AthleteOwner` | the athlete | Owns the profile; capability scales with effective tier + perks. For adults, the final approver. |
 | `Guardian` | parent / legal guardian | Linked to a **minor** profile; permissions configurable; for minors, the final approver. |
 
-Why this shape (vs "1 or 2 fixed identities"): it scales cleanly to a second guardian, a temporary delegate, or future roles, and it keeps **legal account-holder** logic in one place. A minor profile must always have at least one active `Guardian`.
+Why this shape (vs "1 or 2 fixed identities"): it scales cleanly to a second guardian, a temporary delegate, or future roles, and it keeps **legal account-holder** logic in one place. A minor profile must always have at least one `Guardian` login (see registration paths below).
+
+### Two registration paths
+
+"Who authenticates" and "who the profile is for" are not always the same person. Two commands, sharing a private profile-creation core, cover both:
+
+| | **Self-registration** (`RegisterOwnAthleteCommand`) | **Guardian-creates-child** (`RegisterChildAthleteCommand`) |
+|---|---|---|
+| Caller | the athlete (adult, or older minor with their own login) | the parent/guardian |
+| Caller's login becomes | `AthleteOwner` | `Guardian` |
+| `AthleteOwner` login | the caller | **none in v1** (no child login yet — deferred) |
+| `Guardian` login | invited **if** the caller is a minor | **is the caller** (active by construction) |
+| Idempotency | one owned profile per caller | a guardian may register **multiple** children |
+
+- **Self + minor:** the command requires `GuardianEmail`; the profile and a **`Pending`** guardian login are written in one transaction. Missing guardian email → reject, nothing written.
+- **Guardian-creates-child:** v1 is for minors only — registering an adult is rejected (`guardian.cannot_register_adult`); an adult must self-register. A child's own `AthleteOwner` login is added later (when old enough) via a future `InviteAthleteOwnerLoginCommand`, reusing the pending-invite/claim machinery.
+
+### Pending vs. active guardian, and the publish gate
+
+A minor profile can be **created** the moment a guardian is named, but a `Pending` (invited, not-yet-accepted) guardian **cannot publish**, and the minor `AthleteOwner` does not hold publish rights by default. So a minor profile stays a private draft until a **real, active** guardian (holding `canPublish`) has accepted and published it — no minor is ever publicly visible without an accountable adult having acted. The guardian-creates-child path skips the pending state (the caller is already an active guardian).
+
+**Accepting the invite (implemented).** When the invited guardian first authenticates (a new IdP `sub`, same email), the system **links** that subject to the unclaimed user row by matching the verified email (identity reconciliation only — it grants nothing), and `GET /api/me` surfaces the **pending guardian invite** so the frontend can prompt them. The guardian then **explicitly accepts** via `POST /api/guardianships/accept` (`AcceptGuardianInviteCommand`): this claims the account and flips their `Pending` guardian login(s) → `Active`. Acceptance is deliberate and auditable — never a silent side-effect of logging in. (An email-delivered invite link is a later, additive enhancement; the invite today is the guardian email captured at registration.)
 
 ### Guardian permission configuration
 

@@ -8,30 +8,30 @@ Core principle: **signup is lightweight; media is never a blocker.** A young ath
 
 ## 1. Athlete signup — minimal gate
 
-A profile can be created and published (within tier) with **text only**. Required at signup:
+Signup is **two gates** (`03`): **Gate 1 — authentication** (Auth0 hosted login creates the credential; age-blind, guardian-free, not built by us), then **Gate 2 — profile registration** (the domain step below, behind `[Authorize]`). After login the frontend calls **`GET /api/me`**, which reports `{ Registered, Role }` so it can route a new user to the registration form and a returning one to their dashboard. Identity (email + IdP subject) always comes from the authenticated token, never the form body.
+
+There are **two registration entry flows** (`03` §1) — the athlete sets up their own profile, or a parent sets one up for their child:
+
+### Self-registration (`POST /api/athletes/register`)
+
+A profile can be created and published (within tier) with **text only**. Required:
 
 | Field | Required | Why |
 |-------|----------|-----|
-| Email / login | yes | account |
 | Display name | yes | profile + slug seed |
 | Date of birth | yes | determines `IsMinor` → guardian gating (`03`) |
 | Sport | yes (defaults `judo`) | profile context |
 | Preferred locale (da/en) | yes | bilingual default |
-| **If minor:** guardian email | yes | a `Guardian` login must exist before publish (`03`) |
+| **If minor:** guardian email | yes | a `Guardian` login is created with the profile; required before publish (`03`) |
 
-That is the whole gate. Everything else — bio, results, photos, themes — is onboarding.
+(Email/login is not a form field — it's the authenticated caller.) That is the whole gate. Everything else — bio, results, photos, themes — is onboarding.
 
-### Minor branch
+- **Minor:** guardian email is required; the profile + a **pending** `Guardian` login are created together. The guardian accepts the invite, gets publish + approval defaults, and publishes; the young athlete may build/propose but not publish.
+- **Adult (≥18):** athlete is sole owner/approver; no guardian step.
 
-If DOB < 18:
-1. Collect guardian email.
-2. Guardian receives an invite, creates/links a `Guardian` login (`03`).
-3. Guardian permission defaults applied (guardian holds publish + approval).
-4. Athlete may build/propose; guardian approves and publishes.
+### Guardian-creates-profile-for-child (`POST /api/athletes/register-child`)
 
-### Adult branch
-
-If DOB ≥ 18: athlete is sole owner/approver; no guardian step.
+The common youth-judo case: a parent sets up their child's profile. The **caller becomes the `Guardian`** (active by construction); the child has **no login in v1**. Required: child display name, child DOB, locale (slug seeded from the name). Registering an adult this way is rejected — an adult must self-register. One guardian may register multiple children.
 
 ---
 

@@ -14,7 +14,8 @@ namespace NextAtlet.Application.Tests;
 public class DraftConfigTests
 {
     private static Task<Guid> RegisterAthleteAsync(TestApp app) => app
-        .Send(new RegisterAthleteProfileCommand("Anna", "anna", new DateTime(1995, 1, 1), Locale.Da.Id))
+        .Send(new RegisterOwnAthleteCommand(
+            TestApp.OwnerAuthProviderId, TestApp.OwnerEmail, "Anna", "anna", new DateTime(1995, 1, 1), Locale.Da.Id))
         .ContinueWith(t => t.Result.Id);
 
     private static SiteLayout ValidLayout(string bioText) => new()

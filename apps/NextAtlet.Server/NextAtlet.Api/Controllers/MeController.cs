@@ -20,5 +20,6 @@ public class MeController : ControllerBase
     /// and what role they hold. Lets the frontend route new vs returning users.
     /// </summary>
     [HttpGet]
-    public async Task<ActionResult<MeDto>> Get() => Ok(await _sender.Send(new GetCurrentUserQuery()));
+    public async Task<ActionResult<MeDto>> Get()
+        => Ok(await _sender.Send(new GetCurrentUserQuery(User.GetAuthProviderId(), User.GetEmail())));
 }

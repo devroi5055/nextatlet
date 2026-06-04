@@ -2,7 +2,6 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using NextAtlet.Application;
-using NextAtlet.Application.Abstractions.Identity;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Infrastructure.Data;
@@ -44,9 +43,6 @@ internal sealed class TestApp : IDisposable
         services.AddScoped<ISectionTypeRegistry, SectionTypeRegistry>();
         services.AddScoped<ISanitizationService, SanitizationService>();
 
-        // Fake authenticated caller (stands in for token claims).
-        services.AddScoped<ICurrentUserContext>(_ => new FakeCurrentUserContext(OwnerAuthProviderId, OwnerEmail));
-
         _provider = services.BuildServiceProvider();
 
         using var scope = _provider.CreateScope();
@@ -70,16 +66,4 @@ internal sealed class TestApp : IDisposable
     }
 
     public void Dispose() => _provider.Dispose();
-}
-
-internal sealed class FakeCurrentUserContext : ICurrentUserContext
-{
-    public FakeCurrentUserContext(string authProviderId, string email)
-    {
-        AuthProviderId = authProviderId;
-        Email = email;
-    }
-
-    public string AuthProviderId { get; }
-    public string Email { get; }
 }

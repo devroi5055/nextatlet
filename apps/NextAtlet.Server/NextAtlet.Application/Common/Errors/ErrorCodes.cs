@@ -17,6 +17,7 @@ public static class ErrorCodes
     public const string SectionTypeNotSupported = "section.type_not_supported";
     public const string SectionValidationFailed = "section.validation_failed";
     public const string ProfileAlreadyExists    = "profile.already_exists";
+    public const string GuardianCannotRegisterAdult = "guardian.cannot_register_adult";
 
     // Authentication — the validated token is missing an expected claim.
     public const string AuthSubMissing          = "auth.sub_missing";

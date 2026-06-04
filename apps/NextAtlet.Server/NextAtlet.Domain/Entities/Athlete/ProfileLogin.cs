@@ -33,7 +33,12 @@ public class ProfileLogin : AuditableEntity
         Permissions = null
     };
 
-    public static ProfileLogin CreateGuardian(Guid userId, AthleteProfile profile)
+    /// <summary>
+    /// Creates a guardian login for a minor profile. <paramref name="active"/> = false (default) is an
+    /// invite the guardian must accept (self-minor flow); true means the caller IS the guardian and has
+    /// consented by creating the child's profile (guardian-creates-child flow).
+    /// </summary>
+    public static ProfileLogin CreateGuardian(Guid userId, AthleteProfile profile, bool active = false)
     {
         if (!profile.IsMinor)
             throw new InvalidOperationException(
@@ -44,9 +49,21 @@ public class ProfileLogin : AuditableEntity
             UserId = userId,
             AthleteProfileId = profile.Id,
             RoleId = ProfileRole.Guardian.Id,
-            Status = ProfileLoginStatus.Pending,
+            Status = active ? ProfileLoginStatus.Active : ProfileLoginStatus.Pending,
             Permissions = GuardianPermissions.Defaults()
         };
+    }
+
+    /// <summary>
+    /// The invited guardian accepts: the login becomes Active (they can now publish/approve).
+    /// Idempotent for an already-active login; only valid on a Guardian login.
+    /// </summary>
+    public void Accept()
+    {
+        if (RoleId != ProfileRole.Guardian.Id)
+            throw new InvalidOperationException("Only a guardian login can be accepted.");
+
+        Status = ProfileLoginStatus.Active;
     }
 }
 

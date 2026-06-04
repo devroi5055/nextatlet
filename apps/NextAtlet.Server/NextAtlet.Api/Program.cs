@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using NextAtlet.Api;
 using NextAtlet.Application;
-using NextAtlet.Application.Abstractions.Identity;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Infrastructure.Data;
@@ -22,31 +21,43 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi(options => options.AddDocumentTransformer<OAuthSecuritySchemeTransformer>());
 
-// OAuth2 / OIDC bearer authentication (Auth0). Tokens are validated against the configured issuer.
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+// Dual-scheme auth: cookie (production / Next.js session) + JWT bearer (Swagger, service clients).
+// A "smart" policy scheme routes each request to the right handler so [Authorize] endpoints serve
+// both transparently. Claim extraction (ClaimsPrincipalExtensions) is scheme-agnostic.
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultScheme = "smart";
+    options.DefaultChallengeScheme = "smart";
+})
+.AddCookie("cookie", options =>
+{
+    options.Cookie.Name = "nextatlet.session";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+})
+.AddJwtBearer("bearer", options =>
+{
+    options.Authority = builder.Configuration["Authentication:Authority"];
+    options.Audience = builder.Configuration["Authentication:Audience"];
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.Authority = builder.Configuration["Authentication:Authority"];
-        options.Audience = builder.Configuration["Authentication:Audience"];
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            NameClaimType = ClaimTypes.NameIdentifier // map Auth0 'sub' to NameIdentifier
-        };
-        options.Events = new JwtBearerEvents
-        {
-            OnMessageReceived = context =>
-            {
-                // Prefer the httpOnly access_token cookie (XSS-safe transport); fall back to the
-                // Authorization header so tooling/machine clients (and Swagger) still work.
-                if (context.Request.Cookies.TryGetValue("access_token", out var cookieToken)
-                    && !string.IsNullOrEmpty(cookieToken))
-                {
-                    context.Token = cookieToken;
-                }
-                return Task.CompletedTask;
-            }
-        };
-    });
+        NameClaimType = ClaimTypes.NameIdentifier // map Auth0 'sub' to NameIdentifier
+    };
+})
+.AddPolicyScheme("smart", "smart", options =>
+{
+    options.ForwardDefaultSelector = context =>
+    {
+        var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
+        return authHeader?.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) == true
+            ? "bearer"   // Swagger / machine clients
+            : "cookie";  // Next.js frontend session
+    };
+});
+
+// Auth0 access tokens omit email by default — point this at the namespaced claim an Action adds.
+ClaimsPrincipalExtensions.ConfiguredEmailClaimType = builder.Configuration["Authentication:EmailClaimType"];
 
 // Authenticated by default: every endpoint requires a valid token unless it opts out with
 // [AllowAnonymous]. New endpoints are locked unless deliberately opened.
@@ -83,10 +94,6 @@ builder.Services.AddScoped<ISiteConfigRepository, SiteConfigRepository>();
 // Domain services (behind Application abstractions)
 builder.Services.AddScoped<ISectionTypeRegistry, SectionTypeRegistry>();
 builder.Services.AddScoped<ISanitizationService, SanitizationService>();
-
-// Current user resolved from the validated token's claims (all environments).
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<ICurrentUserContext, CurrentUserContext>();
 
 // Add CORS (for development)
 builder.Services.AddCors(options =>

@@ -30,11 +30,14 @@ Read the numbered docs only when working on that specific area (links noted per 
 ## Identity & permissions model
 
 - **`AthleteProfile`** — one per athlete; B2C core.
-- **`ProfileLogin`** — join of `User ↔ AthleteProfile` with role (`AthleteOwner` | `Guardian`) + `Permissions` jsonb.
-- Minor profile **must** have ≥1 active `Guardian` login at all times.
+- **`ProfileLogin`** — join of `User ↔ AthleteProfile` with role (`AthleteOwner` | `Guardian`) + `Permissions` jsonb. A profile may carry {Owner+Guardian}, {Owner only}, or {Guardian only}.
+- **`User.AuthProviderId` is nullable** — null = an **unclaimed** user (e.g. an invited guardian); `IsClaimed` (computed) once a real IdP `sub` is linked.
+- Minor profile **must** have ≥1 `Guardian` login, **created atomically with the profile** (never after). `Pending` when invited (self-minor flow); `Active` when the caller is the guardian (child flow). Publishing a minor needs an *active* guardian.
+- **Two registration commands** (caller = AthleteOwner vs caller = Guardian-for-child) share `AthleteRegistrationHandlerBase`; identity comes from token claims, never the body. See `docs/03` §1, `docs/05`, `REFACTOR_ATHLETE_REGISTRATION.md`.
 - **`OrganizationLogin`** — `User ↔ Organization` with role (`ClubAdmin` | `ClubEditor`; others reserved).
 - All authorization expressed as composable **Specifications** (`CanEditContent`, `CanPublish`, `CanManageBilling`, etc.) — no scattered `if/role` checks.
 - Guardian permission defaults: guardian holds `canPublish` + `canApproveChanges`; athlete may edit/propose, not publish.
+- **Auth = Auth0 (OIDC), dual-scheme:** JWT bearer (Swagger/services) + cookie (Next.js session) behind a `smart` policy scheme; authenticated-by-default fallback policy; `[AllowAnonymous]` to opt out. See `docs/07` (Authentication).
 
 ---
 

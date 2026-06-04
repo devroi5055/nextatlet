@@ -5,11 +5,10 @@
 # log in via Auth0, then copy the access token here (or grab one from Auth0 directly).
 @token = PASTE_ACCESS_TOKEN_HERE
 
-### Create an athlete (minor with guardian)
-# Owner identity (email + IdP subject) comes from the authenticated caller, not the body.
-# In Development a fixed dev user is used, so this works without a token.
+### Self-registration — the caller registers their own profile (minor → guardian invited)
+# Identity (email + IdP subject) comes from the authenticated caller, not the body.
 # defaultLocale is an EnumerationDto — only `id` is required.
-POST {{NextAtlet.Api_HostAddress}}/api/athletes
+POST {{NextAtlet.Api_HostAddress}}/api/athletes/register
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
@@ -20,6 +19,28 @@ Authorization: Bearer {{token}}
   "defaultLocale": { "id": "da" },
   "guardianEmail": "aunt@example.dk"
 }
+
+### Guardian registers a profile for their child — the caller becomes the Guardian
+POST {{NextAtlet.Api_HostAddress}}/api/athletes/register-child
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "childDisplayName": "Lukas Jensen",
+  "slug": "lukas-jensen",
+  "childDateOfBirth": "2015-03-20",
+  "defaultLocale": { "id": "da" }
+}
+
+### Who am I? (registration gate: Registered + Role + PendingGuardianInvites)
+GET {{NextAtlet.Api_HostAddress}}/api/me
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### Accept guardianship (invited guardian claims account + activates pending guardian logins)
+# Log in as the guardian (the email named at the child's registration), then call this.
+POST {{NextAtlet.Api_HostAddress}}/api/guardianships/accept
+Authorization: Bearer {{token}}
 
 ### Get the draft config (copy the id from the create response into @profileId)
 GET {{NextAtlet.Api_HostAddress}}/api/athletes/{{profileId}}/config/draft

@@ -5,6 +5,8 @@ using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Features.Athletes.Commands;
 using NextAtlet.Application.Features.Athletes.Queries;
 
+// ClaimsPrincipalExtensions (User.GetAuthProviderId()/GetEmail()) live in the NextAtlet.Api namespace.
+
 namespace NextAtlet.Api.Controllers;
 
 [ApiController]
@@ -17,18 +19,37 @@ public class AthletesController : ControllerBase
     public AthletesController(ISender sender) => _sender = sender;
 
     /// <summary>
-    /// Creates a new athlete profile with an AthleteOwner login and (if minor) a Pending guardian link.
+    /// Self-registration: the authenticated caller registers their own profile (becomes AthleteOwner;
+    /// a guardian is invited if the caller is a minor).
     /// </summary>
-    [HttpPost]
-    public async Task<ActionResult<AthleteProfileDto>> CreateAthlete([FromBody] CreateAthleteRequest request)
+    [HttpPost("register")]
+    public async Task<ActionResult<AthleteProfileDto>> RegisterOwn([FromBody] RegisterOwnAthleteRequest request)
     {
-        // Owner identity is resolved from the authenticated token inside the handler (ICurrentUserContext).
-        var dto = await _sender.Send(new RegisterAthleteProfileCommand(
+        var dto = await _sender.Send(new RegisterOwnAthleteCommand(
+            User.GetAuthProviderId(),
+            User.GetEmail(),
             request.DisplayName,
             request.Slug,
             request.DateOfBirth,
-            request.DefaultLocale.Id,
+            request.DefaultLocaleId,
             request.GuardianEmail));
+
+        return Created($"/api/athletes/{dto.Id}", dto);
+    }
+
+    /// <summary>
+    /// Guardian registers a profile for their child: the authenticated caller becomes the Guardian.
+    /// </summary>
+    [HttpPost("register-child")]
+    public async Task<ActionResult<AthleteProfileDto>> RegisterChild([FromBody] RegisterChildAthleteRequest request)
+    {
+        var dto = await _sender.Send(new RegisterChildAthleteCommand(
+            User.GetAuthProviderId(),
+            User.GetEmail(),
+            request.ChildDisplayName,
+            request.Slug,
+            request.ChildDateOfBirth,
+            request.DefaultLocaleId));
 
         return Created($"/api/athletes/{dto.Id}", dto);
     }

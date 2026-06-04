@@ -42,6 +42,20 @@ Clean Architecture: abstractions (MediatR handlers, repository interfaces, `IUni
 
 One `DomainException`, one `ErrorCodes` source of truth, one global handler, one `ApiError` response shape (`01`). A build-time test asserts every code has both `da` and `en` translations (no raw key ever reaches a user). **Deferred upgrades (do not build now):** `Result<T>` (Model B) for validation-heavy flows, and RFC 9457 Problem Details (Model C) if/when the API gets external consumers. Full plan: `error-handling-implementation-plan.md`.
 
+### Authentication — dual-scheme (cookie + bearer)
+
+Auth0 (OIDC) is the identity provider. The API registers **two authentication schemes** plus a `smart` policy scheme that forwards per request:
+
+- **Bearer** — `Authorization: Bearer <jwt>` (Swagger, service-to-service). Validated against the Auth0 issuer/audience (RS256, keys via JWKS).
+- **Cookie** — the production/Next.js session (httpOnly, `SameSite=Strict`).
+- **`smart`** `AddPolicyScheme` — `ForwardDefaultSelector` routes to bearer if an `Authorization: Bearer` header is present, else cookie. Endpoints carry a plain `[Authorize]`; a global **fallback policy** makes everything authenticated unless it opts out with `[AllowAnonymous]` (the OpenAPI doc does).
+
+Authentication and domain registration are **two gates**: Gate 1 = Auth0 credential (age-blind); Gate 2 = profile registration behind `[Authorize]`. The caller's `sub`/`email` are read from the validated principal via scheme-agnostic `ClaimsPrincipalExtensions` — **never** the request body. (CSRF on the cookie `POST`s and which app issues the production cookie are open items — see `auth_plan.md` / `REFACTOR_ATHLETE_REGISTRATION.md` §6a.)
+
+### Naming: commands by intent (registration split)
+
+Commands are named for the **use-case**, not CRUD. Athlete creation is two intent-named commands sharing a private core (`AthleteRegistrationHandlerBase.CreateAthleteProfileCoreAsync`): `RegisterOwnAthleteCommand` (caller → AthleteOwner) and `RegisterChildAthleteCommand` (caller → Guardian, child login deferred). The shared base owns slug validation + profile + default draft `SiteConfig` + user get-or-create; each handler owns only its login-attachment + rules. New athlete-onboarding variants extend the base, not copy it. Full plan: `REFACTOR_ATHLETE_REGISTRATION.md`.
+
 ---
 
 ## 2. Things to keep stable (don't churn these)

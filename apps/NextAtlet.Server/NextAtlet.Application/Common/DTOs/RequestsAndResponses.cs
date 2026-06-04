@@ -2,14 +2,25 @@ using NextAtlet.Domain.ValueObjects;
 
 namespace NextAtlet.Application.Common.DTOs;
 
-public class CreateAthleteRequest
+// Identity (email + IdP subject) comes from the authenticated token, never the body.
+
+/// <summary>Self-registration: the caller registers their own athlete profile.</summary>
+public class RegisterOwnAthleteRequest
 {
-    // Owner identity (email + IdP subject) comes from the authenticated token, not the body.
     public required string DisplayName { get; set; }
     public required string Slug { get; set; }
     public required DateTime DateOfBirth { get; set; }
-    public EnumerationDto DefaultLocale { get; set; } = default!;
-    public string? GuardianEmail { get; set; } // Required if athlete is a minor
+    public string DefaultLocaleId { get; set; } = default!;
+    public string? GuardianEmail { get; set; } // Required if the caller is a minor
+}
+
+/// <summary>Guardian creates a profile for their child; the caller becomes the Guardian.</summary>
+public class RegisterChildAthleteRequest
+{
+    public required string ChildDisplayName { get; set; }
+    public required string Slug { get; set; }
+    public required DateTime ChildDateOfBirth { get; set; }
+    public string DefaultLocaleId { get; set; } = default!;
 }
 
 public class AthleteProfileDto
@@ -46,8 +57,12 @@ public class UpdateSiteConfigRequest
 /// <summary>
 /// Result of the /me domain-gate check. Registered = owns an athlete profile.
 /// Role is the caller's ProfileRole id (athlete owner / guardian), or null if neither.
+/// PendingGuardianInvites = guardian invitations awaiting this caller's acceptance.
 /// </summary>
-public record MeDto(bool Registered, string? Role);
+public record MeDto(bool Registered, string? Role, int PendingGuardianInvites);
+
+/// <summary>Result of accepting guardian invitations: how many were activated.</summary>
+public record GuardianshipAcceptedDto(int Accepted);
 
 public class ErrorResponse
 {
