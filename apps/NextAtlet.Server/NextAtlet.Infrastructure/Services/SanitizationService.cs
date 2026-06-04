@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Domain.ValueObjects;
 using NextAtlet.Domain.ValueObjects.Sections;
 
@@ -9,7 +10,7 @@ namespace NextAtlet.Infrastructure.Services;
 /// Applied to all text content before save. Operates on the typed layout model —
 /// each section type's text fields are sanitized in place.
 /// </summary>
-public class SanitizationService
+public class SanitizationService : ISanitizationService
 {
     private static readonly Regex HtmlTagsRegex = new(@"<[^>]*>", RegexOptions.Compiled);
     private static readonly Regex ScriptPatternRegex = new(@"javascript:", RegexOptions.IgnoreCase | RegexOptions.Compiled);

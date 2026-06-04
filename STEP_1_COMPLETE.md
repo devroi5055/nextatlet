@@ -1,5 +1,7 @@
 # Step 1: Complete — Profiles + SiteConfig + Auth Implementation
 
+> **Historical note.** Since this was written, the backend was refactored to **CQRS via MediatR + repository/Unit-of-Work** with an inverted dependency direction, and section payloads became **typed polymorphic DTOs**. Treat the architecture details below as the original Step-1 snapshot — see `docs/08` (ADR), `docs/07`, and `REFACTOR_PLAN.md` for the current design.
+
 **Status:** ✅ Build successful. Ready for database testing and integration.
 
 **Date:** 2026-06-02

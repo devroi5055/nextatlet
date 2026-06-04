@@ -38,12 +38,31 @@ Read the numbered docs only when working on that specific area (links noted per 
 
 ---
 
-## Read/write path split (CQRS-lite)
+## Read/write path split
 
 | Path | Data | Cache |
 |------|------|-------|
 | Editor (authenticated) | Full draft config + tier/perk schema for *this* profile | Never cached |
 | Public (anonymous) | Published public contract only — sanitized, CDN-resolved media, theme manifest | ISR + CDN; invalidate on publish |
+
+The editor write path is implemented as **CQRS via MediatR**: controllers dispatch `IRequest` commands/queries through `ISender`; handlers orchestrate repositories + domain services and commit once via `IUnitOfWork`. The editor-vs-public separation above is orthogonal — it governs caching and the public contract, not the dispatch mechanism.
+
+## Layering & dependency direction
+
+```
+Api ──► Application ◄── Infrastructure
+          │                  │
+          └──────► Domain ◄──┘
+```
+
+- **Application** owns the contracts: MediatR `IRequest`/handlers, repository interfaces, `IUnitOfWork`, `ISanitizationService`/`ISectionTypeRegistry`. No EF here.
+- **Infrastructure** implements them over EF Core (`NextAtletDbContext`, repositories, `EfUnitOfWork`) and references Application.
+- Handlers are **orchestrators**: they never touch `DbContext` — they read/write via repository interfaces and call `IUnitOfWork.SaveChangesAsync()` once.
+- **MediatR** is pinned to v13 Community (free under the org-revenue threshold). Handler/`IRequest` code is portable to MediatR 12 (MIT) or a hand-rolled `ISender` if licensing policy changes — see `docs/08`.
+
+## Error handling (Model A — error codes)
+
+Backend emits **error codes, never localized strings**; the frontend resolves `da`/`en`. User-facing failures throw `DomainException(code, params)` → `400` + `ApiError { errorCode, parameters }`; system failures are logged → generic `500` `internal_error` (no leak). `ErrorCodes` is the single source of truth; a build-time test asserts every code has both translations. Don't classify a system/seed failure (e.g. missing Classic theme) as a `DomainException`. Details: `docs/01` (contract), `docs/07`, `error-handling-implementation-plan.md`.
 
 Club pages reference athletes by id; resolved at render against published contract. If athlete is `Private`/unpublished → graceful placeholder, never a leak or a break.
 
@@ -91,7 +110,7 @@ One React component per section type. Theme manifest declares supported section 
 
 ## Design patterns in use
 
-`Strategy` (section validation/rendering) · `Factory/Registry` (`SectionTypeRegistry`) · `Specification` (tier/perk/role gating) · `CQRS-lite` (editor vs public path) · `Builder` (public render payload) · `Decorator/Middleware` (caching + sanitization on public path) · `DTO + mapping` (never expose EF entities) · `Options pattern` (tier/perk/theme config).
+`Strategy` (section validation/rendering) · `Factory/Registry` (`SectionTypeRegistry`) · `Specification` (tier/perk/role gating) · `CQRS` via MediatR (`IRequest`/`IRequestHandler`, dispatched via `ISender`) · `Repository` + `Unit of Work` (DB access; interfaces in Application, EF impls in Infrastructure) · read/write path split (editor vs public) · `Builder` (public render payload) · `Decorator/Middleware` (caching + sanitization on public path) · `DTO + mapping` (never expose EF entities) · `Options pattern` (tier/perk/theme config).
 
 ---
 

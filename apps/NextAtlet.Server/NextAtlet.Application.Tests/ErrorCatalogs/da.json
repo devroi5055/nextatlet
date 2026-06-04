@@ -1,0 +1,12 @@
+{
+  "slug.already_taken": "Brugernavnet '{0}' er allerede taget",
+  "slug.reserved": "Brugernavnet '{0}' er reserveret",
+  "guardian.email_required": "Der kræves en værges e-mail for atleter under 18 år",
+  "guardian.invitation.not_found": "Værgeinvitationen kunne ikke findes",
+  "profile.not_found": "Profilen blev ikke fundet",
+  "config.draft.not_found": "Kladdekonfigurationen blev ikke fundet",
+  "config.draft.version_conflict": "Kladden blev ændret et andet sted. Genindlæs og prøv igen.",
+  "section.type_not_supported": "Sektion {0} bruger en type, som dette tema ikke understøtter",
+  "section.validation_failed": "Sektion {0} er ugyldig: {1}",
+  "internal_error": "Noget gik galt. Prøv venligst igen."
+}

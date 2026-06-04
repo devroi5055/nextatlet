@@ -1,5 +1,3 @@
-
-
 using NextAtlet.Domain.Common;
 using NextAtlet.Domain.Entities.Athlete;
 
@@ -17,9 +15,17 @@ public class User : AuditableEntity
 
     /// <summary>
     /// External IdP subject identifier (e.g. Auth0/Entra sub claim).
-    /// We do not store password hashes — auth is delegated to the IdP.
+    /// Null until the account is <see cref="IsClaimed">claimed</see> — e.g. a guardian who was
+    /// invited by email but has not signed up yet. We never store password hashes; auth is delegated to the IdP.
     /// </summary>
-    public required string AuthProviderId { get; set; }
+    public string? AuthProviderId { get; set; }
+
+    /// <summary>
+    /// True once a real IdP identity is linked. An unclaimed user is a placeholder created by an
+    /// invite (e.g. a guardian) that becomes claimed when that person first signs in.
+    /// Computed from <see cref="AuthProviderId"/> — never stored.
+    /// </summary>
+    public bool IsClaimed => !string.IsNullOrWhiteSpace(AuthProviderId);
 
     // Navigation
     public ICollection<ProfileLogin> ProfileLogins { get; set; } = [];

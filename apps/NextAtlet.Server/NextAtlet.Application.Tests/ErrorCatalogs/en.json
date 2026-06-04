@@ -1,0 +1,12 @@
+{
+  "slug.already_taken": "The username '{0}' is already taken",
+  "slug.reserved": "The username '{0}' is reserved",
+  "guardian.email_required": "A guardian email is required for athletes under 18",
+  "guardian.invitation.not_found": "The guardian invitation could not be found",
+  "profile.not_found": "Profile not found",
+  "config.draft.not_found": "Draft configuration not found",
+  "config.draft.version_conflict": "This draft was changed elsewhere. Reload and try again.",
+  "section.type_not_supported": "Section {0} uses a type this theme does not support",
+  "section.validation_failed": "Section {0} is invalid: {1}",
+  "internal_error": "Something went wrong. Please try again."
+}

@@ -15,7 +15,8 @@ public static class JsonbValueConversion
 {
     public static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web);
 
-    public static PropertyBuilder<T> HasJsonbConversion<T>(this PropertyBuilder<T> builder) where T : class
+    // No `where T : class` so nullable VO properties (GlobalSettings?, etc.) bind without CS8634.
+    public static PropertyBuilder<T> HasJsonbConversion<T>(this PropertyBuilder<T> builder)
     {
         var converter = new ValueConverter<T, string>(
             value => JsonSerializer.Serialize(value, Options),
@@ -24,7 +25,7 @@ public static class JsonbValueConversion
         // Compare/snapshot by serialized form so EF detects in-place edits to the object graph.
         var comparer = new ValueComparer<T>(
             (a, b) => JsonSerializer.Serialize(a, Options) == JsonSerializer.Serialize(b, Options),
-            v => v == null ? 0 : JsonSerializer.Serialize(v, Options).GetHashCode(),
+            v => JsonSerializer.Serialize(v, Options).GetHashCode(), // Serialize(null) => "null", safe
             v => JsonSerializer.Deserialize<T>(JsonSerializer.Serialize(v, Options), Options)!);
 
         builder.HasConversion(converter, comparer).HasColumnType("jsonb");

@@ -11,7 +11,9 @@
 | **Strategy** | section validation & rendering contract | one strategy per section type; add a type → add a strategy, no `switch` sprawl |
 | **Factory / Registry** | `SectionTypeRegistry` | maps `"hero"` → schema + validator + (frontend) component contract; same idea for club section types |
 | **Specification** | tier/perk gating, ownership, role checks | composable, declarative rules (`CanEditField`, `CanUseTheme`, `CanManageBilling`, `CanProposeToAthlete`) instead of scattered `if`s |
-| **CQRS-lite** | editor (write) vs public (read) paths | separate, sanitized, cacheable public read model from the editable model (`01` §3) |
+| **CQRS via MediatR** | application commands/queries | `IRequest`/`IRequestHandler` dispatched via `ISender`; handlers orchestrate repositories + services; thin controllers; pipeline behaviors for cross-cutting concerns |
+| **Repository + Unit of Work** | all DB access | handlers depend on repository interfaces (in Application); EF implementations + `EfUnitOfWork` in Infrastructure; one `SaveChangesAsync` per request, commit timing owned by the handler |
+| **Read/write path split** | editor (write) vs public (read) paths | separate, sanitized, cacheable public read model from the editable model (`01` §3) — orthogonal to the MediatR dispatch mechanism |
 | **Builder** | public render payload | compose config + theme manifest + resolved media into one self-contained response |
 | **Decorator / Middleware** | caching + sanitization on public path | wrap public render without touching core logic |
 | **DTO + mapping** | API boundaries | never expose EF entities; map to DTOs so internal schema can evolve |
@@ -19,7 +21,26 @@
 | **Dedicated service: `PerkResolver`** | effective-capability resolution | single place that computes `max(SelfTier, ActiveClubPerks)` per feature (`02` §6, `04`) — never persist conflated state |
 | **Dedicated service: `PublicContractProjector`** | the only path athlete data leaves to public/club | `ToPublicContract(profile)` — enforces the privacy boundary in one place (`03` §4) |
 
-> Resist over-engineering. No event sourcing, no microservice-per-concept, no full DDD aggregates at this stage. **Strategy (sections) + Specification (gating) + CQRS-lite (read/write split) + two focused services (PerkResolver, PublicContractProjector)** give ~90% of the flexibility at a fraction of the cost.
+> Resist over-engineering. No event sourcing, no microservice-per-concept, no full DDD aggregates at this stage. **Strategy (sections) + Specification (gating) + CQRS via MediatR over repositories + the read/write path split + two focused services (PerkResolver, PublicContractProjector)** give ~90% of the flexibility at a fraction of the cost. Repositories are intention-revealing per aggregate (`GetBySlugAsync`, `GetDraftByProfileIdAsync`), **not** a generic `IRepository<T>` framework.
+
+### Layering & dependency direction
+
+```
+Api ──► Application ◄── Infrastructure
+          │                  │
+          └──────► Domain ◄──┘
+```
+
+Clean Architecture: abstractions (MediatR handlers, repository interfaces, `IUnitOfWork`, service interfaces) live in **Application**; EF Core implementations (`NextAtletDbContext`, repositories, `EfUnitOfWork`) live in **Infrastructure**, which references Application. Handlers never see `DbContext`. This inverts the original `Application → Infrastructure` reference (see `docs/08` ADR). MediatR is v13 Community; the choice is reversible (MediatR 12 MIT, `martinothamar/Mediator`, or a hand-rolled `ISender`) since every feature is just an `IRequestHandler`.
+
+### Error handling — Model A (error codes + global handler)
+
+**Chosen: Model A.** The backend emits stable **error codes + parameters**, never localized strings; the frontend resolves codes → `da`/`en` text (locale lives where the user is — see `02 §7`). Two categories, never conflated:
+
+- **Domain / user-facing** (slug taken, guardian required, not-found, version conflict, invalid section) → `DomainException(code, params)` → **400** + `ApiError`.
+- **System / infrastructure** (missing seed theme, DB down) → plain exception → logged → generic **500**, no detail leaked.
+
+One `DomainException`, one `ErrorCodes` source of truth, one global handler, one `ApiError` response shape (`01`). A build-time test asserts every code has both `da` and `en` translations (no raw key ever reaches a user). **Deferred upgrades (do not build now):** `Result<T>` (Model B) for validation-heavy flows, and RFC 9457 Problem Details (Model C) if/when the API gets external consumers. Full plan: `error-handling-implementation-plan.md`.
 
 ---
 

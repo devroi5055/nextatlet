@@ -1,5 +1,7 @@
 # Step 1 Bug Fixes: Complete Summary
 
+> **Historical note.** Superseded in places by the CQRS/MediatR + repository refactor and the typed polymorphic section model. See `docs/08` (ADR), `docs/07`, and `REFACTOR_PLAN.md`.
+
 **Date:** After Initial Step 1 Implementation  
 **All Critical Bugs:** ✅ FIXED  
 **Build Status:** ✅ SUCCESS (0 errors)  

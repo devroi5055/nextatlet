@@ -4,7 +4,7 @@ namespace NextAtlet.Application.Common.DTOs;
 
 public class CreateAthleteRequest
 {
-    public required string Email { get; set; }
+    // Owner identity (email + IdP subject) comes from the authenticated token, not the body.
     public required string DisplayName { get; set; }
     public required string Slug { get; set; }
     public required DateTime DateOfBirth { get; set; }

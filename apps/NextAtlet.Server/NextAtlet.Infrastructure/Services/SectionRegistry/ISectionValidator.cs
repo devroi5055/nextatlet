@@ -1,20 +1,12 @@
+using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Domain.ValueObjects.Sections;
 
 namespace NextAtlet.Infrastructure.Services.SectionRegistry;
 
 /// <summary>
-/// Result of section validation.
-/// </summary>
-public record ValidationResult
-{
-    public bool IsValid { get; set; }
-    public List<string> Errors { get; set; } = [];
-}
-
-/// <summary>
-/// Strategy interface for validating a specific section type.
-/// Receives the already-typed (polymorphically deserialized) payload — validators now
-/// assert business rules, not JSON shape (the type system covers shape).
+/// Strategy interface for validating a specific section type. Implementation detail of
+/// <see cref="SectionTypeRegistry"/> — the Application layer talks to ISectionTypeRegistry,
+/// not to individual validators. Uses the shared <see cref="ValidationResult"/> contract.
 /// </summary>
 public interface ISectionValidator
 {

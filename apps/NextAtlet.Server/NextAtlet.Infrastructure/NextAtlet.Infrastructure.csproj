@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\NextAtlet.Domain\NextAtlet.Domain.csproj" />
+    <ProjectReference Include="..\NextAtlet.Application\NextAtlet.Application.csproj" />
   </ItemGroup>
 
 </Project>

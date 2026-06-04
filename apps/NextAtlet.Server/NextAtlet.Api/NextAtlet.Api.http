@@ -1,6 +1,58 @@
 @NextAtlet.Api_HostAddress = http://localhost:5278
+@profileId = 00000000-0000-0000-0000-000000000000
 
-GET {{NextAtlet.Api_HostAddress}}/weatherforecast/
+### Create an athlete (minor with guardian)
+# defaultLocale is an EnumerationDto — only `id` is required.
+POST {{NextAtlet.Api_HostAddress}}/api/athletes
+Content-Type: application/json
+
+{
+  "email": "maria@example.dk",
+  "displayName": "Maria Jensen",
+  "slug": "maria-jensen",
+  "dateOfBirth": "2007-06-15",
+  "defaultLocale": { "id": "da" },
+  "guardianEmail": "aunt@example.dk"
+}
+
+### Get the draft config (copy the id from the create response into @profileId)
+GET {{NextAtlet.Api_HostAddress}}/api/athletes/{{profileId}}/config/draft
 Accept: application/json
+
+### Update the draft config
+# NOTE: the polymorphic section "type" discriminator lives inside `data` and MUST be its
+# first property (System.Text.Json polymorphism requirement).
+PUT {{NextAtlet.Api_HostAddress}}/api/athletes/{{profileId}}/config/draft
+Content-Type: application/json
+
+{
+  "layout": {
+    "sections": [
+      {
+        "id": "hero-1",
+        "order": 0,
+        "data": {
+          "type": "hero",
+          "headline": { "da": "Velkommen", "en": "Welcome" },
+          "subheading": { "da": "Min judoprofil", "en": "My judo profile" },
+          "backgroundImageAssetId": null
+        }
+      },
+      {
+        "id": "bio-1",
+        "order": 1,
+        "data": {
+          "type": "bio",
+          "bio": { "da": "Jeg er...", "en": "I am..." },
+          "highlightItems": [
+            { "label": { "da": "Bælte", "en": "Belt" }, "value": "2. dan" }
+          ]
+        }
+      }
+    ]
+  },
+  "globalSettings": { "accentColor": "#ffd700", "fontFamily": "Inter" },
+  "expectedVersion": 1
+}
 
 ###

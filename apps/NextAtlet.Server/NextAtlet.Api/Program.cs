@@ -1,7 +1,13 @@
+using MediatR;
 using Microsoft.EntityFrameworkCore;
-using NextAtlet.Application.Features.Athletes.Commands;
-using NextAtlet.Application.Features.Athletes.Queries;
+using NextAtlet.Api;
+using NextAtlet.Application;
+using NextAtlet.Application.Abstractions.Identity;
+using NextAtlet.Application.Abstractions.Persistence;
+using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Infrastructure.Data;
+using NextAtlet.Infrastructure.Persistence;
+using NextAtlet.Infrastructure.Persistence.Repositories;
 using NextAtlet.Infrastructure.Services;
 using NextAtlet.Infrastructure.Services.SectionRegistry;
 
@@ -11,6 +17,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+
+// ProblemDetails + global exception handling (replaces per-action try/catch)
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 // Configure PostgreSQL DbContext
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -24,12 +34,24 @@ builder.Services.AddDbContext<NextAtletDbContext>(options =>
     });
 });
 
-// Register application services
-builder.Services.AddScoped<SectionTypeRegistry>();
-builder.Services.AddScoped<SanitizationService>();
-builder.Services.AddScoped<CreateAthleteCommand>();
-builder.Services.AddScoped<GetDraftConfigQuery>();
-builder.Services.AddScoped<UpdateDraftConfigCommand>();
+// CQRS via MediatR — handlers live in the Application assembly
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(IApplicationMarker).Assembly));
+
+// Repositories + Unit of Work (EF implementations over the shared scoped DbContext)
+builder.Services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IAthleteProfileRepository, AthleteProfileRepository>();
+builder.Services.AddScoped<IProfileLoginRepository, ProfileLoginRepository>();
+builder.Services.AddScoped<IThemeRepository, ThemeRepository>();
+builder.Services.AddScoped<ISiteConfigRepository, SiteConfigRepository>();
+
+// Domain services (behind Application abstractions)
+builder.Services.AddScoped<ISectionTypeRegistry, SectionTypeRegistry>();
+builder.Services.AddScoped<ISanitizationService, SanitizationService>();
+
+// Current user resolved from the validated token's claims
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserContext, CurrentUserContext>();
 
 // Add CORS (for development)
 builder.Services.AddCors(options =>
@@ -43,6 +65,8 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

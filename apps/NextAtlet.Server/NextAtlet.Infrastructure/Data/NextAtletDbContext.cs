@@ -26,8 +26,10 @@ public class NextAtletDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Email).IsRequired().HasMaxLength(256);
-            entity.Property(e => e.AuthProviderId).IsRequired().HasMaxLength(256);
+            // Nullable: unclaimed users (e.g. invited guardians) have no AuthProviderId yet.
+            entity.Property(e => e.AuthProviderId).HasMaxLength(256);
             entity.HasIndex(e => e.Email).IsUnique();
+            // Postgres treats NULLs as distinct, so many unclaimed users coexist; claimed subjects stay unique.
             entity.HasIndex(e => e.AuthProviderId).IsUnique();
         });
 

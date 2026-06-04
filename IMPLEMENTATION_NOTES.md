@@ -1,5 +1,7 @@
 # NextAtlet Implementation Notes — Step 1
 
+> **Historical note.** The backend has since moved to **CQRS via MediatR + repository/Unit-of-Work** with an inverted dependency direction, and typed polymorphic section payloads. See `docs/08` (ADR), `docs/07`, and `REFACTOR_PLAN.md` for the current design.
+
 ## Auth Decision
 
 **Chosen: External Managed IdP (Entra ID / Auth0)**
