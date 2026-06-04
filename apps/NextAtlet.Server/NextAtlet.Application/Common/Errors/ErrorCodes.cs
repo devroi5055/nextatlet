@@ -16,6 +16,11 @@ public static class ErrorCodes
     public const string DraftVersionConflict    = "config.draft.version_conflict";
     public const string SectionTypeNotSupported = "section.type_not_supported";
     public const string SectionValidationFailed = "section.validation_failed";
+    public const string ProfileAlreadyExists    = "profile.already_exists";
+
+    // Authentication — the validated token is missing an expected claim.
+    public const string AuthSubMissing          = "auth.sub_missing";
+    public const string AuthEmailMissing        = "auth.email_missing";
 
     /// <summary>Generic fallback for unhandled/system failures. Never carries internal detail.</summary>
     public const string Internal                = "internal_error";

@@ -8,5 +8,8 @@
   "config.draft.version_conflict": "This draft was changed elsewhere. Reload and try again.",
   "section.type_not_supported": "Section {0} uses a type this theme does not support",
   "section.validation_failed": "Section {0} is invalid: {1}",
+  "profile.already_exists": "You already have an athlete profile",
+  "auth.sub_missing": "Your sign-in token is missing a subject identifier",
+  "auth.email_missing": "Your sign-in token is missing an email address",
   "internal_error": "Something went wrong. Please try again."
 }

@@ -68,6 +68,11 @@ public class RegisterAthleteProfileCommandHandler : IRequestHandler<RegisterAthl
         EnsureGuardianProvidedForMinor(isMinor, request.GuardianEmail);
 
         var owner = await ResolveOwnerUserAsync(cancellationToken);
+
+        // One profile per owner — registration is not repeatable.
+        if (await _profiles.GetOwnedByUserIdAsync(owner.Id, cancellationToken) is not null)
+            throw new DomainException(ErrorCodes.ProfileAlreadyExists);
+
         var athleteProfile = AddProfile(request, slug);
         _logins.Add(ProfileLogin.CreateOwner(owner.Id, athleteProfile.Id));
 

@@ -1,13 +1,19 @@
 @NextAtlet.Api_HostAddress = http://localhost:5278
 @profileId = 00000000-0000-0000-0000-000000000000
 
+# All /api endpoints require a bearer token now. Easiest: open /swagger, click "Authorize",
+# log in via Auth0, then copy the access token here (or grab one from Auth0 directly).
+@token = PASTE_ACCESS_TOKEN_HERE
+
 ### Create an athlete (minor with guardian)
+# Owner identity (email + IdP subject) comes from the authenticated caller, not the body.
+# In Development a fixed dev user is used, so this works without a token.
 # defaultLocale is an EnumerationDto — only `id` is required.
 POST {{NextAtlet.Api_HostAddress}}/api/athletes
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
-  "email": "maria@example.dk",
   "displayName": "Maria Jensen",
   "slug": "maria-jensen",
   "dateOfBirth": "2007-06-15",
@@ -18,12 +24,14 @@ Content-Type: application/json
 ### Get the draft config (copy the id from the create response into @profileId)
 GET {{NextAtlet.Api_HostAddress}}/api/athletes/{{profileId}}/config/draft
 Accept: application/json
+Authorization: Bearer {{token}}
 
 ### Update the draft config
 # NOTE: the polymorphic section "type" discriminator lives inside `data` and MUST be its
 # first property (System.Text.Json polymorphism requirement).
 PUT {{NextAtlet.Api_HostAddress}}/api/athletes/{{profileId}}/config/draft
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "layout": {

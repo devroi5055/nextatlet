@@ -98,4 +98,16 @@ public class RegisterAthleteProfileCommandTests
             app.Send(new RegisterAthleteProfileCommand("Kid", "kid", MinorDob, Locale.Da.Id)));
         Assert.Equal(ErrorCodes.GuardianEmailRequired, ex.ErrorCode);
     }
+
+    [Fact]
+    public async Task Second_registration_for_same_user_throws()
+    {
+        using var app = new TestApp();
+        await app.Send(new RegisterAthleteProfileCommand("Anna", "anna", AdultDob, Locale.Da.Id));
+
+        // same authenticated caller (fake identity), different slug → one-profile-per-owner guard
+        var ex = await Assert.ThrowsAsync<DomainException>(() =>
+            app.Send(new RegisterAthleteProfileCommand("Anna Again", "anna-2", AdultDob, Locale.Da.Id)));
+        Assert.Equal(ErrorCodes.ProfileAlreadyExists, ex.ErrorCode);
+    }
 }

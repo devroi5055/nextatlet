@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Domain.Entities.Athlete;
+using NextAtlet.Domain.Enumerations;
 using NextAtlet.Infrastructure.Data;
 
 namespace NextAtlet.Infrastructure.Persistence.Repositories;
@@ -16,6 +17,14 @@ public class AthleteProfileRepository : IAthleteProfileRepository
 
     public async Task<AthleteProfile?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => await _context.AthleteProfiles.FindAsync([id], cancellationToken);
+
+    public Task<AthleteProfile?> GetOwnedByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var ownerRoleId = ProfileRole.AthleteOwner.Id;
+        return _context.AthleteProfiles.FirstOrDefaultAsync(
+            p => p.ProfileLogins.Any(l => l.UserId == userId && l.RoleId == ownerRoleId),
+            cancellationToken);
+    }
 
     public void Add(AthleteProfile profile) => _context.AthleteProfiles.Add(profile);
 }

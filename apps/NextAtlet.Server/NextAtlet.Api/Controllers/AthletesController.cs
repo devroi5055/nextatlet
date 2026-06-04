@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Features.Athletes.Commands;
@@ -7,6 +8,7 @@ using NextAtlet.Application.Features.Athletes.Queries;
 namespace NextAtlet.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class AthletesController : ControllerBase
 {

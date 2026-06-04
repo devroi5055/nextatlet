@@ -43,6 +43,12 @@ public class UpdateSiteConfigRequest
     public int ExpectedVersion { get; set; }
 }
 
+/// <summary>
+/// Result of the /me domain-gate check. Registered = owns an athlete profile.
+/// Role is the caller's ProfileRole id (athlete owner / guardian), or null if neither.
+/// </summary>
+public record MeDto(bool Registered, string? Role);
+
 public class ErrorResponse
 {
     public int StatusCode { get; set; }

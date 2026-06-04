@@ -8,5 +8,8 @@
   "config.draft.version_conflict": "Kladden blev ændret et andet sted. Genindlæs og prøv igen.",
   "section.type_not_supported": "Sektion {0} bruger en type, som dette tema ikke understøtter",
   "section.validation_failed": "Sektion {0} er ugyldig: {1}",
+  "profile.already_exists": "Du har allerede en atletprofil",
+  "auth.sub_missing": "Dit login-token mangler en bruger-id",
+  "auth.email_missing": "Dit login-token mangler en e-mailadresse",
   "internal_error": "Noget gik galt. Prøv venligst igen."
 }
