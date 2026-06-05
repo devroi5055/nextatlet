@@ -2,6 +2,8 @@ using MediatR;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
+using NextAtlet.Application.Features.Account;
+using NextAtlet.Application.Features.Invitations;
 using NextAtlet.Domain.Entities.Athlete;
 
 namespace NextAtlet.Application.Features.Athletes.Commands;
@@ -13,7 +15,7 @@ namespace NextAtlet.Application.Features.Athletes.Commands;
 /// "minor profile always has a guardian" rule holds by construction.
 /// A guardian may register multiple children (no single-profile idempotency guard here).
 /// </summary>
-public record RegisterChildAthleteCommand(
+public record GuardianRegisterAthleteCommand(
     string AuthProviderId,
     string Email,
     string ChildDisplayName,
@@ -21,19 +23,20 @@ public record RegisterChildAthleteCommand(
     DateTime ChildDateOfBirth,
     string DefaultLocaleId) : IRequest<AthleteProfileDto>;
 
-public class RegisterChildAthleteCommandHandler
-    : AthleteRegistrationHandlerBase, IRequestHandler<RegisterChildAthleteCommand, AthleteProfileDto>
+public class GuardianRegisterAthleteCommandHandler
+    : AthleteRegistrationHandlerBase, IRequestHandler<GuardianRegisterAthleteCommand, AthleteProfileDto>
 {
-    public RegisterChildAthleteCommandHandler(
-        IUserRepository users,
+    public GuardianRegisterAthleteCommandHandler(
         IAthleteProfileRepository profiles,
         IProfileLoginRepository logins,
         IThemeRepository themes,
         ISiteConfigRepository siteConfigs,
+        UserProvisioner userProvisioner,
+        InvitationIssuer inviter,
         IUnitOfWork unitOfWork)
-        : base(users, profiles, logins, themes, siteConfigs, unitOfWork) { }
+        : base(profiles, logins, themes, siteConfigs, userProvisioner, inviter, unitOfWork) { }
 
-    public async Task<AthleteProfileDto> Handle(RegisterChildAthleteCommand request, CancellationToken cancellationToken)
+    public async Task<AthleteProfileDto> Handle(GuardianRegisterAthleteCommand request, CancellationToken cancellationToken)
     {
         // v1: this flow is for minors. An adult must self-register.
         if (!IsMinor(request.ChildDateOfBirth))

@@ -13,6 +13,7 @@ public class NextAtletDbContext : DbContext
     public DbSet<User> Users { get; set; }
     public DbSet<AthleteProfile> AthleteProfiles { get; set; }
     public DbSet<ProfileLogin> ProfileLogins { get; set; }
+    public DbSet<Invitation> Invitations { get; set; }
     public DbSet<Theme> Themes { get; set; }
     public DbSet<SiteConfig> SiteConfigs { get; set; }
     public DbSet<MediaAsset> MediaAssets { get; set; }
@@ -70,6 +71,32 @@ public class NextAtletDbContext : DbContext
                 .WithMany(ap => ap.ProfileLogins)
                 .HasForeignKey(e => e.AthleteProfileId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Invitation configuration
+        modelBuilder.Entity<Invitation>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.RoleId).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Email).IsRequired().HasMaxLength(256);
+            // Status is an enum — persist as its string name, not the underlying int.
+            entity.Property(e => e.Status).HasConversion<string>().IsRequired().HasMaxLength(20);
+            entity.Property(e => e.ExpiresUtc).IsRequired();
+
+            // Fast lookup of "pending invites for this email" (drives /me + anti double-send).
+            entity.HasIndex(e => new { e.Email, e.Status });
+            entity.HasIndex(e => e.TargetProfileId);
+
+            entity.HasOne(e => e.TargetProfile)
+                .WithMany()
+                .HasForeignKey(e => e.TargetProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Audit FK to the inviter — keep the row if the inviter is removed; don't cascade-delete history.
+            entity.HasOne(e => e.InvitedBy)
+                .WithMany()
+                .HasForeignKey(e => e.InvitedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // Theme configuration

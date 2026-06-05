@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Features.Athletes.Commands;
 using NextAtlet.Application.Features.Athletes.Queries;
+using NextAtlet.Application.Features.Invitations.Commands;
 
 // ClaimsPrincipalExtensions (User.GetAuthProviderId()/GetEmail()) live in the NextAtlet.Api namespace.
 
@@ -22,10 +23,10 @@ public class AthletesController : ControllerBase
     /// Self-registration: the authenticated caller registers their own profile (becomes AthleteOwner;
     /// a guardian is invited if the caller is a minor).
     /// </summary>
-    [HttpPost("register")]
-    public async Task<ActionResult<AthleteProfileDto>> RegisterOwn([FromBody] RegisterOwnAthleteRequest request)
+    [HttpPost("self-register")]
+    public async Task<ActionResult<AthleteProfileDto>> SelfRegister([FromBody] RegisterOwnAthleteRequest request)
     {
-        var dto = await _sender.Send(new RegisterOwnAthleteCommand(
+        var dto = await _sender.Send(new SelfRegisterAthleteCommand(
             User.GetAuthProviderId(),
             User.GetEmail(),
             request.DisplayName,
@@ -40,10 +41,10 @@ public class AthletesController : ControllerBase
     /// <summary>
     /// Guardian registers a profile for their child: the authenticated caller becomes the Guardian.
     /// </summary>
-    [HttpPost("register-child")]
-    public async Task<ActionResult<AthleteProfileDto>> RegisterChild([FromBody] RegisterChildAthleteRequest request)
+    [HttpPost("guardian-register")]
+    public async Task<ActionResult<AthleteProfileDto>> GuardianRegister([FromBody] RegisterChildAthleteRequest request)
     {
-        var dto = await _sender.Send(new RegisterChildAthleteCommand(
+        var dto = await _sender.Send(new GuardianRegisterAthleteCommand(
             User.GetAuthProviderId(),
             User.GetEmail(),
             request.ChildDisplayName,
@@ -52,6 +53,23 @@ public class AthletesController : ControllerBase
             request.DefaultLocaleId));
 
         return Created($"/api/athletes/{dto.Id}", dto);
+    }
+
+    /// <summary>
+    /// Invite a person (by email) to this profile in a given role. Only a caller holding an active
+    /// login on the profile may invite to it. The invited person claims it at /invitations/{id}/accept.
+    /// </summary>
+    [HttpPost("{id:guid}/invite")]
+    public async Task<ActionResult<InvitationDto>> Invite(Guid id, [FromBody] InviteToProfileRequest request)
+    {
+        var dto = await _sender.Send(new InviteToProfileCommand(
+            id,
+            User.GetAuthProviderId(),
+            User.GetEmail(),
+            request.Email,
+            request.Role));
+
+        return Created($"/api/invitations/{dto.Id}/accept", dto);
     }
 
     /// <summary>

@@ -57,12 +57,28 @@ public class UpdateSiteConfigRequest
 /// <summary>
 /// Result of the /me domain-gate check. Registered = owns an athlete profile.
 /// Role is the caller's ProfileRole id (athlete owner / guardian), or null if neither.
-/// PendingGuardianInvites = guardian invitations awaiting this caller's acceptance.
+/// ProfileId = the owned profile (null if not an owner). GuardedProfileIds = profiles this caller
+/// actively guards. PendingGuardianInvites = invitations awaiting this caller's acceptance.
 /// </summary>
-public record MeDto(bool Registered, string? Role, int PendingGuardianInvites);
+public record MeDto(
+    bool Registered,
+    string? Role,
+    Guid? ProfileId,
+    IReadOnlyList<Guid> GuardedProfileIds,
+    int PendingGuardianInvites);
 
-/// <summary>Result of accepting guardian invitations: how many were activated.</summary>
-public record GuardianshipAcceptedDto(int Accepted);
+/// <summary>Body for inviting a person to an existing profile. Identity of the inviter comes from the token.</summary>
+public class InviteToProfileRequest
+{
+    public required string Email { get; set; }
+    public required string Role { get; set; } // ProfileRole id: "athlete_owner" | "guardian"
+}
+
+/// <summary>An issued invitation. The Id is the token used in the accept URL.</summary>
+public record InvitationDto(Guid Id, Guid TargetProfileId, string Email, string Role, DateTime ExpiresUtc);
+
+/// <summary>Result of accepting an invitation: which role on which profile was materialized.</summary>
+public record InvitationAcceptedDto(Guid ProfileId, string Role);
 
 public class ErrorResponse
 {

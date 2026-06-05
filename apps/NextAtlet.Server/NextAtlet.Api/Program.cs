@@ -1,13 +1,18 @@
+using System.Net.Http.Headers;
 using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using NextAtlet.Api;
 using NextAtlet.Application;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Abstractions.Services;
+using NextAtlet.Application.Common.Options;
+using NextAtlet.Application.Features.Account;
+using NextAtlet.Application.Features.Invitations;
 using NextAtlet.Infrastructure.Data;
 using NextAtlet.Infrastructure.Persistence;
 using NextAtlet.Infrastructure.Persistence.Repositories;
@@ -88,12 +93,36 @@ builder.Services.AddScoped<IUnitOfWork, EfUnitOfWork>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAthleteProfileRepository, AthleteProfileRepository>();
 builder.Services.AddScoped<IProfileLoginRepository, ProfileLoginRepository>();
+builder.Services.AddScoped<IInvitationRepository, InvitationRepository>();
 builder.Services.AddScoped<IThemeRepository, ThemeRepository>();
 builder.Services.AddScoped<ISiteConfigRepository, SiteConfigRepository>();
 
 // Domain services (behind Application abstractions)
 builder.Services.AddScoped<ISectionTypeRegistry, SectionTypeRegistry>();
 builder.Services.AddScoped<ISanitizationService, SanitizationService>();
+
+// Email: send real invite mail via Resend when an API key is configured; otherwise log the link
+// (so local dev needs no secrets). Either way handlers depend only on IEmailService.
+var emailSection = builder.Configuration.GetRequiredSection(EmailOptions.SectionName);
+builder.Services.Configure<EmailOptions>(emailSection);
+if (!string.IsNullOrWhiteSpace(emailSection[nameof(EmailOptions.InviteApiKey)]))
+{
+    builder.Services.AddHttpClient<IEmailService, ResendEmailService>((sp, client) =>
+    {
+        var options = sp.GetRequiredService<IOptions<EmailOptions>>().Value;
+        client.BaseAddress = new Uri("https://api.resend.com/");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", options.InviteApiKey);
+    });
+}
+else
+{
+    builder.Services.AddScoped<IEmailService, LoggingEmailService>();
+}
+
+// Application services shared across handlers (identity provisioning + invitation issuing)
+builder.Services.AddScoped<UserProvisioner>();
+builder.Services.AddScoped<InvitationIssuer>();
+builder.Services.Configure<InvitationOptions>(builder.Configuration.GetSection(InvitationOptions.SectionName));
 
 // Add CORS (for development)
 builder.Services.AddCors(options =>

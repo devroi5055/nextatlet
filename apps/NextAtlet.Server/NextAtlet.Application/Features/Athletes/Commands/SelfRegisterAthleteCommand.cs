@@ -2,7 +2,10 @@ using MediatR;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
+using NextAtlet.Application.Features.Account;
+using NextAtlet.Application.Features.Invitations;
 using NextAtlet.Domain.Entities.Athlete;
+using NextAtlet.Domain.Enumerations;
 
 namespace NextAtlet.Application.Features.Athletes.Commands;
 
@@ -12,7 +15,7 @@ namespace NextAtlet.Application.Features.Athletes.Commands;
 /// same transaction) — the core "minor profile always has a guardian" rule.
 /// Identity (sub/email) comes from the authenticated principal via the controller, never the body.
 /// </summary>
-public record RegisterOwnAthleteCommand(
+public record SelfRegisterAthleteCommand(
     string AuthProviderId,
     string Email,
     string DisplayName,
@@ -21,19 +24,20 @@ public record RegisterOwnAthleteCommand(
     string DefaultLocaleId,
     string? GuardianEmail = null) : IRequest<AthleteProfileDto>;
 
-public class RegisterOwnAthleteCommandHandler
-    : AthleteRegistrationHandlerBase, IRequestHandler<RegisterOwnAthleteCommand, AthleteProfileDto>
+public class SelfRegisterAthleteCommandHandler
+    : AthleteRegistrationHandlerBase, IRequestHandler<SelfRegisterAthleteCommand, AthleteProfileDto>
 {
-    public RegisterOwnAthleteCommandHandler(
-        IUserRepository users,
+    public SelfRegisterAthleteCommandHandler(
         IAthleteProfileRepository profiles,
         IProfileLoginRepository logins,
         IThemeRepository themes,
         ISiteConfigRepository siteConfigs,
+        UserProvisioner userProvisioner,
+        InvitationIssuer inviter,
         IUnitOfWork unitOfWork)
-        : base(users, profiles, logins, themes, siteConfigs, unitOfWork) { }
+        : base(profiles, logins, themes, siteConfigs, userProvisioner, inviter, unitOfWork) { }
 
-    public async Task<AthleteProfileDto> Handle(RegisterOwnAthleteCommand request, CancellationToken cancellationToken)
+    public async Task<AthleteProfileDto> Handle(SelfRegisterAthleteCommand request, CancellationToken cancellationToken)
     {
         var caller = await GetOrCreateUserAsync(request.Email, request.AuthProviderId, cancellationToken);
 
@@ -49,14 +53,18 @@ public class RegisterOwnAthleteCommandHandler
 
         Logins.Add(ProfileLogin.CreateOwner(caller.Id, profile.Id));
 
-        // Minor → invite a (pending) guardian in the SAME transaction; the invariant is never violated.
-        if (isMinor)
-        {
-            var guardian = await GetOrCreatePendingUserAsync(request.GuardianEmail!, cancellationToken);
-            Logins.Add(ProfileLogin.CreateGuardian(guardian.Id, profile));
-        }
+        // Minor → issue a guardian Invitation in the SAME transaction. The guardian's ProfileLogin is
+        // materialized when they accept; until then the Invitation is the pending state.
+        Invitation? guardianInvite = isMinor
+            ? Inviter.Issue(profile.Id, request.GuardianEmail!, ProfileRole.Guardian.Id, caller.Id)
+            : null;
 
         await UnitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Fire the email only after the row is durably committed (avoids inviting on a rolled-back tx).
+        if (guardianInvite is not null)
+            await Inviter.NotifyAsync(guardianInvite, cancellationToken);
+
         return MapToDto(profile);
     }
 }

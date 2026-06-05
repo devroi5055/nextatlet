@@ -13,19 +13,22 @@ public class ProfileLoginRepository : IProfileLoginRepository
 
     public ProfileLoginRepository(NextAtletDbContext context) => _context = context;
 
-    public Task<bool> HasGuardianLoginAsync(Guid userId, CancellationToken cancellationToken = default)
+    public Task<bool> HasActiveLoginAsync(Guid userId, Guid profileId, CancellationToken cancellationToken = default)
     {
-        var guardianRoleId = ProfileRole.Guardian.Id;
-        return _context.ProfileLogins.AnyAsync(l => l.UserId == userId && l.RoleId == guardianRoleId, cancellationToken);
+        const ProfileLoginStatus active = ProfileLoginStatus.Active;
+        return _context.ProfileLogins.AnyAsync(
+            l => l.UserId == userId && l.AthleteProfileId == profileId && l.Status == active,
+            cancellationToken);
     }
 
-    public async Task<IReadOnlyList<ProfileLogin>> GetPendingGuardianLoginsByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Guid>> GetActiveGuardianProfileIdsByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         var guardianRoleId = ProfileRole.Guardian.Id;
-        const ProfileLoginStatus pending = ProfileLoginStatus.Pending;
+        const ProfileLoginStatus active = ProfileLoginStatus.Active;
 
         return await _context.ProfileLogins
-            .Where(l => l.UserId == userId && l.RoleId == guardianRoleId && l.Status == pending)
+            .Where(l => l.UserId == userId && l.RoleId == guardianRoleId && l.Status == active)
+            .Select(l => l.AthleteProfileId)
             .ToListAsync(cancellationToken);
     }
 

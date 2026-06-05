@@ -2,6 +2,8 @@ using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Extensions;
+using NextAtlet.Application.Features.Account;
+using NextAtlet.Application.Features.Invitations;
 using NextAtlet.Domain.Entities.Athlete;
 using NextAtlet.Domain.Entities.Shared;
 using NextAtlet.Domain.Enumerations;
@@ -21,26 +23,29 @@ public abstract class AthleteRegistrationHandlerBase
     protected static readonly string[] ReservedSlugs =
         ["admin", "api", "about", "contact", "terms", "privacy", "login", "signup", "settings", "dashboard"];
 
-    protected readonly IUserRepository Users;
     protected readonly IAthleteProfileRepository Profiles;
     protected readonly IProfileLoginRepository Logins;
     protected readonly IThemeRepository Themes;
     protected readonly ISiteConfigRepository SiteConfigs;
+    protected readonly UserProvisioner UserProvisioner;
+    protected readonly InvitationIssuer Inviter;
     protected readonly IUnitOfWork UnitOfWork;
 
     protected AthleteRegistrationHandlerBase(
-        IUserRepository users,
         IAthleteProfileRepository profiles,
         IProfileLoginRepository logins,
         IThemeRepository themes,
         ISiteConfigRepository siteConfigs,
+        UserProvisioner userProvisioner,
+        InvitationIssuer inviter,
         IUnitOfWork unitOfWork)
     {
-        Users = users;
         Profiles = profiles;
         Logins = logins;
         Themes = themes;
         SiteConfigs = siteConfigs;
+        UserProvisioner = userProvisioner;
+        Inviter = inviter;
         UnitOfWork = unitOfWork;
     }
 
@@ -76,41 +81,9 @@ public abstract class AthleteRegistrationHandlerBase
         return profile;
     }
 
-    /// <summary>
-    /// Resolve the authenticated caller's domain user, provisioning just-in-time. If no row matches
-    /// the subject yet, an invited user (e.g. a guardian) may already exist by email with no subject —
-    /// link this login to it (Email is unique) instead of creating a duplicate. Binding the subject is
-    /// identity reconciliation only; it does NOT grant guardianship (that stays an explicit accept).
-    /// </summary>
-    protected async Task<User> GetOrCreateUserAsync(string email, string authProviderId, CancellationToken cancellationToken)
-    {
-        var bySubject = await Users.GetByAuthProviderIdAsync(authProviderId, cancellationToken);
-        if (bySubject is not null)
-            return bySubject;
-
-        var byEmail = await Users.GetByEmailAsync(email, cancellationToken);
-        if (byEmail is not null)
-        {
-            byEmail.AuthProviderId ??= authProviderId; // claim the unclaimed (invited) row
-            return byEmail;
-        }
-
-        var user = new User { Email = email, AuthProviderId = authProviderId };
-        Users.Add(user);
-        return user;
-    }
-
-    /// <summary>Invited (not-yet-authenticated) user: looked up by email, created unclaimed (no sub).</summary>
-    protected async Task<User> GetOrCreatePendingUserAsync(string email, CancellationToken cancellationToken)
-    {
-        var user = await Users.GetByEmailAsync(email, cancellationToken);
-        if (user is null)
-        {
-            user = new User { Email = email }; // unclaimed: AuthProviderId == null
-            Users.Add(user);
-        }
-        return user;
-    }
+    /// <summary>Resolve the authenticated caller's domain user, provisioning just-in-time (see <see cref="UserProvisioner"/>).</summary>
+    protected Task<User> GetOrCreateUserAsync(string email, string authProviderId, CancellationToken cancellationToken)
+        => UserProvisioner.GetOrCreateAsync(email, authProviderId, cancellationToken);
 
     protected static AthleteProfileDto MapToDto(AthleteProfile profile) => new()
     {

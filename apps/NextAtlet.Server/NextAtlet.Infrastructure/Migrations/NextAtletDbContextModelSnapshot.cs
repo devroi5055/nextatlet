@@ -84,6 +84,56 @@ namespace NextAtlet.Infrastructure.Migrations
                     b.ToTable("AthleteProfiles");
                 });
 
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.Invitation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("AcceptedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTime>("ExpiresUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("InvitedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RoleId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid>("TargetProfileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InvitedByUserId");
+
+                    b.HasIndex("TargetProfileId");
+
+                    b.HasIndex("Email", "Status");
+
+                    b.ToTable("Invitations");
+                });
+
             modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.ProfileLogin", b =>
                 {
                     b.Property<Guid>("Id")
@@ -319,6 +369,25 @@ namespace NextAtlet.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.Invitation", b =>
+                {
+                    b.HasOne("NextAtlet.Domain.Entities.Shared.User", "InvitedBy")
+                        .WithMany()
+                        .HasForeignKey("InvitedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("NextAtlet.Domain.Entities.Athlete.AthleteProfile", "TargetProfile")
+                        .WithMany()
+                        .HasForeignKey("TargetProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("InvitedBy");
+
+                    b.Navigation("TargetProfile");
                 });
 
             modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.ProfileLogin", b =>

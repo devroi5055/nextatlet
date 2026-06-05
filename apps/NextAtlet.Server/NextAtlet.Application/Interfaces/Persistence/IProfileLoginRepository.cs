@@ -4,11 +4,11 @@ namespace NextAtlet.Application.Abstractions.Persistence;
 
 public interface IProfileLoginRepository
 {
-    /// <summary>True if the user holds any Guardian login (any status).</summary>
-    Task<bool> HasGuardianLoginAsync(Guid userId, CancellationToken cancellationToken = default);
+    /// <summary>True if the user holds any Active login (any role) on the given profile — the invite gate.</summary>
+    Task<bool> HasActiveLoginAsync(Guid userId, Guid profileId, CancellationToken cancellationToken = default);
 
-    /// <summary>The user's tracked Pending guardian logins (the invites awaiting acceptance).</summary>
-    Task<IReadOnlyList<ProfileLogin>> GetPendingGuardianLoginsByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
+    /// <summary>Ids of profiles this user actively guards (Active Guardian logins). Drives /me.</summary>
+    Task<IReadOnlyList<Guid>> GetActiveGuardianProfileIdsByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
 
     void Add(ProfileLogin login);
 }

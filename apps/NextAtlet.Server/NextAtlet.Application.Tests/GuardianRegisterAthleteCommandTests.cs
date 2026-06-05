@@ -9,12 +9,12 @@ namespace NextAtlet.Application.Tests;
 /// <summary>
 /// Guardian-creates-profile-for-child: the caller becomes the Guardian; no AthleteOwner login (v1).
 /// </summary>
-public class RegisterChildAthleteCommandTests
+public class GuardianRegisterAthleteCommandTests
 {
     private static readonly DateTime AdultDob = new(1995, 1, 1);
     private static readonly DateTime ChildDob = DateTime.UtcNow.AddYears(-9);
 
-    private static RegisterChildAthleteCommand Child(string childName, string slug, DateTime dob)
+    private static GuardianRegisterAthleteCommand Child(string childName, string slug, DateTime dob)
         => new(TestApp.OwnerAuthProviderId, TestApp.OwnerEmail, childName, slug, dob, Locale.Da.Id);
 
     [Fact]

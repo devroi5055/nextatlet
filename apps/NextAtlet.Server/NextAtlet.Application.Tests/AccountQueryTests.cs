@@ -30,7 +30,7 @@ public class AccountQueryTests
     public async Task Me_reports_owner_after_self_registration()
     {
         using var app = new TestApp();
-        await app.Send(new RegisterOwnAthleteCommand(
+        await app.Send(new SelfRegisterAthleteCommand(
             TestApp.OwnerAuthProviderId, TestApp.OwnerEmail, "Anna", "anna", new DateTime(1995, 1, 1), Locale.Da.Id));
 
         var me = await app.Send(new GetCurrentUserQuery(TestApp.OwnerAuthProviderId, TestApp.OwnerEmail));
@@ -44,7 +44,7 @@ public class AccountQueryTests
     public async Task Me_reports_guardian_after_registering_a_child()
     {
         using var app = new TestApp();
-        await app.Send(new RegisterChildAthleteCommand(
+        await app.Send(new GuardianRegisterAthleteCommand(
             TestApp.OwnerAuthProviderId, TestApp.OwnerEmail, "Kid", "kid", DateTime.UtcNow.AddYears(-9), Locale.Da.Id));
 
         var me = await app.Send(new GetCurrentUserQuery(TestApp.OwnerAuthProviderId, TestApp.OwnerEmail));
@@ -60,7 +60,7 @@ public class AccountQueryTests
     {
         using var app = new TestApp();
         // child self-registers and names a guardian by email
-        await app.Send(new RegisterOwnAthleteCommand(
+        await app.Send(new SelfRegisterAthleteCommand(
             TestApp.OwnerAuthProviderId, TestApp.OwnerEmail, "Kid", "kid", DateTime.UtcNow.AddYears(-10), Locale.Da.Id,
             GuardianEmail: GuardianEmail));
 

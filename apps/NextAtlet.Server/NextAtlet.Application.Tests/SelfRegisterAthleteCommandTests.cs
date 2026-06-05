@@ -10,12 +10,12 @@ namespace NextAtlet.Application.Tests;
 /// <summary>
 /// Self-registration: the caller becomes the AthleteOwner.
 /// </summary>
-public class RegisterOwnAthleteCommandTests
+public class SelfRegisterAthleteCommandTests
 {
     private static readonly DateTime AdultDob = new(1995, 1, 1);
     private static readonly DateTime MinorDob = DateTime.UtcNow.AddYears(-10);
 
-    private static RegisterOwnAthleteCommand Own(string displayName, string slug, DateTime dob, string? guardianEmail = null)
+    private static SelfRegisterAthleteCommand Own(string displayName, string slug, DateTime dob, string? guardianEmail = null)
         => new(TestApp.OwnerAuthProviderId, TestApp.OwnerEmail, displayName, slug, dob, Locale.Da.Id, guardianEmail);
 
     [Fact]
@@ -42,7 +42,7 @@ public class RegisterOwnAthleteCommandTests
     }
 
     [Fact]
-    public async Task Minor_self_registration_invites_pending_unclaimed_guardian()
+    public async Task Minor_self_registration_issues_a_guardian_invitation()
     {
         using var app = new TestApp();
 
@@ -50,12 +50,20 @@ public class RegisterOwnAthleteCommandTests
 
         Assert.True(dto.IsMinor);
 
-        var guardianLogin = await app.QueryAsync(c => c.ProfileLogins.SingleAsync(l =>
-            l.AthleteProfileId == dto.Id && l.RoleId == ProfileRole.Guardian.Id));
-        Assert.Equal(NextAtlet.Domain.Enumerations.Enums.AthleteProfile.ProfileLoginStatus.Pending, guardianLogin.Status);
+        // The guardian is invited via an Invitation row — not a pending ProfileLogin, not a pre-created user.
+        var invitation = await app.QueryAsync(c => c.Invitations.SingleAsync(i => i.TargetProfileId == dto.Id));
+        Assert.Equal("parent@example.com", invitation.Email);
+        Assert.Equal(ProfileRole.Guardian.Id, invitation.RoleId);
+        Assert.Equal(NextAtlet.Domain.Enumerations.Enums.AthleteProfile.InvitationStatus.Pending, invitation.Status);
 
-        var guardian = await app.QueryAsync(c => c.Users.SingleAsync(u => u.Email == "parent@example.com"));
-        Assert.False(guardian.IsClaimed); // invited, not yet claimed
+        // Only the owner login exists; the guardian credential is materialized at accept time.
+        var logins = await app.QueryAsync(c => c.ProfileLogins.Where(l => l.AthleteProfileId == dto.Id).ToListAsync());
+        var only = Assert.Single(logins);
+        Assert.Equal(ProfileRole.AthleteOwner.Id, only.RoleId);
+
+        // No user row is pre-created for the invited guardian.
+        var guardianUsers = await app.QueryAsync(c => c.Users.CountAsync(u => u.Email == "parent@example.com"));
+        Assert.Equal(0, guardianUsers);
     }
 
     [Fact]
@@ -87,7 +95,7 @@ public class RegisterOwnAthleteCommandTests
         await app.Send(Own("Anna", "anna", AdultDob));
 
         // a DIFFERENT caller tries the same slug
-        var ex = await Assert.ThrowsAsync<DomainException>(() => app.Send(new RegisterOwnAthleteCommand(
+        var ex = await Assert.ThrowsAsync<DomainException>(() => app.Send(new SelfRegisterAthleteCommand(
             "other-sub", "other@test.local", "Bjorn", "anna", AdultDob, Locale.Da.Id)));
         Assert.Equal(ErrorCodes.SlugAlreadyTaken, ex.ErrorCode);
     }

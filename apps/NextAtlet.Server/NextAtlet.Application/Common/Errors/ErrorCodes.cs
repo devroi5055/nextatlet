@@ -10,7 +10,6 @@ public static class ErrorCodes
     public const string SlugAlreadyTaken        = "slug.already_taken";
     public const string SlugReserved            = "slug.reserved";
     public const string GuardianEmailRequired   = "guardian.email_required";
-    public const string GuardianInviteNotFound  = "guardian.invitation.not_found";
     public const string ProfileNotFound         = "profile.not_found";
     public const string DraftConfigNotFound     = "config.draft.not_found";
     public const string DraftVersionConflict    = "config.draft.version_conflict";
@@ -18,6 +17,17 @@ public static class ErrorCodes
     public const string SectionValidationFailed = "section.validation_failed";
     public const string ProfileAlreadyExists    = "profile.already_exists";
     public const string GuardianCannotRegisterAdult = "guardian.cannot_register_adult";
+
+    // Invitations — the single, auditable home for pending profile invites.
+    public const string InvitationNotFound      = "invitation.not_found";
+    public const string InvitationAlreadyUsed   = "invitation.already_used";
+    public const string InvitationExpired       = "invitation.expired";
+    public const string InvitationEmailMismatch = "invitation.email_mismatch";
+    public const string InvitationAlreadyPending = "invitation.already_pending";
+    public const string InvitationRoleInvalid   = "invitation.role_invalid";
+
+    /// <summary>Caller lacks the rights required for the requested action (e.g. inviting to a profile they don't hold).</summary>
+    public const string NotAuthorized           = "not_authorized";
 
     // Authentication — the validated token is missing an expected claim.
     public const string AuthSubMissing          = "auth.sub_missing";

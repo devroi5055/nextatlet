@@ -4,6 +4,9 @@ using Microsoft.Extensions.DependencyInjection;
 using NextAtlet.Application;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Abstractions.Services;
+using NextAtlet.Application.Common.Options;
+using NextAtlet.Application.Features.Account;
+using NextAtlet.Application.Features.Invitations;
 using NextAtlet.Infrastructure.Data;
 using NextAtlet.Infrastructure.Persistence;
 using NextAtlet.Infrastructure.Persistence.Repositories;
@@ -38,10 +41,15 @@ internal sealed class TestApp : IDisposable
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IAthleteProfileRepository, AthleteProfileRepository>();
         services.AddScoped<IProfileLoginRepository, ProfileLoginRepository>();
+        services.AddScoped<IInvitationRepository, InvitationRepository>();
         services.AddScoped<IThemeRepository, ThemeRepository>();
         services.AddScoped<ISiteConfigRepository, SiteConfigRepository>();
         services.AddScoped<ISectionTypeRegistry, SectionTypeRegistry>();
         services.AddScoped<ISanitizationService, SanitizationService>();
+        services.AddScoped<IEmailService, LoggingEmailService>();
+        services.AddScoped<UserProvisioner>();
+        services.AddScoped<InvitationIssuer>();
+        services.Configure<InvitationOptions>(_ => { }); // defaults (7-day expiry)
 
         _provider = services.BuildServiceProvider();
 
