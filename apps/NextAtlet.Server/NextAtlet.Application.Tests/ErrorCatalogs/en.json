@@ -16,6 +16,12 @@
   "invitation.already_pending": "An invitation is already pending for this person",
   "invitation.role_invalid": "The invitation role is not valid",
   "not_authorized": "You are not authorized to perform this action",
+  "registration.below_minimum_age": "You must be at least 13 to create your own profile",
+  "registration.parental_consent_required": "Parental consent must be confirmed for athletes under 16",
+  "control.athlete_too_young": "Control cannot be transferred to an athlete under 13",
+  "control.no_athlete_login": "There is no athlete login to receive control",
+  "control.no_guardian_login": "There is no guardian login to receive control",
+  "control.transfer_target_invalid": "The transfer target must be 'athlete' or 'guardian'",
   "auth.sub_missing": "Your sign-in token is missing a subject identifier",
   "auth.email_missing": "Your sign-in token is missing an email address",
   "internal_error": "Something went wrong. Please try again."

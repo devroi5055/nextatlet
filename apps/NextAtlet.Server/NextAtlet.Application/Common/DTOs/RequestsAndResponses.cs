@@ -1,3 +1,4 @@
+using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
 using NextAtlet.Domain.ValueObjects;
 
 namespace NextAtlet.Application.Common.DTOs;
@@ -11,7 +12,8 @@ public class RegisterOwnAthleteRequest
     public required string Slug { get; set; }
     public required DateTime DateOfBirth { get; set; }
     public string DefaultLocaleId { get; set; } = default!;
-    public string? GuardianEmail { get; set; } // Required if the caller is a minor
+    public string? GuardianEmail { get; set; }        // Required for 13–17
+    public bool ParentalConsentConfirmed { get; set; } // Required for 13–15
 }
 
 /// <summary>Guardian creates a profile for their child; the caller becomes the Guardian.</summary>
@@ -30,6 +32,7 @@ public class AthleteProfileDto
     public required string DisplayName { get; set; }
     public required DateOnly DateOfBirth { get; set; }
     public bool IsMinor { get; set; }
+    public ControlMode ControlMode { get; set; }
     public EnumerationDto DefaultLocale { get; set; } = default!;
 }
 
@@ -57,13 +60,19 @@ public class UpdateSiteConfigRequest
 /// <summary>
 /// Result of the /me domain-gate check. Registered = owns an athlete profile.
 /// Role is the caller's ProfileRole id (athlete owner / guardian), or null if neither.
-/// ProfileId = the owned profile (null if not an owner). GuardedProfileIds = profiles this caller
-/// actively guards. PendingGuardianInvites = invitations awaiting this caller's acceptance.
+/// ProfileId = the owned profile (null if not an owner). ControlMode / IsInControl / CanEdit describe
+/// the caller's relationship to that owned profile (null/false for a guardian-only caller — the editor
+/// loads each guarded child by id). GuardedProfileIds = profiles this caller actively guards.
+/// PendingGuardianInvites = invitations awaiting this caller's acceptance.
+/// The frontend uses IsInControl to show publish/transfer controls and CanEdit to show the draft editor.
 /// </summary>
 public record MeDto(
     bool Registered,
     string? Role,
     Guid? ProfileId,
+    ControlMode? ControlMode,
+    bool IsInControl,
+    bool CanEdit,
     IReadOnlyList<Guid> GuardedProfileIds,
     int PendingGuardianInvites);
 
@@ -79,6 +88,18 @@ public record InvitationDto(Guid Id, Guid TargetProfileId, string Email, string 
 
 /// <summary>Result of accepting an invitation: which role on which profile was materialized.</summary>
 public record InvitationAcceptedDto(Guid ProfileId, string Role);
+
+/// <summary>Body for transferring control of a profile to the other party.</summary>
+public class TransferControlRequest
+{
+    public required string To { get; set; } // "athlete" | "guardian"
+}
+
+/// <summary>Body for toggling shared editing (collaboration) on a profile.</summary>
+public class SetCollaborationRequest
+{
+    public required bool SharedEditing { get; set; }
+}
 
 public class ErrorResponse
 {

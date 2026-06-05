@@ -73,6 +73,28 @@ public class AthletesController : ControllerBase
     }
 
     /// <summary>
+    /// Transfers control of the profile to the other party ("athlete" | "guardian"). Only the current
+    /// controller may initiate; guardian→athlete is age-gated; the receiving side's login must exist.
+    /// </summary>
+    [HttpPost("{id:guid}/transfer-control")]
+    public async Task<IActionResult> TransferControl(Guid id, [FromBody] TransferControlRequest request)
+    {
+        await _sender.Send(new TransferControlCommand(id, User.GetAuthProviderId(), request.To));
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Enables/disables shared editing — lets the non-controlling party edit the draft (+ media) but
+    /// never publish, approve, or transfer. Does not change who controls. Only the controller may toggle it.
+    /// </summary>
+    [HttpPost("{id:guid}/collaboration")]
+    public async Task<IActionResult> SetCollaboration(Guid id, [FromBody] SetCollaborationRequest request)
+    {
+        await _sender.Send(new SetCollaborationCommand(id, User.GetAuthProviderId(), request.SharedEditing));
+        return NoContent();
+    }
+
+    /// <summary>
     /// Gets the draft SiteConfig for an athlete profile.
     /// </summary>
     [HttpGet("{id:guid}/config/draft")]

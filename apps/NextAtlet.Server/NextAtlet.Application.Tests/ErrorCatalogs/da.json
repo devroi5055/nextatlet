@@ -16,6 +16,12 @@
   "invitation.already_pending": "Der afventer allerede en invitation til denne person",
   "invitation.role_invalid": "Invitationens rolle er ugyldig",
   "not_authorized": "Du har ikke tilladelse til at udføre denne handling",
+  "registration.below_minimum_age": "Du skal være mindst 13 år for at oprette din egen profil",
+  "registration.parental_consent_required": "Forældresamtykke skal bekræftes for atleter under 16 år",
+  "control.athlete_too_young": "Kontrol kan ikke overdrages til en atlet under 13 år",
+  "control.no_athlete_login": "Der er ingen atletlogin til at modtage kontrol",
+  "control.no_guardian_login": "Der er ingen værgelogin til at modtage kontrol",
+  "control.transfer_target_invalid": "Modtageren skal være 'athlete' eller 'guardian'",
   "auth.sub_missing": "Dit login-token mangler en bruger-id",
   "auth.email_missing": "Dit login-token mangler en e-mailadresse",
   "internal_error": "Noget gik galt. Prøv venligst igen."

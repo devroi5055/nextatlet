@@ -5,6 +5,8 @@ using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Features.Account;
 using NextAtlet.Application.Features.Invitations;
 using NextAtlet.Domain.Entities.Athlete;
+using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
+using NextAtlet.Domain.Policies;
 
 namespace NextAtlet.Application.Features.Athletes.Commands;
 
@@ -38,18 +40,20 @@ public class GuardianRegisterAthleteCommandHandler
 
     public async Task<AthleteProfileDto> Handle(GuardianRegisterAthleteCommand request, CancellationToken cancellationToken)
     {
-        // v1: this flow is for minors. An adult must self-register.
-        if (!IsMinor(request.ChildDateOfBirth))
+        // v1: this flow is for minors. An adult must self-register. Under-13 IS allowed here — that is
+        // the intended path for very young children (the age floor only applies to self-register).
+        if (AgePolicy.BandToday(request.ChildDateOfBirth) == AgeBand.Adult)
             throw new DomainException(ErrorCodes.GuardianCannotRegisterAdult);
 
         var guardian = await GetOrCreateUserAsync(request.Email, request.AuthProviderId, cancellationToken);
 
+        // Guardian-register always starts GuardianControlled — the guardian created the profile.
         var profile = await CreateAthleteProfileCoreAsync(
-            request.Slug, request.ChildDisplayName, request.ChildDateOfBirth, request.DefaultLocaleId, cancellationToken);
+            request.Slug, request.ChildDisplayName, request.ChildDateOfBirth, request.DefaultLocaleId,
+            ControlMode.GuardianControlled, cancellationToken);
 
-        // Caller becomes the Guardian, ACTIVE by construction (consent given by creating the profile);
-        // the child's AthleteOwner login is deferred.
-        Logins.Add(ProfileLogin.CreateGuardian(guardian.Id, profile, active: true));
+        // Caller becomes the Guardian (Active by construction). The child's AthleteOwner login is deferred.
+        Logins.Add(ProfileLogin.CreateGuardian(guardian.Id, profile.Id));
 
         await UnitOfWork.SaveChangesAsync(cancellationToken);
         return MapToDto(profile);

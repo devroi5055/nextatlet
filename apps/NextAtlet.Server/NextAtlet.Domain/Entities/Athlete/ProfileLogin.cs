@@ -14,8 +14,9 @@ public class ProfileLogin : AuditableEntity
     public required ProfileLoginStatus Status { get; set; }
 
     /// <summary>
-    /// Guardian-only. Null for AthleteOwner logins.
-    /// Configures what the guardian may do on this profile.
+    /// Legacy per-login permission blob. Retained on the table but always null and never read —
+    /// permissions are resolved at request time from <c>ControlMode</c> + role by the PermissionResolver.
+    /// See the ControlMode plan §7 / §13 (only repopulate if arbitrary per-login grants ever become a real need).
     /// </summary>
     public GuardianPermissions? Permissions { get; set; }
 
@@ -23,7 +24,8 @@ public class ProfileLogin : AuditableEntity
     public User User { get; set; } = default!;
     public AthleteProfile AthleteProfile { get; set; } = default!;
 
-    // Factory methods — enforce correct defaults per role
+    // Factory methods — set role + status only. A login is created Active; permissions are derived,
+    // never stored. (Pending state for an unaccepted invite now lives on the Invitation, not here.)
     public static ProfileLogin CreateOwner(Guid userId, Guid profileId) => new()
     {
         UserId = userId,
@@ -33,37 +35,13 @@ public class ProfileLogin : AuditableEntity
         Permissions = null
     };
 
-    /// <summary>
-    /// Creates a guardian login for a minor profile. <paramref name="active"/> = false (default) is an
-    /// invite the guardian must accept (self-minor flow); true means the caller IS the guardian and has
-    /// consented by creating the child's profile (guardian-creates-child flow).
-    /// </summary>
-    public static ProfileLogin CreateGuardian(Guid userId, AthleteProfile profile, bool active = false)
+    public static ProfileLogin CreateGuardian(Guid userId, Guid profileId) => new()
     {
-        if (!profile.IsMinor)
-            throw new InvalidOperationException(
-                "A guardian login can only be created for a minor athlete profile.");
-
-        return new()
-        {
-            UserId = userId,
-            AthleteProfileId = profile.Id,
-            RoleId = ProfileRole.Guardian.Id,
-            Status = active ? ProfileLoginStatus.Active : ProfileLoginStatus.Pending,
-            Permissions = GuardianPermissions.Defaults()
-        };
-    }
-
-    /// <summary>
-    /// The invited guardian accepts: the login becomes Active (they can now publish/approve).
-    /// Idempotent for an already-active login; only valid on a Guardian login.
-    /// </summary>
-    public void Accept()
-    {
-        if (RoleId != ProfileRole.Guardian.Id)
-            throw new InvalidOperationException("Only a guardian login can be accepted.");
-
-        Status = ProfileLoginStatus.Active;
-    }
+        UserId = userId,
+        AthleteProfileId = profileId,
+        RoleId = ProfileRole.Guardian.Id,
+        Status = ProfileLoginStatus.Active,
+        Permissions = null
+    };
 }
 

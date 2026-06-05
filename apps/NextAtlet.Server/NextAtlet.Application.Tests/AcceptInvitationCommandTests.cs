@@ -16,14 +16,14 @@ public class AcceptInvitationCommandTests
 {
     private const string GuardianEmail = "guardian@test.local";
     private const string GuardianSub = "guardian-sub";
-    private static readonly DateTime MinorDob = DateTime.UtcNow.AddYears(-10);
+    private static readonly DateTime YoungMinorDob = DateTime.UtcNow.AddYears(-14);
 
     /// <summary>Minor self-registration issues a guardian Invitation; returns its Id (the accept token).</summary>
     private static async Task<Guid> IssueGuardianInviteAsync(TestApp app)
     {
         await app.Send(new SelfRegisterAthleteCommand(
-            TestApp.OwnerAuthProviderId, TestApp.OwnerEmail, "Kid", "kid", MinorDob, Locale.Da.Id,
-            GuardianEmail: GuardianEmail));
+            TestApp.OwnerAuthProviderId, TestApp.OwnerEmail, "Kid", "kid", YoungMinorDob, Locale.Da.Id,
+            GuardianEmail: GuardianEmail, ParentalConsentConfirmed: true));
 
         var invite = await app.QueryAsync(c => c.Invitations.SingleAsync(i => i.Email == GuardianEmail));
         return invite.Id;

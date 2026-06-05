@@ -23,20 +23,17 @@ public record AcceptInvitationCommand(
 public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCommand, InvitationAcceptedDto>
 {
     private readonly IInvitationRepository _invitations;
-    private readonly IAthleteProfileRepository _profiles;
     private readonly IProfileLoginRepository _logins;
     private readonly UserProvisioner _userProvisioner;
     private readonly IUnitOfWork _unitOfWork;
 
     public AcceptInvitationCommandHandler(
         IInvitationRepository invitations,
-        IAthleteProfileRepository profiles,
         IProfileLoginRepository logins,
         UserProvisioner userProvisioner,
         IUnitOfWork unitOfWork)
     {
         _invitations = invitations;
-        _profiles = profiles;
         _logins = logins;
         _userProvisioner = userProvisioner;
         _unitOfWork = unitOfWork;
@@ -61,18 +58,11 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
         // GetOrCreate the user — may already exist (returning user) or be new.
         var user = await _userProvisioner.GetOrCreateAsync(request.Email, request.AuthProviderId, cancellationToken);
 
-        // Materialize the ProfileLogin with the role the invitation specified.
-        if (invite.RoleId == ProfileRole.Guardian.Id)
-        {
-            var profile = await _profiles.GetByIdAsync(invite.TargetProfileId, cancellationToken)
-                ?? throw new DomainException(ErrorCodes.ProfileNotFound);
-            // Active by construction — accepting IS the guardian's consent.
-            _logins.Add(ProfileLogin.CreateGuardian(user.Id, profile, active: true));
-        }
-        else
-        {
-            _logins.Add(ProfileLogin.CreateOwner(user.Id, invite.TargetProfileId));
-        }
+        // Materialize the ProfileLogin (Active) with the role the invitation specified. Permissions
+        // are derived from the profile's ControlMode at request time — none are stored here.
+        _logins.Add(invite.RoleId == ProfileRole.Guardian.Id
+            ? ProfileLogin.CreateGuardian(user.Id, invite.TargetProfileId)
+            : ProfileLogin.CreateOwner(user.Id, invite.TargetProfileId));
 
         invite.Accept();
 

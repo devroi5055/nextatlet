@@ -25,6 +25,7 @@ public class GuardianRegisterAthleteCommandTests
         var dto = await app.Send(Child("Little Judoka", "little-judoka", ChildDob));
 
         Assert.True(dto.IsMinor);
+        Assert.Equal(NextAtlet.Domain.Enumerations.Enums.AthleteProfile.ControlMode.GuardianControlled, dto.ControlMode);
 
         var logins = await app.QueryAsync(c => c.ProfileLogins.Where(l => l.AthleteProfileId == dto.Id).ToListAsync());
         var single = Assert.Single(logins);

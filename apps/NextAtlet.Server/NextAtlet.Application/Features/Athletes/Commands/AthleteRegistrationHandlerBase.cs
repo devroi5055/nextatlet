@@ -7,6 +7,7 @@ using NextAtlet.Application.Features.Invitations;
 using NextAtlet.Domain.Entities.Athlete;
 using NextAtlet.Domain.Entities.Shared;
 using NextAtlet.Domain.Enumerations;
+using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
 using NextAtlet.Domain.ValueObjects;
 using NextAtlet.Domain.ValueObjects.Sections;
 
@@ -49,15 +50,13 @@ public abstract class AthleteRegistrationHandlerBase
         UnitOfWork = unitOfWork;
     }
 
-    // IsMinor is computed from DateOfBirth; never stored.
-    protected static bool IsMinor(DateTime dateOfBirth) => dateOfBirth.AddYears(18) > DateTime.UtcNow;
-
     /// <summary>
-    /// Slug validation + the AthleteProfile + its default draft SiteConfig. Returns the tracked
-    /// profile with NO logins attached — the caller attaches owner/guardian logins per its flow.
+    /// Slug validation + the AthleteProfile (with its explicit <paramref name="controlMode"/>) + its
+    /// default draft SiteConfig. Returns the tracked profile with NO logins attached — the caller
+    /// attaches owner/guardian logins per its flow.
     /// </summary>
     protected async Task<AthleteProfile> CreateAthleteProfileCoreAsync(
-        string slug, string displayName, DateTime dateOfBirth, string defaultLocaleId, CancellationToken cancellationToken)
+        string slug, string displayName, DateTime dateOfBirth, string defaultLocaleId, ControlMode controlMode, CancellationToken cancellationToken)
     {
         slug = slug.ToLowerInvariant();
 
@@ -73,7 +72,8 @@ public abstract class AthleteRegistrationHandlerBase
             SportId = "judo",
             DateOfBirth = DateOnly.FromDateTime(dateOfBirth),
             DefaultLocaleId = defaultLocaleId,
-            VisibilityStateId = "public"
+            VisibilityStateId = "public",
+            ControlMode = controlMode
         };
         Profiles.Add(profile);
 
@@ -92,6 +92,7 @@ public abstract class AthleteRegistrationHandlerBase
         DisplayName = profile.DisplayName,
         DateOfBirth = profile.DateOfBirth,
         IsMinor = profile.IsMinor,
+        ControlMode = profile.ControlMode,
         DefaultLocale = Locale.FromId(profile.DefaultLocaleId).ToDto()
     };
 

@@ -19,7 +19,7 @@ public class ResendEmailServiceTests
 
     private static EmailOptions Options() => new()
     {
-        ApiKey = "re_test_key",
+        InviteApiKey = "re_test_key",
         FromAddress = "no-reply@nextatlet.dk",
         FromName = "NextAtlet",
         AppBaseUrl = "https://app.nextatlet.dk"
@@ -31,7 +31,7 @@ public class ResendEmailServiceTests
         // Mirror the production typed-client setup (base address + bearer auth from Program.cs).
         var client = new HttpClient(handler) { BaseAddress = new Uri("https://api.resend.com/") };
         client.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", options.ApiKey);
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", options.InviteApiKey);
         return new ResendEmailService(client, new OptionsWrapper<EmailOptions>(options), NullLogger<ResendEmailService>.Instance);
     }
 
@@ -50,7 +50,7 @@ public class ResendEmailServiceTests
 
         using var json = JsonDocument.Parse(handler.Body!);
         var root = json.RootElement;
-        Assert.Equal("NextAtlet <no-reply@nextatlet.dk>", root.GetProperty("from").GetString());
+        Assert.Equal("no-reply@nextatlet.dk", root.GetProperty("from").GetString());
         Assert.Equal("receiver@example.com", root.GetProperty("to")[0].GetString());
 
         var expectedLink = $"https://app.nextatlet.dk/invitations/{InvitationId}/accept";

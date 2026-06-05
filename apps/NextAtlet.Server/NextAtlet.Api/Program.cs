@@ -13,6 +13,7 @@ using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Features.Account;
 using NextAtlet.Application.Features.Invitations;
+using NextAtlet.Domain.Authorization;
 using NextAtlet.Infrastructure.Data;
 using NextAtlet.Infrastructure.Persistence;
 using NextAtlet.Infrastructure.Persistence.Repositories;
@@ -122,6 +123,7 @@ else
 // Application services shared across handlers (identity provisioning + invitation issuing)
 builder.Services.AddScoped<UserProvisioner>();
 builder.Services.AddScoped<InvitationIssuer>();
+builder.Services.AddSingleton<PermissionResolver>(); // stateless: ControlMode + role → permissions
 builder.Services.Configure<InvitationOptions>(builder.Configuration.GetSection(InvitationOptions.SectionName));
 
 // Add CORS (for development)

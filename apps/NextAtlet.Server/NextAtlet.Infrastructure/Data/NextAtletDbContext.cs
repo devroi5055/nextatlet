@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using NextAtlet.Domain.Entities.Athlete;
 using NextAtlet.Domain.Entities.Shared;
 using NextAtlet.Domain.Enumerations;
+using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
 using NextAtlet.Domain.ValueObjects;
 
 namespace NextAtlet.Infrastructure.Data;
@@ -44,6 +45,10 @@ public class NextAtletDbContext : DbContext
             entity.Property(e => e.DateOfBirth).IsRequired();
             entity.Property(e => e.DefaultLocaleId).IsRequired().HasMaxLength(2).HasDefaultValue("da");
             entity.Property(e => e.VisibilityStateId).IsRequired().HasMaxLength(20).HasDefaultValue("Public");
+            // ControlMode: stored, explicit fact. Persist enum as its string name; default for existing rows.
+            entity.Property(e => e.ControlMode)
+                .HasConversion<string>().IsRequired().HasMaxLength(30)
+                .HasDefaultValue(ControlMode.AthleteControlled);
             entity.HasIndex(e => e.Slug).IsUnique();
             entity.HasIndex(e => e.SportId);
             entity.HasIndex(e => e.CreatedUtc).IsDescending();

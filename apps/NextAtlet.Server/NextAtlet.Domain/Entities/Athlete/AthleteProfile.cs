@@ -1,6 +1,7 @@
 using NextAtlet.Domain.Common;
 using NextAtlet.Domain.Entities.Shared;
 using NextAtlet.Domain.Enumerations;
+using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
 
 namespace NextAtlet.Domain.Entities.Athlete;
 
@@ -22,6 +23,18 @@ public class AthleteProfile : AuditableEntity
 
     public string DefaultLocaleId { get; set; } = Locale.Da.Id;
     public string VisibilityStateId { get; set; } = VisibilityState.Public.Id;
+
+    /// <summary>
+    /// Who controls this profile — a stored, explicit fact set at registration and changed only via the
+    /// transfer-control / collaboration endpoints. Never derived from age, never auto-mutated.
+    /// </summary>
+    public ControlMode ControlMode { get; set; } = ControlMode.AthleteControlled;
+
+    /// <summary>
+    /// When parental consent was declared (13–15 self-registration). Null when consent is implicit
+    /// (16+ self-register, or guardian-register where the guardian created the profile).
+    /// </summary>
+    public DateTime? ConsentCapturedUtc { get; set; }
 
     /// <summary>
     /// Denormalized read field — derived from the active Subscription.

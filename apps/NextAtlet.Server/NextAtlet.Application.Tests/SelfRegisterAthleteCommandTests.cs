@@ -2,24 +2,28 @@ using Microsoft.EntityFrameworkCore;
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Features.Athletes.Commands;
 using NextAtlet.Domain.Enumerations;
+using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
 using NextAtlet.Domain.ValueObjects.Sections;
 using Xunit;
 
 namespace NextAtlet.Application.Tests;
 
 /// <summary>
-/// Self-registration: the caller becomes the AthleteOwner.
+/// Self-registration: the caller becomes the AthleteOwner and the profile is always AthleteControlled.
+/// Under-13 is rejected; 13–17 needs a guardian invite; 13–15 also needs parental consent.
 /// </summary>
 public class SelfRegisterAthleteCommandTests
 {
     private static readonly DateTime AdultDob = new(1995, 1, 1);
-    private static readonly DateTime MinorDob = DateTime.UtcNow.AddYears(-10);
+    private static readonly DateTime OlderMinorDob = DateTime.UtcNow.AddYears(-17); // 16–17
+    private static readonly DateTime YoungMinorDob = DateTime.UtcNow.AddYears(-14); // 13–15
+    private static readonly DateTime BelowMinDob = DateTime.UtcNow.AddYears(-10);   // < 13
 
-    private static SelfRegisterAthleteCommand Own(string displayName, string slug, DateTime dob, string? guardianEmail = null)
-        => new(TestApp.OwnerAuthProviderId, TestApp.OwnerEmail, displayName, slug, dob, Locale.Da.Id, guardianEmail);
+    private static SelfRegisterAthleteCommand Own(string displayName, string slug, DateTime dob, string? guardianEmail = null, bool consent = false)
+        => new(TestApp.OwnerAuthProviderId, TestApp.OwnerEmail, displayName, slug, dob, Locale.Da.Id, guardianEmail, consent);
 
     [Fact]
-    public async Task Adult_self_registration_creates_owner_login_and_draft()
+    public async Task Adult_self_registration_creates_owner_login_draft_and_athlete_control()
     {
         using var app = new TestApp();
 
@@ -27,6 +31,7 @@ public class SelfRegisterAthleteCommandTests
 
         Assert.Equal("anna-judo", dto.Slug);
         Assert.False(dto.IsMinor);
+        Assert.Equal(ControlMode.AthleteControlled, dto.ControlMode);
 
         var logins = await app.QueryAsync(c => c.ProfileLogins.Where(l => l.AthleteProfileId == dto.Id).ToListAsync());
         Assert.Single(logins);
@@ -42,41 +47,79 @@ public class SelfRegisterAthleteCommandTests
     }
 
     [Fact]
-    public async Task Minor_self_registration_issues_a_guardian_invitation()
+    public async Task Young_minor_self_registration_issues_guardian_invitation_and_stays_athlete_controlled()
     {
         using var app = new TestApp();
 
-        var dto = await app.Send(Own("Kid", "kid-judo", MinorDob, guardianEmail: "parent@example.com"));
+        var dto = await app.Send(Own("Kid", "kid-judo", YoungMinorDob, guardianEmail: "parent@example.com", consent: true));
 
         Assert.True(dto.IsMinor);
+        // Self-registered minor controls their own profile; the guardian is not (yet) the controller.
+        Assert.Equal(ControlMode.AthleteControlled, dto.ControlMode);
 
         // The guardian is invited via an Invitation row — not a pending ProfileLogin, not a pre-created user.
         var invitation = await app.QueryAsync(c => c.Invitations.SingleAsync(i => i.TargetProfileId == dto.Id));
         Assert.Equal("parent@example.com", invitation.Email);
         Assert.Equal(ProfileRole.Guardian.Id, invitation.RoleId);
-        Assert.Equal(NextAtlet.Domain.Enumerations.Enums.AthleteProfile.InvitationStatus.Pending, invitation.Status);
+        Assert.Equal(InvitationStatus.Pending, invitation.Status);
 
         // Only the owner login exists; the guardian credential is materialized at accept time.
         var logins = await app.QueryAsync(c => c.ProfileLogins.Where(l => l.AthleteProfileId == dto.Id).ToListAsync());
         var only = Assert.Single(logins);
         Assert.Equal(ProfileRole.AthleteOwner.Id, only.RoleId);
 
-        // No user row is pre-created for the invited guardian.
-        var guardianUsers = await app.QueryAsync(c => c.Users.CountAsync(u => u.Email == "parent@example.com"));
-        Assert.Equal(0, guardianUsers);
+        // Parental consent declaration is stamped for the 13–15 band.
+        var profile = await app.QueryAsync(c => c.AthleteProfiles.SingleAsync(p => p.Id == dto.Id));
+        Assert.NotNull(profile.ConsentCapturedUtc);
     }
 
     [Fact]
-    public async Task Minor_without_guardian_is_rejected_and_writes_no_profile()
+    public async Task Older_minor_self_registration_needs_guardian_but_no_consent_stamp()
     {
         using var app = new TestApp();
 
-        var ex = await Assert.ThrowsAsync<DomainException>(() => app.Send(Own("Kid", "kid", MinorDob)));
-        Assert.Equal(ErrorCodes.GuardianEmailRequired, ex.ErrorCode);
+        var dto = await app.Send(Own("Teen", "teen-judo", OlderMinorDob, guardianEmail: "parent@example.com"));
 
-        // atomicity: nothing was written
+        Assert.Equal(ControlMode.AthleteControlled, dto.ControlMode);
+        var invitation = await app.QueryAsync(c => c.Invitations.SingleAsync(i => i.TargetProfileId == dto.Id));
+        Assert.Equal(ProfileRole.Guardian.Id, invitation.RoleId);
+
+        var profile = await app.QueryAsync(c => c.AthleteProfiles.SingleAsync(p => p.Id == dto.Id));
+        Assert.Null(profile.ConsentCapturedUtc); // consent implicit for 16+
+    }
+
+    [Fact]
+    public async Task Under_13_self_registration_is_rejected_and_writes_no_profile()
+    {
+        using var app = new TestApp();
+
+        var ex = await Assert.ThrowsAsync<DomainException>(() => app.Send(Own("Tiny", "tiny", BelowMinDob)));
+        Assert.Equal(ErrorCodes.BelowMinimumAge, ex.ErrorCode);
+
         var profileCount = await app.QueryAsync(c => c.AthleteProfiles.CountAsync());
         Assert.Equal(0, profileCount);
+    }
+
+    [Fact]
+    public async Task Young_minor_without_guardian_is_rejected()
+    {
+        using var app = new TestApp();
+
+        var ex = await Assert.ThrowsAsync<DomainException>(() => app.Send(Own("Kid", "kid", YoungMinorDob, consent: true)));
+        Assert.Equal(ErrorCodes.GuardianEmailRequired, ex.ErrorCode);
+
+        var profileCount = await app.QueryAsync(c => c.AthleteProfiles.CountAsync());
+        Assert.Equal(0, profileCount);
+    }
+
+    [Fact]
+    public async Task Young_minor_without_parental_consent_is_rejected()
+    {
+        using var app = new TestApp();
+
+        var ex = await Assert.ThrowsAsync<DomainException>(() =>
+            app.Send(Own("Kid", "kid", YoungMinorDob, guardianEmail: "parent@example.com", consent: false)));
+        Assert.Equal(ErrorCodes.ParentalConsentRequired, ex.ErrorCode);
     }
 
     [Fact]
@@ -94,7 +137,6 @@ public class SelfRegisterAthleteCommandTests
         using var app = new TestApp();
         await app.Send(Own("Anna", "anna", AdultDob));
 
-        // a DIFFERENT caller tries the same slug
         var ex = await Assert.ThrowsAsync<DomainException>(() => app.Send(new SelfRegisterAthleteCommand(
             "other-sub", "other@test.local", "Bjorn", "anna", AdultDob, Locale.Da.Id)));
         Assert.Equal(ErrorCodes.SlugAlreadyTaken, ex.ErrorCode);

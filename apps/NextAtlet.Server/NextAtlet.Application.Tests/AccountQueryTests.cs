@@ -38,6 +38,10 @@ public class AccountQueryTests
         Assert.True(me.Registered);
         Assert.Equal(ProfileRole.AthleteOwner.Id, me.Role);
         Assert.Equal(0, me.PendingGuardianInvites);
+        // The self-registered adult controls their own AthleteControlled profile.
+        Assert.Equal(NextAtlet.Domain.Enumerations.Enums.AthleteProfile.ControlMode.AthleteControlled, me.ControlMode);
+        Assert.True(me.IsInControl);
+        Assert.True(me.CanEdit);
     }
 
     [Fact]
@@ -59,10 +63,10 @@ public class AccountQueryTests
     public async Task Me_surfaces_pending_invite_for_an_invited_guardian()
     {
         using var app = new TestApp();
-        // child self-registers and names a guardian by email
+        // a 14-year-old self-registers and names a guardian by email
         await app.Send(new SelfRegisterAthleteCommand(
-            TestApp.OwnerAuthProviderId, TestApp.OwnerEmail, "Kid", "kid", DateTime.UtcNow.AddYears(-10), Locale.Da.Id,
-            GuardianEmail: GuardianEmail));
+            TestApp.OwnerAuthProviderId, TestApp.OwnerEmail, "Kid", "kid", DateTime.UtcNow.AddYears(-14), Locale.Da.Id,
+            GuardianEmail: GuardianEmail, ParentalConsentConfirmed: true));
 
         // the guardian logs in (new sub, matching email) and checks /me before accepting
         var me = await app.Send(new GetCurrentUserQuery(GuardianSub, GuardianEmail));

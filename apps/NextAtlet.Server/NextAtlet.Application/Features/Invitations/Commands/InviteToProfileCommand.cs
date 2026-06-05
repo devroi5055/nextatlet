@@ -57,7 +57,7 @@ public class InviteToProfileCommandHandler : IRequestHandler<InviteToProfileComm
             ?? throw new DomainException(ErrorCodes.ProfileNotFound);
 
         // Authorization: only someone with an Active login on this profile may invite to it.
-        if (!await _logins.HasActiveLoginAsync(caller.Id, profile.Id, cancellationToken))
+        if (await _logins.GetActiveLoginAsync(caller.Id, profile.Id, cancellationToken) is null)
             throw new DomainException(ErrorCodes.NotAuthorized);
 
         // A guardian only makes sense for a minor — refuse to invite one onto an adult profile.

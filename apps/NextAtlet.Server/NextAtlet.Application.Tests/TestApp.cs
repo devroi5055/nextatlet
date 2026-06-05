@@ -7,6 +7,7 @@ using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Features.Account;
 using NextAtlet.Application.Features.Invitations;
+using NextAtlet.Domain.Authorization;
 using NextAtlet.Infrastructure.Data;
 using NextAtlet.Infrastructure.Persistence;
 using NextAtlet.Infrastructure.Persistence.Repositories;
@@ -49,6 +50,7 @@ internal sealed class TestApp : IDisposable
         services.AddScoped<IEmailService, LoggingEmailService>();
         services.AddScoped<UserProvisioner>();
         services.AddScoped<InvitationIssuer>();
+        services.AddSingleton<PermissionResolver>();
         services.Configure<InvitationOptions>(_ => { }); // defaults (7-day expiry)
 
         _provider = services.BuildServiceProvider();
@@ -63,6 +65,14 @@ internal sealed class TestApp : IDisposable
         using var scope = _provider.CreateScope();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
         return await sender.Send(request);
+    }
+
+    /// <summary>Dispatches a void (IRequest) command through MediatR in a fresh DI scope.</summary>
+    public async Task Send(IRequest request)
+    {
+        using var scope = _provider.CreateScope();
+        var sender = scope.ServiceProvider.GetRequiredService<ISender>();
+        await sender.Send(request);
     }
 
     /// <summary>Runs a read against the shared in-memory store for assertions.</summary>

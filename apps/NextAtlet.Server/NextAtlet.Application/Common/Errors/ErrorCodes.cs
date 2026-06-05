@@ -18,6 +18,16 @@ public static class ErrorCodes
     public const string ProfileAlreadyExists    = "profile.already_exists";
     public const string GuardianCannotRegisterAdult = "guardian.cannot_register_adult";
 
+    // Age gating + consent (ControlMode plan).
+    public const string BelowMinimumAge         = "registration.below_minimum_age";
+    public const string ParentalConsentRequired = "registration.parental_consent_required";
+
+    // Control transfer / collaboration.
+    public const string AthleteTooYoungForControl = "control.athlete_too_young";
+    public const string NoAthleteLoginExists    = "control.no_athlete_login";
+    public const string NoGuardianLoginExists   = "control.no_guardian_login";
+    public const string TransferTargetInvalid   = "control.transfer_target_invalid";
+
     // Invitations — the single, auditable home for pending profile invites.
     public const string InvitationNotFound      = "invitation.not_found";
     public const string InvitationAlreadyUsed   = "invitation.already_used";
