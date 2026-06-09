@@ -2,6 +2,7 @@ using MediatR;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
+using NextAtlet.Application.Common.Time;
 using NextAtlet.Domain.Enumerations;
 
 namespace NextAtlet.Application.Features.Invitations.Commands;
@@ -26,6 +27,7 @@ public class InviteToProfileCommandHandler : IRequestHandler<InviteToProfileComm
     private readonly IInvitationRepository _invitations;
     private readonly InvitationIssuer _inviter;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
 
     public InviteToProfileCommandHandler(
         IUserRepository users,
@@ -33,7 +35,8 @@ public class InviteToProfileCommandHandler : IRequestHandler<InviteToProfileComm
         IProfileLoginRepository logins,
         IInvitationRepository invitations,
         InvitationIssuer inviter,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IClock clock)
     {
         _users = users;
         _profiles = profiles;
@@ -41,6 +44,7 @@ public class InviteToProfileCommandHandler : IRequestHandler<InviteToProfileComm
         _invitations = invitations;
         _inviter = inviter;
         _unitOfWork = unitOfWork;
+        _clock = clock;
     }
 
     public async Task<InvitationDto> Handle(InviteToProfileCommand request, CancellationToken cancellationToken)
@@ -61,7 +65,7 @@ public class InviteToProfileCommandHandler : IRequestHandler<InviteToProfileComm
             throw new DomainException(ErrorCodes.NotAuthorized);
 
         // A guardian only makes sense for a minor — refuse to invite one onto an adult profile.
-        if (request.Role == ProfileRole.Guardian.Id && !profile.IsMinor)
+        if (request.Role == ProfileRole.Guardian.Id && !profile.IsMinor(_clock.UtcNow))
             throw new DomainException(ErrorCodes.GuardianCannotRegisterAdult);
 
         // Don't double-invite the same email+role on the same profile.

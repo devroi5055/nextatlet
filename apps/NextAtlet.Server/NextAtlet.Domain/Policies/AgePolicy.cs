@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+
 namespace NextAtlet.Domain.Policies;
 
 /// <summary>
@@ -28,8 +30,8 @@ public static class AgePolicy
         return age;
     }
 
-    public static AgeBand BandToday(DateOnly dob) =>
-        AgeAt(dob, DateOnly.FromDateTime(DateTime.UtcNow)) switch
+    public static AgeBand BandToday(DateOnly dob, DateTime utcNow) =>
+        AgeAt(dob, DateOnly.FromDateTime(utcNow)) switch
         {
             < 13 => AgeBand.BelowMinimum,
             < 16 => AgeBand.YoungMinor,
@@ -37,5 +39,16 @@ public static class AgePolicy
             _    => AgeBand.Adult
         };
 
-    public static AgeBand BandToday(DateTime dob) => BandToday(DateOnly.FromDateTime(dob));
+    public static AgeBand BandToday(DateTime dob, DateTime utcNow) => BandToday(DateOnly.FromDateTime(dob), utcNow);
+
+    /// <summary>
+    /// True when a guardian must consent (GDPR Art. 8): the athlete is below the self-consent age.
+    /// The threshold is passed in (from <c>AgeThresholdOptions</c>) so Domain stays config-free and the
+    /// rule is trivially testable at any threshold (e.g. an EU shift to 16).
+    /// </summary>
+    public static bool RequiresGuardianConsent(DateOnly dob, DateTime utcNow, int selfConsentAge)
+        => AgeAt(dob, DateOnly.FromDateTime(utcNow)) < selfConsentAge;
+
+    public static bool RequiresGuardianConsent(DateTime dob, DateTime utcNow, int selfConsentAge)
+        => RequiresGuardianConsent(DateOnly.FromDateTime(dob), utcNow, selfConsentAge);
 }

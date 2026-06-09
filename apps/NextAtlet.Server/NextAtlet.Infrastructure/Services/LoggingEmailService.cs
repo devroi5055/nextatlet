@@ -20,4 +20,11 @@ public class LoggingEmailService : IEmailService
             "Invitation email to {Email}: accept at /invitations/{InvitationId}/accept", email, invitationId);
         return Task.CompletedTask;
     }
+
+    public Task SendConsentRequestAsync(string email, Guid athleteProfileId, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation(
+            "Guardian-consent email to {Email}: confirm at /athletes/{AthleteProfileId}/consent", email, athleteProfileId);
+        return Task.CompletedTask;
+    }
 }

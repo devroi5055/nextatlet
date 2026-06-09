@@ -31,10 +31,16 @@ public class AthleteProfile : AuditableEntity
     public ControlMode ControlMode { get; set; } = ControlMode.AthleteControlled;
 
     /// <summary>
-    /// When parental consent was declared (13–15 self-registration). Null when consent is implicit
-    /// (16+ self-register, or guardian-register where the guardian created the profile).
+    /// Legacy declaration timestamp. Superseded by <see cref="ConsentState"/> + the GuardianConsent
+    /// audit record; retained for back-compat and no longer written by registration.
     /// </summary>
     public DateTime? ConsentCapturedUtc { get; set; }
+
+    /// <summary>
+    /// Guardian-consent gate (GDPR Art. 8). Stored, explicit. A profile may go public only when this
+    /// is not <see cref="ConsentState.PendingGuardianConsent"/>. Orthogonal to VisibilityState.
+    /// </summary>
+    public ConsentState ConsentState { get; set; } = ConsentState.NotRequired;
 
     /// <summary>
     /// Denormalized read field — derived from the active Subscription.
@@ -52,5 +58,11 @@ public class AthleteProfile : AuditableEntity
     /// Computed at request time from DateOfBirth. NOT stored — a stored flag
     /// goes stale the day the athlete turns 18.
     /// </summary>
-    public bool IsMinor => DateTime.UtcNow < DateOfBirth.ToDateTime(TimeOnly.MinValue).AddYears(18);
+    public bool IsMinor(DateTime utcNow) => utcNow < DateOfBirth.ToDateTime(TimeOnly.MinValue).AddYears(18);
+
+    /// <summary>
+    /// True while awaiting guardian consent — the publish path must refuse to make the profile public
+    /// in this state (no public processing pre-consent). The draft may still be edited.
+    /// </summary>
+    public bool AwaitsGuardianConsent => ConsentState == ConsentState.PendingGuardianConsent;
 }

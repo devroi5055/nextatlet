@@ -31,6 +31,13 @@ namespace NextAtlet.Infrastructure.Migrations
                     b.Property<DateTime?>("ConsentCapturedUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("ConsentState")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasDefaultValue("NotRequired");
+
                     b.Property<string>("ControlMode")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -92,6 +99,43 @@ namespace NextAtlet.Infrastructure.Migrations
                     b.HasIndex("SportId");
 
                     b.ToTable("AthleteProfiles");
+                });
+
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.GuardianConsent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AthleteProfileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ConsentedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("GuardianUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Method")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("TermsVersion")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AthleteProfileId");
+
+                    b.HasIndex("GuardianUserId");
+
+                    b.ToTable("GuardianConsents");
                 });
 
             modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.Invitation", b =>
@@ -379,6 +423,25 @@ namespace NextAtlet.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.GuardianConsent", b =>
+                {
+                    b.HasOne("NextAtlet.Domain.Entities.Athlete.AthleteProfile", "AthleteProfile")
+                        .WithMany()
+                        .HasForeignKey("AthleteProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("NextAtlet.Domain.Entities.Shared.User", "Guardian")
+                        .WithMany()
+                        .HasForeignKey("GuardianUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("AthleteProfile");
+
+                    b.Navigation("Guardian");
                 });
 
             modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.Invitation", b =>

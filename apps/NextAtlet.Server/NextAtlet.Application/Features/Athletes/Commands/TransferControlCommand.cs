@@ -1,6 +1,7 @@
 using MediatR;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.Errors;
+using NextAtlet.Application.Common.Time;
 using NextAtlet.Domain.Authorization;
 using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
 using NextAtlet.Domain.Policies;
@@ -30,19 +31,22 @@ public class TransferControlCommandHandler : IRequestHandler<TransferControlComm
     private readonly IUserRepository _users;
     private readonly PermissionResolver _permissions;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
 
     public TransferControlCommandHandler(
         IAthleteProfileRepository profiles,
         IProfileLoginRepository logins,
         IUserRepository users,
         PermissionResolver permissions,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IClock clock)
     {
         _profiles = profiles;
         _logins = logins;
         _users = users;
         _permissions = permissions;
         _unitOfWork = unitOfWork;
+        _clock = clock;
     }
 
     public async Task Handle(TransferControlCommand request, CancellationToken cancellationToken)
@@ -66,7 +70,7 @@ public class TransferControlCommandHandler : IRequestHandler<TransferControlComm
         if (request.TransferTo == ToAthlete)
         {
             // Age gate: control can only go to an athlete who is at least 13.
-            if (AgePolicy.BandToday(profile.DateOfBirth) == AgeBand.BelowMinimum)
+            if (AgePolicy.BandToday(profile.DateOfBirth, _clock.UtcNow) == AgeBand.BelowMinimum)
                 throw new DomainException(ErrorCodes.AthleteTooYoungForControl);
 
             // Can't hand control to a ghost — an athlete owner login must exist.

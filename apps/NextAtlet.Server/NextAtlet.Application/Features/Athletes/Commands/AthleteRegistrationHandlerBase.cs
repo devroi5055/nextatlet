@@ -2,6 +2,7 @@ using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Extensions;
+using NextAtlet.Application.Common.Time;
 using NextAtlet.Application.Features.Account;
 using NextAtlet.Application.Features.Invitations;
 using NextAtlet.Domain.Entities.Athlete;
@@ -30,6 +31,7 @@ public abstract class AthleteRegistrationHandlerBase
     protected readonly ISiteConfigRepository SiteConfigs;
     protected readonly UserProvisioner UserProvisioner;
     protected readonly InvitationIssuer Inviter;
+    protected readonly IClock Clock;
     protected readonly IUnitOfWork UnitOfWork;
 
     protected AthleteRegistrationHandlerBase(
@@ -39,6 +41,7 @@ public abstract class AthleteRegistrationHandlerBase
         ISiteConfigRepository siteConfigs,
         UserProvisioner userProvisioner,
         InvitationIssuer inviter,
+        IClock clock,
         IUnitOfWork unitOfWork)
     {
         Profiles = profiles;
@@ -47,6 +50,7 @@ public abstract class AthleteRegistrationHandlerBase
         SiteConfigs = siteConfigs;
         UserProvisioner = userProvisioner;
         Inviter = inviter;
+        Clock = clock;
         UnitOfWork = unitOfWork;
     }
 
@@ -85,13 +89,13 @@ public abstract class AthleteRegistrationHandlerBase
     protected Task<User> GetOrCreateUserAsync(string email, string authProviderId, CancellationToken cancellationToken)
         => UserProvisioner.GetOrCreateAsync(email, authProviderId, cancellationToken);
 
-    protected static AthleteProfileDto MapToDto(AthleteProfile profile) => new()
+    protected AthleteProfileDto MapToDto(AthleteProfile profile) => new()
     {
         Id = profile.Id,
         Slug = profile.Slug,
         DisplayName = profile.DisplayName,
         DateOfBirth = profile.DateOfBirth,
-        IsMinor = profile.IsMinor,
+        IsMinor = profile.IsMinor(Clock.UtcNow),
         ControlMode = profile.ControlMode,
         DefaultLocale = Locale.FromId(profile.DefaultLocaleId).ToDto()
     };

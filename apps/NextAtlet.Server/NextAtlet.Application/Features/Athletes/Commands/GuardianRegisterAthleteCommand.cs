@@ -2,6 +2,7 @@ using MediatR;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
+using NextAtlet.Application.Common.Time;
 using NextAtlet.Application.Features.Account;
 using NextAtlet.Application.Features.Invitations;
 using NextAtlet.Domain.Entities.Athlete;
@@ -35,14 +36,15 @@ public class GuardianRegisterAthleteCommandHandler
         ISiteConfigRepository siteConfigs,
         UserProvisioner userProvisioner,
         InvitationIssuer inviter,
+        IClock clock,
         IUnitOfWork unitOfWork)
-        : base(profiles, logins, themes, siteConfigs, userProvisioner, inviter, unitOfWork) { }
+        : base(profiles, logins, themes, siteConfigs, userProvisioner, inviter, clock, unitOfWork) { }
 
     public async Task<AthleteProfileDto> Handle(GuardianRegisterAthleteCommand request, CancellationToken cancellationToken)
     {
         // v1: this flow is for minors. An adult must self-register. Under-13 IS allowed here — that is
         // the intended path for very young children (the age floor only applies to self-register).
-        if (AgePolicy.BandToday(request.ChildDateOfBirth) == AgeBand.Adult)
+        if (AgePolicy.BandToday(request.ChildDateOfBirth, Clock.UtcNow) == AgeBand.Adult)
             throw new DomainException(ErrorCodes.GuardianCannotRegisterAdult);
 
         var guardian = await GetOrCreateUserAsync(request.Email, request.AuthProviderId, cancellationToken);

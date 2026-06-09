@@ -95,6 +95,17 @@ public class AthletesController : ControllerBase
     }
 
     /// <summary>
+    /// Guardian gives consent (GDPR Art. 8) for a minor's profile by following the emailed link and
+    /// authenticating. Records the consent and lifts the publish gate. Does not join the profile.
+    /// </summary>
+    [HttpPost("{id:guid}/consent")]
+    public async Task<IActionResult> GiveConsent(Guid id)
+    {
+        await _sender.Send(new RecordGuardianConsentCommand(id, User.GetAuthProviderId(), User.GetEmail()));
+        return NoContent();
+    }
+
+    /// <summary>
     /// Gets the draft SiteConfig for an athlete profile.
     /// </summary>
     [HttpGet("{id:guid}/config/draft")]

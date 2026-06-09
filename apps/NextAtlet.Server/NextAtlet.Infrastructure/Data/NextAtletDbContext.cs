@@ -15,6 +15,7 @@ public class NextAtletDbContext : DbContext
     public DbSet<AthleteProfile> AthleteProfiles { get; set; }
     public DbSet<ProfileLogin> ProfileLogins { get; set; }
     public DbSet<Invitation> Invitations { get; set; }
+    public DbSet<GuardianConsent> GuardianConsents { get; set; }
     public DbSet<Theme> Themes { get; set; }
     public DbSet<SiteConfig> SiteConfigs { get; set; }
     public DbSet<MediaAsset> MediaAssets { get; set; }
@@ -49,6 +50,10 @@ public class NextAtletDbContext : DbContext
             entity.Property(e => e.ControlMode)
                 .HasConversion<string>().IsRequired().HasMaxLength(30)
                 .HasDefaultValue(ControlMode.AthleteControlled);
+            // ConsentState: guardian-consent gate (GDPR Art. 8). Existing rows default to NotRequired.
+            entity.Property(e => e.ConsentState)
+                .HasConversion<string>().IsRequired().HasMaxLength(30)
+                .HasDefaultValue(ConsentState.NotRequired);
             entity.HasIndex(e => e.Slug).IsUnique();
             entity.HasIndex(e => e.SportId);
             entity.HasIndex(e => e.CreatedUtc).IsDescending();
@@ -101,6 +106,28 @@ public class NextAtletDbContext : DbContext
             entity.HasOne(e => e.InvitedBy)
                 .WithMany()
                 .HasForeignKey(e => e.InvitedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // GuardianConsent configuration (GDPR Art. 8 audit record)
+        modelBuilder.Entity<GuardianConsent>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            // Method is an enum — persist as its string name.
+            entity.Property(e => e.Method).HasConversion<string>().IsRequired().HasMaxLength(30);
+            entity.Property(e => e.TermsVersion).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.ConsentedUtc).IsRequired();
+            entity.HasIndex(e => e.AthleteProfileId);
+
+            entity.HasOne(e => e.AthleteProfile)
+                .WithMany()
+                .HasForeignKey(e => e.AthleteProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Audit FK to the guardian — never cascade-delete the consent evidence.
+            entity.HasOne(e => e.Guardian)
+                .WithMany()
+                .HasForeignKey(e => e.GuardianUserId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

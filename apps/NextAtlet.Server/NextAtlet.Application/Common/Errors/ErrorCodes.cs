@@ -22,6 +22,9 @@ public static class ErrorCodes
     public const string BelowMinimumAge         = "registration.below_minimum_age";
     public const string ParentalConsentRequired = "registration.parental_consent_required";
 
+    /// <summary>Publish blocked while a minor profile awaits guardian consent (GDPR Art. 8).</summary>
+    public const string GuardianConsentRequired = "consent.guardian_required";
+
     // Control transfer / collaboration.
     public const string AthleteTooYoungForControl = "control.athlete_too_young";
     public const string NoAthleteLoginExists    = "control.no_athlete_login";

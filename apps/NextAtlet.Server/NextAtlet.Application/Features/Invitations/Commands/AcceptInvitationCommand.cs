@@ -10,10 +10,11 @@ using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
 namespace NextAtlet.Application.Features.Invitations.Commands;
 
 /// <summary>
-/// The invited person claims their login. Role-agnostic — the invitation Id lookup carries everything:
-/// who was invited, to which profile, in what role. The ProfileLogin (the materialized credential) is
-/// created here, at accept time, not at invite time — so a revoked/expired invite never leaves a
-/// dangling login. Identity comes from the validated token (controller), never the body.
+/// The invited person claims their login — this is purely about <i>joining</i> a profile. Role-agnostic:
+/// the invitation Id lookup carries who was invited, to which profile, in what role. The ProfileLogin
+/// (the materialized credential) is created here, at accept time, not at invite time — so a
+/// revoked/expired invite never leaves a dangling login. Guardian consent is a separate flow (the
+/// consent endpoint), never coupled to joining. Identity comes from the validated token, never the body.
 /// </summary>
 public record AcceptInvitationCommand(
     Guid InvitationId,

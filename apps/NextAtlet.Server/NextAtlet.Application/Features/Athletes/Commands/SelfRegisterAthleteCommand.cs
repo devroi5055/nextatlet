@@ -1,11 +1,14 @@
 using MediatR;
+using Microsoft.Extensions.Options;
 using NextAtlet.Application.Abstractions.Persistence;
+using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
+using NextAtlet.Application.Common.Options;
+using NextAtlet.Application.Common.Time;
 using NextAtlet.Application.Features.Account;
 using NextAtlet.Application.Features.Invitations;
 using NextAtlet.Domain.Entities.Athlete;
-using NextAtlet.Domain.Enumerations;
 using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
 using NextAtlet.Domain.Policies;
 
@@ -13,9 +16,12 @@ namespace NextAtlet.Application.Features.Athletes.Commands;
 
 /// <summary>
 /// Self-registration: the authenticated caller registers an AthleteProfile for themselves and becomes
-/// its AthleteOwner — so the profile is always <see cref="ControlMode.AthleteControlled"/>. Under-13 is
-/// rejected (self-consent floor). A 13–17 athlete must name a guardian (invited in the same
-/// transaction); 13–15 must also confirm parental consent. Identity comes from the token, never the body.
+/// its AthleteOwner — so the profile is always <see cref="ControlMode.AthleteControlled"/>. Below the
+/// absolute minimum age it is rejected. Below the self-consent age (GDPR Art. 8) the profile is created
+/// <see cref="ConsentState.PendingGuardianConsent"/> and a consent-request <b>email</b> is sent to the
+/// guardian — they confirm at the consent endpoint, which records consent and lifts the publish gate.
+/// No profile invitation is issued here: a guardian <i>joining</i> the profile is a separate,
+/// owner-initiated step. Identity comes from the token, never the body.
 /// </summary>
 public record SelfRegisterAthleteCommand(
     string AuthProviderId,
@@ -24,12 +30,14 @@ public record SelfRegisterAthleteCommand(
     string Slug,
     DateTime DateOfBirth,
     string DefaultLocaleId,
-    string? GuardianEmail = null,
-    bool ParentalConsentConfirmed = false) : IRequest<AthleteProfileDto>;
+    string? GuardianEmail) : IRequest<AthleteProfileDto>;
 
 public class SelfRegisterAthleteCommandHandler
     : AthleteRegistrationHandlerBase, IRequestHandler<SelfRegisterAthleteCommand, AthleteProfileDto>
 {
+    private readonly AgeThresholdOptions _thresholds;
+    private readonly IEmailService _email;
+
     public SelfRegisterAthleteCommandHandler(
         IAthleteProfileRepository profiles,
         IProfileLoginRepository logins,
@@ -37,22 +45,31 @@ public class SelfRegisterAthleteCommandHandler
         ISiteConfigRepository siteConfigs,
         UserProvisioner userProvisioner,
         InvitationIssuer inviter,
+        IClock clock,
+        IOptions<AgeThresholdOptions> ageThresholds,
+        IEmailService email,
         IUnitOfWork unitOfWork)
-        : base(profiles, logins, themes, siteConfigs, userProvisioner, inviter, unitOfWork) { }
+        : base(profiles, logins, themes, siteConfigs, userProvisioner, inviter, clock, unitOfWork)
+    {
+        _thresholds = ageThresholds.Value;
+        _email = email;
+    }
 
     public async Task<AthleteProfileDto> Handle(SelfRegisterAthleteCommand request, CancellationToken cancellationToken)
     {
-        // Age band is a gate, never a permission input. Under-13 cannot self-register (self-consent floor).
-        var band = AgePolicy.BandToday(request.DateOfBirth);
-        if (band == AgeBand.BelowMinimum)
+        // Age gates only — never a permission input. Below the absolute floor → cannot register at all.
+        var today = DateOnly.FromDateTime(Clock.UtcNow);
+        if (AgePolicy.AgeAt(DateOnly.FromDateTime(request.DateOfBirth), today) < _thresholds.AbsoluteMinimumAge)
             throw new DomainException(ErrorCodes.BelowMinimumAge);
 
-        // 13–17 must name a guardian (invited below). 16+ self-consents; only 13–15 declares parental consent.
-        var needsGuardian = band is AgeBand.YoungMinor or AgeBand.OlderMinor;
-        if (needsGuardian && string.IsNullOrWhiteSpace(request.GuardianEmail))
+        // Below the self-consent age a guardian must consent → we need their email to send the request.
+        var needsConsent = AgePolicy.RequiresGuardianConsent(request.DateOfBirth, Clock.UtcNow, _thresholds.SelfConsentAge);
+        if (needsConsent && string.IsNullOrWhiteSpace(request.GuardianEmail))
             throw new DomainException(ErrorCodes.GuardianEmailRequired);
-        if (band == AgeBand.YoungMinor && !request.ParentalConsentConfirmed)
-            throw new DomainException(ErrorCodes.ParentalConsentRequired);
+
+        // The guardian must be someone other than the athlete themselves.
+        if (needsConsent && string.Equals(request.GuardianEmail, request.Email, StringComparison.OrdinalIgnoreCase))
+            throw new DomainException(ErrorCodes.GuardianEmailRequired);
 
         var caller = await GetOrCreateUserAsync(request.Email, request.AuthProviderId, cancellationToken);
 
@@ -65,24 +82,18 @@ public class SelfRegisterAthleteCommandHandler
             request.Slug, request.DisplayName, request.DateOfBirth, request.DefaultLocaleId,
             ControlMode.AthleteControlled, cancellationToken);
 
-        if (band == AgeBand.YoungMinor)
-            profile.ConsentCapturedUtc = DateTime.UtcNow; // the checkbox declaration; the guardian accept is the verifiable act
+        // Below self-consent age → publish-gated pending guardian verification; otherwise no consent needed.
+        profile.ConsentState = needsConsent ? ConsentState.PendingGuardianConsent : ConsentState.NotRequired;
 
         Logins.Add(ProfileLogin.CreateOwner(caller.Id, profile.Id));
 
-        // A named guardian is invited in the SAME transaction (required 13–17, optional 18+). The
-        // guardian's ProfileLogin is materialized when they accept; until then the Invitation is the
-        // pending state. A self-registered minor stays in control — the guardian is ReadOnly unless
-        // collaboration is enabled later.
-        Invitation? guardianInvite = string.IsNullOrWhiteSpace(request.GuardianEmail)
-            ? null
-            : Inviter.Issue(profile.Id, request.GuardianEmail!, ProfileRole.Guardian.Id, caller.Id);
-
         await UnitOfWork.SaveChangesAsync(cancellationToken);
 
-        // Fire the email only after the row is durably committed (avoids inviting on a rolled-back tx).
-        if (guardianInvite is not null)
-            await Inviter.NotifyAsync(guardianInvite, cancellationToken);
+        // Consent request is an email to a consent endpoint — NOT a profile invitation (consent ≠ joining).
+        // Sent after commit so a rolled-back registration never emails. A guardian joins later, if at all,
+        // via a separate owner-initiated invitation.
+        if (needsConsent)
+            await _email.SendConsentRequestAsync(request.GuardianEmail!, profile.Id, cancellationToken);
 
         return MapToDto(profile);
     }

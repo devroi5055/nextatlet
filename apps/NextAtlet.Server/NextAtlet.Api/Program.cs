@@ -1,5 +1,3 @@
-using System.Net.Http.Headers;
-using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -11,14 +9,18 @@ using NextAtlet.Application;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Application.Common.Options;
+using NextAtlet.Application.Common.Time;
 using NextAtlet.Application.Features.Account;
 using NextAtlet.Application.Features.Invitations;
 using NextAtlet.Domain.Authorization;
+using NextAtlet.Infrastructure.Common.Time;
 using NextAtlet.Infrastructure.Data;
 using NextAtlet.Infrastructure.Persistence;
 using NextAtlet.Infrastructure.Persistence.Repositories;
 using NextAtlet.Infrastructure.Services;
 using NextAtlet.Infrastructure.Services.SectionRegistry;
+using System.Net.Http.Headers;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -95,12 +97,14 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAthleteProfileRepository, AthleteProfileRepository>();
 builder.Services.AddScoped<IProfileLoginRepository, ProfileLoginRepository>();
 builder.Services.AddScoped<IInvitationRepository, InvitationRepository>();
+builder.Services.AddScoped<IGuardianConsentRepository, GuardianConsentRepository>();
 builder.Services.AddScoped<IThemeRepository, ThemeRepository>();
 builder.Services.AddScoped<ISiteConfigRepository, SiteConfigRepository>();
 
 // Domain services (behind Application abstractions)
 builder.Services.AddScoped<ISectionTypeRegistry, SectionTypeRegistry>();
 builder.Services.AddScoped<ISanitizationService, SanitizationService>();
+builder.Services.AddSingleton<IClock, SystemClock>();
 
 // Email: send real invite mail via Resend when an API key is configured; otherwise log the link
 // (so local dev needs no secrets). Either way handlers depend only on IEmailService.
@@ -125,6 +129,9 @@ builder.Services.AddScoped<UserProvisioner>();
 builder.Services.AddScoped<InvitationIssuer>();
 builder.Services.AddSingleton<PermissionResolver>(); // stateless: ControlMode + role → permissions
 builder.Services.Configure<InvitationOptions>(builder.Configuration.GetSection(InvitationOptions.SectionName));
+builder.Services.Configure<AgeThresholdOptions>(builder.Configuration.GetSection(AgeThresholdOptions.SectionName));
+builder.Services.Configure<TermsOptions>(builder.Configuration.GetSection(TermsOptions.SectionName));
+
 
 // Add CORS (for development)
 builder.Services.AddCors(options =>
