@@ -1,8 +1,9 @@
 using MediatR;
-using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Features.Account;
+using NextAtlet.Application.Abstractions.Persistence;
+using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Domain.Entities.Athlete;
 using NextAtlet.Domain.Enumerations;
 using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;

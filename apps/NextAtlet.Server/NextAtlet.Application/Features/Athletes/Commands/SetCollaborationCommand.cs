@@ -1,6 +1,7 @@
 using MediatR;
-using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.Errors;
+using NextAtlet.Application.Abstractions.Persistence;
+using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Domain.Authorization;
 using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
 
@@ -18,20 +19,20 @@ public record SetCollaborationCommand(
 
 public class SetCollaborationCommandHandler : IRequestHandler<SetCollaborationCommand>
 {
-    private readonly IAthleteProfileRepository _profiles;
+    private readonly IAthleteSiteRepository _sites;
     private readonly IProfileLoginRepository _logins;
     private readonly IUserRepository _users;
     private readonly PermissionResolver _permissions;
     private readonly IUnitOfWork _unitOfWork;
 
     public SetCollaborationCommandHandler(
-        IAthleteProfileRepository profiles,
+        IAthleteSiteRepository sites,
         IProfileLoginRepository logins,
         IUserRepository users,
         PermissionResolver permissions,
         IUnitOfWork unitOfWork)
     {
-        _profiles = profiles;
+        _sites = sites;
         _logins = logins;
         _users = users;
         _permissions = permissions;
@@ -40,7 +41,7 @@ public class SetCollaborationCommandHandler : IRequestHandler<SetCollaborationCo
 
     public async Task Handle(SetCollaborationCommand request, CancellationToken cancellationToken)
     {
-        var profile = await _profiles.GetByIdAsync(request.ProfileId, cancellationToken)
+        var profile = await _sites.GetByIdAsync(request.ProfileId, cancellationToken)
             ?? throw new DomainException(ErrorCodes.ProfileNotFound);
 
         var caller = await _users.GetByAuthProviderIdAsync(request.CallerAuthProviderId, cancellationToken)

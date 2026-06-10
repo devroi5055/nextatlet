@@ -4,15 +4,14 @@ using NextAtlet.Domain.Entities.Shared;
 
 namespace NextAtlet.Domain.Entities.Athlete;
 
-public class SiteConfig : AuditableEntity
+public class AthleteSiteSnapshot : CreatedOnlyEntity
 {
     public required Guid AthleteProfileId { get; set; }
-    public required bool IsDraft { get; set; }
     public required Guid ThemeId { get; set; }
 
     /// <summary>
-    /// Pins the theme version at config-creation time for render stability.
-    /// A theme update does not break existing published configs.
+    /// Pins the theme version at snapshot-creation time for render stability.
+    /// A theme update does not break existing published snapshots.
     /// </summary>
     public int ThemeVersion { get; set; } = 1;
 
@@ -37,6 +36,6 @@ public class SiteConfig : AuditableEntity
     public DateTime? PublishedUtc { get; set; }
 
     // Navigation — non-nullable to match non-nullable FKs
-    public AthleteProfile AthleteProfile { get; set; } = default!;
+    public AthleteSite AthleteSite { get; set; } = default!; //TODO: might remove to not have backwards dependencies
     public Theme Theme { get; set; } = default!;
 }

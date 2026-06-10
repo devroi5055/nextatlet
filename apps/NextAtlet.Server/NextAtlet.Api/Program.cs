@@ -6,12 +6,12 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using NextAtlet.Api;
 using NextAtlet.Application;
-using NextAtlet.Application.Abstractions.Persistence;
-using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Common.Time;
 using NextAtlet.Application.Features.Account;
 using NextAtlet.Application.Features.Invitations;
+using NextAtlet.Application.Abstractions.Persistence;
+using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Domain.Authorization;
 using NextAtlet.Infrastructure.Common.Time;
 using NextAtlet.Infrastructure.Data;
@@ -94,12 +94,12 @@ builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(IAppl
 // Repositories + Unit of Work (EF implementations over the shared scoped DbContext)
 builder.Services.AddScoped<IUnitOfWork, EfUnitOfWork>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IAthleteProfileRepository, AthleteProfileRepository>();
+builder.Services.AddScoped<IAthleteSiteRepository, AthleteSiteRepository>();
 builder.Services.AddScoped<IProfileLoginRepository, ProfileLoginRepository>();
 builder.Services.AddScoped<IInvitationRepository, InvitationRepository>();
 builder.Services.AddScoped<IGuardianConsentRepository, GuardianConsentRepository>();
 builder.Services.AddScoped<IThemeRepository, ThemeRepository>();
-builder.Services.AddScoped<ISiteConfigRepository, SiteConfigRepository>();
+builder.Services.AddScoped<IAthleteSiteSnapshotRepository, AthleteSiteSnapshotRepository>();
 
 // Domain services (behind Application abstractions)
 builder.Services.AddScoped<ISectionTypeRegistry, SectionTypeRegistry>();

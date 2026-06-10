@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using NextAtlet.Domain.Entities.Athlete;
 using NextAtlet.Domain.Enumerations;
 using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
@@ -9,7 +9,7 @@ using Xunit;
 
 namespace NextAtlet.Domain.Tests.Entities;
 
-public class SiteConfigTests
+public class AthleteSiteSnapshotTests
 {
     private static SiteLayout AValidLayout() => new()
     {
@@ -34,7 +34,7 @@ public class SiteConfigTests
         ]
     };
 
-    private static SiteConfig ADraftConfig() => new()
+    private static AthleteSiteSnapshot ADraftSnapshot() => new()
     {
         AthleteProfileId = Guid.NewGuid(),
         IsDraft = true,
@@ -46,31 +46,18 @@ public class SiteConfigTests
     };
 
     [Fact]
-    public void NewConfig_StartsAtVersionOne()
+    public void NewSnapshot_StartsAtVersionOne()
     {
-        var config = ADraftConfig();
+        var snapshot = ADraftSnapshot();
 
-        config.Version.Should().Be(1);
+        snapshot.Version.Should().Be(1);
     }
 
     [Fact]
-    public void DraftConfig_HasNoPublishedTimestamp()
+    public void DraftSnapshot_HasNoPublishedTimestamp()
     {
-        var config = ADraftConfig();
+        var snapshot = ADraftSnapshot();
 
-        config.PublishedUtc.Should().BeNull();
+        snapshot.PublishedUtc.Should().BeNull();
     }
-
-    //[Fact(Skip = "Confirm whether Publish() is entity behaviour or a command concern.")]
-    //TODO: SOMETHING HERE
-    //public void Publish_StampsPublishedTimestampAndBumpsVersion()
-    //{
-    //    var config = ADraftConfig();
-    //    var before = config.Version;
-
-    //    config.Publish();
-
-    //    config.PublishedUtc.Should().NotBeNull();
-    //    config.Version.Should().Be(before + 1);
-    //}
 }

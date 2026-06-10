@@ -36,11 +36,10 @@ public class AthleteProfileDto
     public EnumerationDto DefaultLocale { get; set; } = default!;
 }
 
-public class SiteConfigDto
+public class AthleteSiteSnapshotDto
 {
     public Guid Id { get; set; }
     public Guid AthleteProfileId { get; set; }
-    public bool IsDraft { get; set; }
 
     // Typed value objects shared with the domain — no parallel DTO hierarchy, no dicts.
     public SiteLayout Layout { get; set; } = new();
@@ -48,7 +47,7 @@ public class SiteConfigDto
     public int Version { get; set; }
 }
 
-public class UpdateSiteConfigRequest
+public class UpdateAthleteSiteSnapshotRequest
 {
     // System.Text.Json deserializes straight into the polymorphic section model
     // via the "type" discriminator — no JsonElement/Dictionary normalization needed.

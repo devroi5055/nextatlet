@@ -5,7 +5,7 @@ using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
 
 namespace NextAtlet.Domain.Entities.Athlete;
 
-public class AthleteProfile : AuditableEntity
+public class AthleteSite : AuditableEntity
 {
     public required string Slug { get; set; }
     public required string DisplayName { get; set; }
@@ -31,12 +31,6 @@ public class AthleteProfile : AuditableEntity
     public ControlMode ControlMode { get; set; } = ControlMode.AthleteControlled;
 
     /// <summary>
-    /// Legacy declaration timestamp. Superseded by <see cref="ConsentState"/> + the GuardianConsent
-    /// audit record; retained for back-compat and no longer written by registration.
-    /// </summary>
-    public DateTime? ConsentCapturedUtc { get; set; }
-
-    /// <summary>
     /// Guardian-consent gate (GDPR Art. 8). Stored, explicit. A profile may go public only when this
     /// is not <see cref="ConsentState.PendingGuardianConsent"/>. Orthogonal to VisibilityState.
     /// </summary>
@@ -47,11 +41,13 @@ public class AthleteProfile : AuditableEntity
     /// Not authoritative; never overwritten by club perks.
     /// Null until billing is wired (Step 6b).
     /// </summary>
+    /// TODO: might remove
     public string? SelfTierId { get; set; }
 
     // Navigation
+    public Guid? CurrentDraftSnapshotId { get; set; }
+    public Guid? CurrentPublishedSnapshotId { get; set; }
     public ICollection<ProfileLogin> ProfileLogins { get; set; } = [];
-    public ICollection<SiteConfig> SiteConfigs { get; set; } = [];
     public ICollection<MediaAsset> MediaAssets { get; set; } = [];
 
     /// <summary>

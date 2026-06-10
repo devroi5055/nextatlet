@@ -13,7 +13,7 @@ namespace NextAtlet.Domain.Entities.Athlete;
 ///
 /// The row <see cref="AuditableEntity.Id"/> (a v4 GUID, 122 bits of randomness) is used directly as
 /// the URL identifier in the accept link — cryptographically sufficient, no separate token needed.
-/// The materialized credential (a <see cref="ProfileLogin"/>) is created only at accept time, so a
+/// The materialized credential (a <see cref="ProfileLogin"/>) is crRoleated only at accept time, so a
 /// revoked/expired invite never leaves a dangling login.
 /// </summary>
 public class Invitation : AuditableEntity
@@ -37,7 +37,7 @@ public class Invitation : AuditableEntity
     public DateTime? AcceptedUtc { get; set; }
 
     // Navigation
-    public AthleteProfile TargetProfile { get; set; } = default!;
+    public AthleteSite TargetSite { get; set; } = default!;
     public User InvitedBy { get; set; } = default!;
 
     /// <summary>A Pending invitation whose window has elapsed (checked at accept time).</summary>

@@ -1,4 +1,4 @@
-﻿using NextAtlet.Application.Common.Errors;
+using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Features.Athletes.Commands;
 using NextAtlet.Application.Tests.Shared.TestData;
 using NextAtlet.Domain.Entities.Athlete;
@@ -255,7 +255,7 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
                 () => fixture.Handler.Handle(command, CancellationToken.None));
 
             fixture.AthleteRepository.Received(0).Add(Arg.Any<AthleteProfile>());
-            fixture.SiteConfigRepository.Received(0).Add(Arg.Any<SiteConfig>());
+            fixture.SiteSnapshotRepository.Received(0).Add(Arg.Any<AthleteSiteSnapshot>());
             fixture.ProfileLoginRepository.Received(0).Add(Arg.Any<ProfileLogin>());
         }
 
@@ -291,7 +291,7 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
             await fixture.Handler.Handle(command, CancellationToken.None);
 
             fixture.AthleteRepository.Received(1).Add(Arg.Any<AthleteProfile>());
-            fixture.SiteConfigRepository.Received(1).Add(Arg.Any<SiteConfig>());
+            fixture.SiteSnapshotRepository.Received(1).Add(Arg.Any<AthleteSiteSnapshot>());
             fixture.ProfileLoginRepository.Received(1).Add(Arg.Any<ProfileLogin>());
         }
     }

@@ -1,6 +1,7 @@
 using MediatR;
-using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.DTOs;
+using NextAtlet.Application.Abstractions.Persistence;
+using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Domain.Authorization;
 using NextAtlet.Domain.Enumerations;
 
@@ -18,20 +19,20 @@ public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, M
     private static readonly IReadOnlyList<Guid> None = [];
 
     private readonly IUserRepository _users;
-    private readonly IAthleteProfileRepository _profiles;
+    private readonly IAthleteSiteRepository _sites;
     private readonly IProfileLoginRepository _logins;
     private readonly IInvitationRepository _invitations;
     private readonly PermissionResolver _permissions;
 
     public GetCurrentUserQueryHandler(
         IUserRepository users,
-        IAthleteProfileRepository profiles,
+        IAthleteSiteRepository sites,
         IProfileLoginRepository logins,
         IInvitationRepository invitations,
         PermissionResolver permissions)
     {
         _users = users;
-        _profiles = profiles;
+        _sites = sites;
         _logins = logins;
         _invitations = invitations;
         _permissions = permissions;
@@ -54,7 +55,7 @@ public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, M
                 IsInControl: false, CanEdit: false, GuardedProfileIds: None, PendingGuardianInvites: pendingInvites);
         }
 
-        var ownedProfile = await _profiles.GetOwnedByUserIdAsync(user.Id, cancellationToken);
+        var ownedProfile = await _sites.GetOwnedByUserIdAsync(user.Id, cancellationToken);
         var guardedProfileIds = await _logins.GetActiveGuardianProfileIdsByUserIdAsync(user.Id, cancellationToken);
 
         // Owning a profile is "registered"; the caller may also guard children (both states at once).

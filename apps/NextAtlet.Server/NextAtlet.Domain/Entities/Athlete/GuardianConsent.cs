@@ -24,10 +24,7 @@ public class GuardianConsent : CreatedOnlyEntity
     /// <summary>WHAT — the privacy-notice version consented to.</summary>
     public required string TermsVersion { get; set; }
 
-    /// <summary>WHEN — the moment of consent.</summary>
-    public required DateTime ConsentedUtc { get; set; }
-
     // Navigation
-    public AthleteProfile AthleteProfile { get; set; } = default!;
+    public AthleteSite AthleteSite { get; set; } = default!;
     public User Guardian { get; set; } = default!;
 }

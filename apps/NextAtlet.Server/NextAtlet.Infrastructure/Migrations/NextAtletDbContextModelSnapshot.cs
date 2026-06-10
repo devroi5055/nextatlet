@@ -28,9 +28,6 @@ namespace NextAtlet.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("ConsentCapturedUtc")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<string>("ConsentState")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -47,6 +44,12 @@ namespace NextAtlet.Infrastructure.Migrations
 
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CurrentDraftSnapshotId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("CurrentPublishedSnapshotId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateOnly>("DateOfBirth")
                         .HasColumnType("date");
@@ -101,7 +104,7 @@ namespace NextAtlet.Infrastructure.Migrations
                     b.ToTable("AthleteProfiles");
                 });
 
-            modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.GuardianConsent", b =>
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.AthleteSiteSnapshot", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -110,8 +113,52 @@ namespace NextAtlet.Infrastructure.Migrations
                     b.Property<Guid>("AthleteProfileId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("ConsentedUtc")
+                    b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("GlobalSettings")
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("Layout")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<DateTime?>("PublishedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ThemeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ThemeVersion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1);
+
+                    b.Property<int>("Version")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1);
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AthleteProfileId");
+
+                    b.HasIndex("CreatedUtc")
+                        .IsDescending();
+
+                    b.HasIndex("ThemeId");
+
+                    b.ToTable("AthleteSiteSnapshots");
+                });
+
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.GuardianConsent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AthleteProfileId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("timestamp with time zone");
@@ -231,60 +278,6 @@ namespace NextAtlet.Infrastructure.Migrations
                     b.ToTable("ProfileLogins");
                 });
 
-            modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.SiteConfig", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("AthleteProfileId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("GlobalSettings")
-                        .HasColumnType("jsonb");
-
-                    b.Property<bool>("IsDraft")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Layout")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
-                    b.Property<DateTime?>("PublishedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("ThemeId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("ThemeVersion")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(1);
-
-                    b.Property<DateTime>("UpdatedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Version")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(1);
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ThemeId");
-
-                    b.HasIndex("UpdatedUtc")
-                        .IsDescending();
-
-                    b.HasIndex("AthleteProfileId", "IsDraft")
-                        .IsUnique();
-
-                    b.ToTable("SiteConfigs");
-                });
-
             modelBuilder.Entity("NextAtlet.Domain.Entities.Shared.MediaAsset", b =>
                 {
                     b.Property<Guid>("Id")
@@ -357,9 +350,6 @@ namespace NextAtlet.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("jsonb");
 
-                    b.Property<string>("MinimumCapability")
-                        .HasColumnType("jsonb");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -367,9 +357,6 @@ namespace NextAtlet.Infrastructure.Migrations
 
                     b.Property<string>("PreviewImageUrl")
                         .HasColumnType("text");
-
-                    b.Property<DateTime>("UpdatedUtc")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Version")
                         .ValueGeneratedOnAdd()
@@ -386,9 +373,8 @@ namespace NextAtlet.Infrastructure.Migrations
                             Id = new Guid("11111111-1111-1111-1111-111111111111"),
                             CreatedUtc = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             IsActive = true,
-                            Manifest = "{\"supportedSectionTypes\":[\"hero\",\"bio\"],\"colorSlots\":[\"primary\",\"secondary\",\"accent\"],\"fontSlots\":[\"headingFont\",\"bodyFont\"]}",
+                            Manifest = "{\"supportedSectionTypes\":[\"hero\",\"bio\"],\"colorSlots\":[\"primary\",\"accent\",\"background\"],\"fontSlots\":[\"heading\",\"body\"]}",
                             Name = "Classic",
-                            UpdatedUtc = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Version = 1
                         });
                 });
@@ -423,6 +409,25 @@ namespace NextAtlet.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.AthleteSiteSnapshot", b =>
+                {
+                    b.HasOne("NextAtlet.Domain.Entities.Athlete.AthleteProfile", "AthleteProfile")
+                        .WithMany()
+                        .HasForeignKey("AthleteProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("NextAtlet.Domain.Entities.Shared.Theme", "Theme")
+                        .WithMany()
+                        .HasForeignKey("ThemeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("AthleteProfile");
+
+                    b.Navigation("Theme");
                 });
 
             modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.GuardianConsent", b =>
@@ -482,25 +487,6 @@ namespace NextAtlet.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.SiteConfig", b =>
-                {
-                    b.HasOne("NextAtlet.Domain.Entities.Athlete.AthleteProfile", "AthleteProfile")
-                        .WithMany("SiteConfigs")
-                        .HasForeignKey("AthleteProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("NextAtlet.Domain.Entities.Shared.Theme", "Theme")
-                        .WithMany("SiteConfigs")
-                        .HasForeignKey("ThemeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("AthleteProfile");
-
-                    b.Navigation("Theme");
-                });
-
             modelBuilder.Entity("NextAtlet.Domain.Entities.Shared.MediaAsset", b =>
                 {
                     b.HasOne("NextAtlet.Domain.Entities.Athlete.AthleteProfile", "AthleteProfile")
@@ -516,13 +502,6 @@ namespace NextAtlet.Infrastructure.Migrations
                     b.Navigation("MediaAssets");
 
                     b.Navigation("ProfileLogins");
-
-                    b.Navigation("SiteConfigs");
-                });
-
-            modelBuilder.Entity("NextAtlet.Domain.Entities.Shared.Theme", b =>
-                {
-                    b.Navigation("SiteConfigs");
                 });
 
             modelBuilder.Entity("NextAtlet.Domain.Entities.Shared.User", b =>

@@ -106,19 +106,19 @@ public class AthletesController : ControllerBase
     }
 
     /// <summary>
-    /// Gets the draft SiteConfig for an athlete profile.
+    /// Gets the draft site snapshot for an athlete profile.
     /// </summary>
     [HttpGet("{id:guid}/config/draft")]
-    public async Task<ActionResult<SiteConfigDto>> GetDraftConfig(Guid id)
-        => Ok(await _sender.Send(new GetDraftSiteConfigQuery(id)));
+    public async Task<ActionResult<AthleteSiteSnapshotDto>> GetDraftConfig(Guid id)
+        => Ok(await _sender.Send(new GetDraftAthleteSiteSnapshotQuery(id)));
 
     /// <summary>
-    /// Updates the draft SiteConfig for an athlete profile.
+    /// Replaces the draft site snapshot for an athlete profile.
     /// Runs validation, sanitization, and optimistic concurrency checks.
     /// </summary>
     [HttpPut("{id:guid}/config/draft")]
-    public async Task<ActionResult<SiteConfigDto>> UpdateDraftConfig(Guid id, [FromBody] UpdateSiteConfigRequest request)
-        => Ok(await _sender.Send(new EditDraftSiteConfigCommand(
+    public async Task<ActionResult<AthleteSiteSnapshotDto>> UpdateDraftConfig(Guid id, [FromBody] UpdateAthleteSiteSnapshotRequest request)
+        => Ok(await _sender.Send(new EditDraftAthleteSiteSnapshotCommand(
             id,
             request.Layout,
             request.GlobalSettings,

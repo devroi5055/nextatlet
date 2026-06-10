@@ -1,9 +1,10 @@
 using MediatR;
 using Microsoft.Extensions.Options;
-using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Features.Account;
+using NextAtlet.Application.Abstractions.Persistence;
+using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Domain.Entities.Athlete;
 using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
 
@@ -23,20 +24,20 @@ public record RecordGuardianConsentCommand(
 
 public class RecordGuardianConsentCommandHandler : IRequestHandler<RecordGuardianConsentCommand>
 {
-    private readonly IAthleteProfileRepository _profiles;
+    private readonly IAthleteSiteRepository _sites;
     private readonly IGuardianConsentRepository _consents;
     private readonly UserProvisioner _userProvisioner;
     private readonly TermsOptions _terms;
     private readonly IUnitOfWork _unitOfWork;
 
     public RecordGuardianConsentCommandHandler(
-        IAthleteProfileRepository profiles,
+        IAthleteSiteRepository sites,
         IGuardianConsentRepository consents,
         UserProvisioner userProvisioner,
         IOptions<TermsOptions> terms,
         IUnitOfWork unitOfWork)
     {
-        _profiles = profiles;
+        _sites = sites;
         _consents = consents;
         _userProvisioner = userProvisioner;
         _terms = terms.Value;
@@ -45,7 +46,7 @@ public class RecordGuardianConsentCommandHandler : IRequestHandler<RecordGuardia
 
     public async Task Handle(RecordGuardianConsentCommand request, CancellationToken cancellationToken)
     {
-        var profile = await _profiles.GetByIdAsync(request.ProfileId, cancellationToken)
+        var profile = await _sites.GetByIdAsync(request.ProfileId, cancellationToken)
             ?? throw new DomainException(ErrorCodes.ProfileNotFound);
 
         // Idempotent + scoped: only a profile awaiting consent transitions. Already-Consented or
@@ -55,16 +56,17 @@ public class RecordGuardianConsentCommandHandler : IRequestHandler<RecordGuardia
 
         // The authenticated guardian — resolved/provisioned from verified token claims.
         var guardian = await _userProvisioner.GetOrCreateAsync(request.Email, request.AuthProviderId, cancellationToken);
-
-        _consents.Add(new GuardianConsent
+        var consent = new GuardianConsent
         {
             AthleteProfileId = profile.Id,
             GuardianUserId = guardian.Id,          // WHO //TODO: who needs to contain the guardians name
             Method = ConsentMethod.VerifiedEmail,  // HOW
             TermsVersion = _terms.CurrentVersion,  // WHAT
-            ConsentedUtc = DateTime.UtcNow         // WHEN
-        });
+        };
 
+        consent.SetCreated();
+        _consents.Add(consent);
+        
         profile.ConsentState = ConsentState.Consented; // lifts the publish gate
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);

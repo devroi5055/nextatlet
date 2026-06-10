@@ -19,7 +19,8 @@ public static class TestAthletes
     {
         var athlete = TestFixture.Create().Build<AthleteProfile>()
             .Without(a => a.ProfileLogins)
-            .Without(a => a.SiteConfigs)
+            .Without(a => a.CurrentDraftSnapshotId)
+            .Without(a => a.CurrentPublishedSnapshotId)
             .Without(a => a.MediaAssets)
             .With(a => a.Slug, "athlete-" + Guid.NewGuid().ToString("N")[..8])
             .With(a => a.DisplayName, "Maria Jensen")

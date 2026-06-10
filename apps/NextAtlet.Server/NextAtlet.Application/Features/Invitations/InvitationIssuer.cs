@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Options;
+using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Abstractions.Services;
-using NextAtlet.Application.Common.Options;
 using NextAtlet.Domain.Entities.Athlete;
 
 namespace NextAtlet.Application.Features.Invitations;

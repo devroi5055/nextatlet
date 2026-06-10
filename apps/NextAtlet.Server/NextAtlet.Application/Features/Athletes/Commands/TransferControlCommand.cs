@@ -1,7 +1,8 @@
 using MediatR;
-using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Time;
+using NextAtlet.Application.Abstractions.Persistence;
+using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Domain.Authorization;
 using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
 using NextAtlet.Domain.Policies;
@@ -26,7 +27,7 @@ public class TransferControlCommandHandler : IRequestHandler<TransferControlComm
     public const string ToAthlete = "athlete";
     public const string ToGuardian = "guardian";
 
-    private readonly IAthleteProfileRepository _profiles;
+    private readonly IAthleteSiteRepository _sites;
     private readonly IProfileLoginRepository _logins;
     private readonly IUserRepository _users;
     private readonly PermissionResolver _permissions;
@@ -34,14 +35,14 @@ public class TransferControlCommandHandler : IRequestHandler<TransferControlComm
     private readonly IClock _clock;
 
     public TransferControlCommandHandler(
-        IAthleteProfileRepository profiles,
+        IAthleteSiteRepository sites,
         IProfileLoginRepository logins,
         IUserRepository users,
         PermissionResolver permissions,
         IUnitOfWork unitOfWork,
         IClock clock)
     {
-        _profiles = profiles;
+        _sites = sites;
         _logins = logins;
         _users = users;
         _permissions = permissions;
@@ -54,7 +55,7 @@ public class TransferControlCommandHandler : IRequestHandler<TransferControlComm
         if (request.TransferTo is not (ToAthlete or ToGuardian))
             throw new DomainException(ErrorCodes.TransferTargetInvalid, request.TransferTo);
 
-        var profile = await _profiles.GetByIdAsync(request.ProfileId, cancellationToken)
+        var profile = await _sites.GetByIdAsync(request.ProfileId, cancellationToken)
             ?? throw new DomainException(ErrorCodes.ProfileNotFound);
 
         var caller = await _users.GetByAuthProviderIdAsync(request.CallerAuthProviderId, cancellationToken)

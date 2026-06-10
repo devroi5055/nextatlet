@@ -22,7 +22,7 @@ public class ProfileLogin : AuditableEntity
 
     // Navigation — non-nullable to match non-nullable FKs
     public User User { get; set; } = default!;
-    public AthleteProfile AthleteProfile { get; set; } = default!;
+    public AthleteSite AthleteSite { get; set; } = default!;
 
     // Factory methods — set role + status only. A login is created Active; permissions are derived,
     // never stored. (Pending state for an unaccepted invite now lives on the Invitation, not here.)

@@ -1,5 +1,6 @@
 using MediatR;
 using NextAtlet.Application.Abstractions.Persistence;
+using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Time;
@@ -30,15 +31,15 @@ public class GuardianRegisterAthleteCommandHandler
     : AthleteRegistrationHandlerBase, IRequestHandler<GuardianRegisterAthleteCommand, AthleteProfileDto>
 {
     public GuardianRegisterAthleteCommandHandler(
-        IAthleteProfileRepository profiles,
+        IAthleteSiteRepository sites,
         IProfileLoginRepository logins,
         IThemeRepository themes,
-        ISiteConfigRepository siteConfigs,
+        IAthleteSiteSnapshotRepository siteSnapshots,
         UserProvisioner userProvisioner,
         InvitationIssuer inviter,
         IClock clock,
         IUnitOfWork unitOfWork)
-        : base(profiles, logins, themes, siteConfigs, userProvisioner, inviter, clock, unitOfWork) { }
+        : base(sites, logins, themes, siteSnapshots, userProvisioner, inviter, clock, unitOfWork) { }
 
     public async Task<AthleteProfileDto> Handle(GuardianRegisterAthleteCommand request, CancellationToken cancellationToken)
     {

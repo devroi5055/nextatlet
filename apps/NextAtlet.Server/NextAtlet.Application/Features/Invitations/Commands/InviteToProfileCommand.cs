@@ -1,8 +1,9 @@
 using MediatR;
-using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Time;
+using NextAtlet.Application.Abstractions.Persistence;
+using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Domain.Enumerations;
 
 namespace NextAtlet.Application.Features.Invitations.Commands;
@@ -22,7 +23,7 @@ public record InviteToProfileCommand(
 public class InviteToProfileCommandHandler : IRequestHandler<InviteToProfileCommand, InvitationDto>
 {
     private readonly IUserRepository _users;
-    private readonly IAthleteProfileRepository _profiles;
+    private readonly IAthleteSiteRepository _sites;
     private readonly IProfileLoginRepository _logins;
     private readonly IInvitationRepository _invitations;
     private readonly InvitationIssuer _inviter;
@@ -31,7 +32,7 @@ public class InviteToProfileCommandHandler : IRequestHandler<InviteToProfileComm
 
     public InviteToProfileCommandHandler(
         IUserRepository users,
-        IAthleteProfileRepository profiles,
+        IAthleteSiteRepository sites,
         IProfileLoginRepository logins,
         IInvitationRepository invitations,
         InvitationIssuer inviter,
@@ -39,7 +40,7 @@ public class InviteToProfileCommandHandler : IRequestHandler<InviteToProfileComm
         IClock clock)
     {
         _users = users;
-        _profiles = profiles;
+        _sites = sites;
         _logins = logins;
         _invitations = invitations;
         _inviter = inviter;
@@ -57,7 +58,7 @@ public class InviteToProfileCommandHandler : IRequestHandler<InviteToProfileComm
         var caller = await _users.GetByAuthProviderIdAsync(request.CallerAuthProviderId, cancellationToken)
             ?? throw new DomainException(ErrorCodes.NotAuthorized);
 
-        var profile = await _profiles.GetByIdAsync(request.ProfileId, cancellationToken)
+        var profile = await _sites.GetByIdAsync(request.ProfileId, cancellationToken)
             ?? throw new DomainException(ErrorCodes.ProfileNotFound);
 
         // Authorization: only someone with an Active login on this profile may invite to it.

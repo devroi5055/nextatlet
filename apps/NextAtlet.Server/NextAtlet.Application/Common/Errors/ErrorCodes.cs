@@ -14,7 +14,10 @@ public static class ErrorCodes
     public const string DraftConfigNotFound     = "config.draft.not_found";
     public const string DraftVersionConflict    = "config.draft.version_conflict";
     public const string SectionTypeNotSupported = "section.type_not_supported";
+    public const string SectionNotPermitted     = "section.not_permitted";
     public const string SectionValidationFailed = "section.validation_failed";
+    public const string ThemeNotFound           = "theme.not_found";
+    public const string ThemeNotPermitted       = "theme.not_permitted";
     public const string ProfileAlreadyExists    = "profile.already_exists";
     public const string GuardianCannotRegisterAdult = "guardian.cannot_register_adult";
 

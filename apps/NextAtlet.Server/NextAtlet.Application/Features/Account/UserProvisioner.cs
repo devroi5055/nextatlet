@@ -1,4 +1,5 @@
 using NextAtlet.Application.Abstractions.Persistence;
+using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Domain.Entities.Shared;
 
 namespace NextAtlet.Application.Features.Account;

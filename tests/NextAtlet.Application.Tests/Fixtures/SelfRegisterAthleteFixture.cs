@@ -1,12 +1,12 @@
-﻿using AutoFixture;
+using AutoFixture;
 using Microsoft.Extensions.Options;
-using NextAtlet.Application.Abstractions.Persistence;
-using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Common.Time;
 using NextAtlet.Application.Features.Account;
 using NextAtlet.Application.Features.Athletes.Commands;
 using NextAtlet.Application.Features.Invitations;
+using NextAtlet.Application.Abstractions.Persistence;
+using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Application.Tests.Shared;
 using NextAtlet.Domain.Entities.Shared;
 using NSubstitute;
@@ -18,7 +18,7 @@ public class SelfRegisterAthleteFixture
     public IUserRepository UserRepository { get; }
     public IInvitationRepository InvitationRepository { get; }
     public IThemeRepository ThemeRepository { get; }
-    public ISiteConfigRepository SiteConfigRepository { get;  }
+    public IAthleteSiteSnapshotRepository SiteSnapshotRepository { get;  }
     public IEmailService EmailService { get; }
     public IUnitOfWork UnitOfWork { get; }
     public IClock Clock { get; }
@@ -51,7 +51,7 @@ public class SelfRegisterAthleteFixture
         AthleteRepository = Substitute.For<IAthleteProfileRepository>();
         ProfileLoginRepository = Substitute.For<IProfileLoginRepository>();
         ThemeRepository = Substitute.For<IThemeRepository>();
-        SiteConfigRepository = Substitute.For<ISiteConfigRepository>();
+        SiteSnapshotRepository = Substitute.For<IAthleteSiteSnapshotRepository>();
         UserRepository = Substitute.For<IUserRepository>();
         InvitationRepository = Substitute.For<IInvitationRepository>();
         EmailService = Substitute.For<IEmailService>();
@@ -72,7 +72,7 @@ public class SelfRegisterAthleteFixture
             AthleteRepository,
             ProfileLoginRepository,
             ThemeRepository,
-            SiteConfigRepository,
+            SiteSnapshotRepository,
             UserProvisioner,
             InvitationIssuer,
             Clock,

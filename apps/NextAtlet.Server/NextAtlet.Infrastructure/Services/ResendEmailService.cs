@@ -2,8 +2,9 @@ using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Application.Common.Options;
+using NextAtlet.Application.Abstractions.Persistence;
+using NextAtlet.Application.Abstractions.Services;
 
 namespace NextAtlet.Infrastructure.Services;
 

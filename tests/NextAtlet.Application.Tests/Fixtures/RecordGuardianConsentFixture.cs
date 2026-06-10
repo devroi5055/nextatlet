@@ -1,8 +1,9 @@
 using Microsoft.Extensions.Options;
-using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Features.Account;
 using NextAtlet.Application.Features.Athletes.Commands;
+using NextAtlet.Application.Abstractions.Persistence;
+using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Domain.Entities.Shared;
 using NSubstitute;
 using TestUsers = NextAtlet.Application.Tests.Shared.TestData.Users;

@@ -1,13 +1,13 @@
 using MediatR;
 using Microsoft.Extensions.Options;
-using NextAtlet.Application.Abstractions.Persistence;
-using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Common.Time;
 using NextAtlet.Application.Features.Account;
 using NextAtlet.Application.Features.Invitations;
+using NextAtlet.Application.Abstractions.Persistence;
+using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Domain.Entities.Athlete;
 using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
 using NextAtlet.Domain.Policies;
@@ -39,17 +39,17 @@ public class SelfRegisterAthleteCommandHandler
     private readonly IEmailService _email;
 
     public SelfRegisterAthleteCommandHandler(
-        IAthleteProfileRepository profiles,
+        IAthleteSiteRepository sites,
         IProfileLoginRepository logins,
         IThemeRepository themes,
-        ISiteConfigRepository siteConfigs,
+        IAthleteSiteSnapshotRepository siteSnapshots,
         UserProvisioner userProvisioner,
         InvitationIssuer inviter,
         IClock clock,
         IOptions<AgeThresholdOptions> ageThresholds,
         IEmailService email,
         IUnitOfWork unitOfWork)
-        : base(profiles, logins, themes, siteConfigs, userProvisioner, inviter, clock, unitOfWork)
+        : base(sites, logins, themes, siteSnapshots, userProvisioner, inviter, clock, unitOfWork)
     {
         _thresholds = ageThresholds.Value;
         _email = email;
@@ -74,7 +74,7 @@ public class SelfRegisterAthleteCommandHandler
         var caller = await GetOrCreateUserAsync(request.Email, request.AuthProviderId, cancellationToken);
 
         // A user can't self-register two owned profiles.
-        if (await Profiles.GetOwnedByUserIdAsync(caller.Id, cancellationToken) is not null)
+        if (await Sites.GetOwnedByUserIdAsync(caller.Id, cancellationToken) is not null)
             throw new DomainException(ErrorCodes.ProfileAlreadyExists);
 
         // Self-register always starts AthleteControlled — the athlete chose to create their own profile.

@@ -12,12 +12,12 @@ public class NextAtletDbContext : DbContext
     public NextAtletDbContext(DbContextOptions<NextAtletDbContext> options) : base(options) { }
 
     public DbSet<User> Users { get; set; }
-    public DbSet<AthleteProfile> AthleteProfiles { get; set; }
+    public DbSet<AthleteSite> AthleteSites { get; set; }
     public DbSet<ProfileLogin> ProfileLogins { get; set; }
     public DbSet<Invitation> Invitations { get; set; }
     public DbSet<GuardianConsent> GuardianConsents { get; set; }
     public DbSet<Theme> Themes { get; set; }
-    public DbSet<SiteConfig> SiteConfigs { get; set; }
+    public DbSet<AthleteSiteSnapshot> AthleteSiteSnapshots { get; set; }
     public DbSet<MediaAsset> MediaAssets { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -29,15 +29,13 @@ public class NextAtletDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Email).IsRequired().HasMaxLength(256);
-            // Nullable: unclaimed users (e.g. invited guardians) have no AuthProviderId yet.
             entity.Property(e => e.AuthProviderId).HasMaxLength(256);
             entity.HasIndex(e => e.Email).IsUnique();
-            // Postgres treats NULLs as distinct, so many unclaimed users coexist; claimed subjects stay unique.
             entity.HasIndex(e => e.AuthProviderId).IsUnique();
         });
 
         // AthleteProfile configuration
-        modelBuilder.Entity<AthleteProfile>(entity =>
+        modelBuilder.Entity<AthleteSite>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Slug).IsRequired().HasMaxLength(256);
@@ -46,11 +44,9 @@ public class NextAtletDbContext : DbContext
             entity.Property(e => e.DateOfBirth).IsRequired();
             entity.Property(e => e.DefaultLocaleId).IsRequired().HasMaxLength(2).HasDefaultValue("da");
             entity.Property(e => e.VisibilityStateId).IsRequired().HasMaxLength(20).HasDefaultValue("Public");
-            // ControlMode: stored, explicit fact. Persist enum as its string name; default for existing rows.
             entity.Property(e => e.ControlMode)
                 .HasConversion<string>().IsRequired().HasMaxLength(30)
                 .HasDefaultValue(ControlMode.AthleteControlled);
-            // ConsentState: guardian-consent gate (GDPR Art. 8). Existing rows default to NotRequired.
             entity.Property(e => e.ConsentState)
                 .HasConversion<string>().IsRequired().HasMaxLength(30)
                 .HasDefaultValue(ConsentState.NotRequired);
@@ -64,9 +60,7 @@ public class NextAtletDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.RoleId).IsRequired().HasMaxLength(50);
-            // Status is an enum — persist as its string name, not the underlying int.
             entity.Property(e => e.Status).HasConversion<string>().IsRequired().HasMaxLength(20);
-            // Guardian-only permissions VO — stored as jsonb (null for AthleteOwner logins).
             entity.Property(e => e.Permissions).HasJsonbConversion();
             entity.HasIndex(e => new { e.UserId, e.AthleteProfileId }).IsUnique();
             entity.HasIndex(e => e.UserId);
@@ -77,7 +71,7 @@ public class NextAtletDbContext : DbContext
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(e => e.AthleteProfile)
+            entity.HasOne(e => e.AthleteSite)
                 .WithMany(ap => ap.ProfileLogins)
                 .HasForeignKey(e => e.AthleteProfileId)
                 .OnDelete(DeleteBehavior.Cascade);
@@ -89,20 +83,16 @@ public class NextAtletDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.RoleId).IsRequired().HasMaxLength(50);
             entity.Property(e => e.Email).IsRequired().HasMaxLength(256);
-            // Status is an enum — persist as its string name, not the underlying int.
             entity.Property(e => e.Status).HasConversion<string>().IsRequired().HasMaxLength(20);
             entity.Property(e => e.ExpiresUtc).IsRequired();
-
-            // Fast lookup of "pending invites for this email" (drives /me + anti double-send).
             entity.HasIndex(e => new { e.Email, e.Status });
             entity.HasIndex(e => e.TargetProfileId);
 
-            entity.HasOne(e => e.TargetProfile)
+            entity.HasOne(e => e.TargetSite)
                 .WithMany()
                 .HasForeignKey(e => e.TargetProfileId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Audit FK to the inviter — keep the row if the inviter is removed; don't cascade-delete history.
             entity.HasOne(e => e.InvitedBy)
                 .WithMany()
                 .HasForeignKey(e => e.InvitedByUserId)
@@ -113,18 +103,16 @@ public class NextAtletDbContext : DbContext
         modelBuilder.Entity<GuardianConsent>(entity =>
         {
             entity.HasKey(e => e.Id);
-            // Method is an enum — persist as its string name.
             entity.Property(e => e.Method).HasConversion<string>().IsRequired().HasMaxLength(30);
             entity.Property(e => e.TermsVersion).IsRequired().HasMaxLength(50);
-            entity.Property(e => e.ConsentedUtc).IsRequired();
+            entity.Property(e => e.CreatedUtc).IsRequired();
             entity.HasIndex(e => e.AthleteProfileId);
 
-            entity.HasOne(e => e.AthleteProfile)
+            entity.HasOne(e => e.AthleteSite)
                 .WithMany()
                 .HasForeignKey(e => e.AthleteProfileId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Audit FK to the guardian — never cascade-delete the consent evidence.
             entity.HasOne(e => e.Guardian)
                 .WithMany()
                 .HasForeignKey(e => e.GuardianUserId)
@@ -138,28 +126,27 @@ public class NextAtletDbContext : DbContext
             entity.Property(e => e.Name).IsRequired().HasMaxLength(256);
             entity.Property(e => e.Version).IsRequired().HasDefaultValue(1);
             entity.Property(e => e.Manifest).HasJsonbConversion().IsRequired();
-            entity.Property(e => e.MinimumCapability).HasJsonbConversion();
             entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
         });
 
-        // SiteConfig configuration
-        modelBuilder.Entity<SiteConfig>(entity =>
+        // AthleteSiteSnapshot configuration
+        modelBuilder.Entity<AthleteSiteSnapshot>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.ThemeVersion).IsRequired().HasDefaultValue(1);
             entity.Property(e => e.Layout).HasJsonbConversion().IsRequired();
             entity.Property(e => e.GlobalSettings).HasJsonbConversion();
             entity.Property(e => e.Version).IsRequired().HasDefaultValue(1);
-            entity.HasIndex(e => new { e.AthleteProfileId, e.IsDraft }).IsUnique();
-            entity.HasIndex(e => e.UpdatedUtc).IsDescending();
+            entity.HasIndex(e => e.AthleteProfileId);
+            entity.HasIndex(e => e.CreatedUtc).IsDescending();
 
-            entity.HasOne(e => e.AthleteProfile)
-                .WithMany(ap => ap.SiteConfigs)
+            entity.HasOne(e => e.AthleteSite)
+                .WithMany()
                 .HasForeignKey(e => e.AthleteProfileId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(e => e.Theme)
-                .WithMany(t => t.SiteConfigs)
+                .WithMany()
                 .HasForeignKey(e => e.ThemeId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
@@ -168,7 +155,6 @@ public class NextAtletDbContext : DbContext
         modelBuilder.Entity<MediaAsset>(entity =>
         {
             entity.HasKey(e => e.Id);
-            // Type is an Enumeration reference type — persist its stable Id, rehydrate via FromId.
             entity.Property(e => e.Type)
                 .HasConversion(t => t.Id, id => MediaAssetType.FromId(id))
                 .IsRequired().HasMaxLength(20);
@@ -176,11 +162,11 @@ public class NextAtletDbContext : DbContext
             entity.Property(e => e.IsClubBranding).IsRequired().HasDefaultValue(false);
             entity.Property(e => e.StorageKey).IsRequired().HasMaxLength(512);
             entity.Property(e => e.AltText).HasMaxLength(512);
-            entity.HasIndex(e => e.AthleteProfileId);
+            entity.HasIndex(e => e.AthleteSiteId);
 
-            entity.HasOne(e => e.AthleteProfile)
+            entity.HasOne(e => e.AthleteSite)
                 .WithMany(ap => ap.MediaAssets)
-                .HasForeignKey(e => e.AthleteProfileId)
+                .HasForeignKey(e => e.AthleteSiteId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -195,8 +181,8 @@ public class NextAtletDbContext : DbContext
         var classicManifest = new ThemeManifest
         {
             SupportedSectionTypes = ["hero", "bio"],
-            ColorSlots = ["primary", "secondary", "accent"],
-            FontSlots = ["headingFont", "bodyFont"]
+            ColorSlots = ["primary", "accent", "background"],
+            FontSlots = ["heading", "body"]
         };
 
         modelBuilder.Entity<Theme>().HasData(new Theme
@@ -205,7 +191,6 @@ public class NextAtletDbContext : DbContext
             Name = "Classic",
             Version = 1,
             Manifest = classicManifest,
-            MinimumCapability = null, // free theme — available to all tiers
             IsActive = true,
         });
     }

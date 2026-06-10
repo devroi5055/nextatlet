@@ -29,7 +29,7 @@ public class RecordGuardianConsentTests
             c.GuardianUserId == guardian.Id &&
             c.Method == ConsentMethod.VerifiedEmail &&
             c.TermsVersion == RecordGuardianConsentFixture.TermsVersion &&
-            c.ConsentedUtc != default));
+            c.CreatedUtc != default));
         Assert.Equal(ConsentState.Consented, profile.ConsentState);
     }
 

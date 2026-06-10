@@ -12,7 +12,7 @@ namespace NextAtlet.Domain.Entities.Shared;
 public class MediaAsset : CreatedOnlyEntity
 {
     // Owner — XOR (exactly one non-null)
-    public Guid? AthleteProfileId { get; set; }
+    public Guid? AthleteSiteId { get; set; }
     public Guid? OrganizationId { get; set; }
 
     public required MediaAssetType Type { get; set; }
@@ -34,7 +34,7 @@ public class MediaAsset : CreatedOnlyEntity
     public string? AltText { get; set; }
 
     // Navigation — nullable because owner is XOR
-    public AthleteProfile? AthleteProfile { get; set; }
+    public AthleteSite? AthleteSite { get; set; }
 
     //TODO: implement Organization
     // public Organization.Organization? Organization { get; set; }

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Abstractions.Services;
 
 namespace NextAtlet.Infrastructure.Services;
