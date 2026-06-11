@@ -6,9 +6,12 @@ namespace NextAtlet.Domain.ValueObjects.Sections;
 public class BioSectionData : SectionData
 {
     public const string TypeId = "bio";
-
     public override string TypeKey => TypeId;
-
+    public static class Variants
+    {
+        public const string Classic = "classic";
+    }
+    public string Variant { get; set; } = Variants.Classic; 
     public LocalizedText Bio { get; set; } = new();
     public List<HighlightItem> HighlightItems { get; set; } = [];
 }

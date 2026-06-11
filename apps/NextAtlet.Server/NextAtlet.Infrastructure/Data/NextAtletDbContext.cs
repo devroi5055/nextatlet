@@ -3,7 +3,13 @@ using NextAtlet.Domain.Entities.Athlete;
 using NextAtlet.Domain.Entities.Shared;
 using NextAtlet.Domain.Enumerations;
 using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
+using NextAtlet.Domain.strings;
 using NextAtlet.Domain.ValueObjects;
+using NextAtlet.Domain.ValueObjects.Sections;
+using NextAtlet.Domain.ValueObjects.Theme.Builders;
+using NextAtlet.Domain.ValueObjects.ThemeStyle;
+using System.Globalization;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace NextAtlet.Infrastructure.Data;
 
@@ -178,12 +184,7 @@ public class NextAtletDbContext : DbContext
     {
         var classicThemeId = new Guid("11111111-1111-1111-1111-111111111111");
 
-        var classicManifest = new ThemeManifest
-        {
-            SupportedSectionTypes = ["hero", "bio"],
-            ColorSlots = ["primary", "accent", "background"],
-            FontSlots = ["heading", "body"]
-        };
+        var classicManifest = ClassicTheme.Manifest();
 
         modelBuilder.Entity<Theme>().HasData(new Theme
         {

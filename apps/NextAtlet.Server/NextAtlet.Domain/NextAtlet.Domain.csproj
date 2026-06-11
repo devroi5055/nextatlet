@@ -11,6 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Capabilities\" />
     <Folder Include="Entities\Organization\" />
     <Folder Include="Entities\Membership\" />
     <Folder Include="Entities\Billing\" />
