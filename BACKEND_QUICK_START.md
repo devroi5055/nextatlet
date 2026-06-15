@@ -2,6 +2,13 @@
 
 **Status:** ✅ Build complete. Database and API ready for integration testing.
 
+> **⚠️ Updated after the CQRS/MediatR refactor (2026-06-03).** The architecture now uses
+> **MediatR** (`IRequest`/handlers via `ISender`) over a **repository + Unit of Work** layer,
+> with the dependency direction inverted (`Infrastructure → Application`). Section payloads are
+> **typed polymorphic DTOs** (the `type` discriminator lives inside `data`), not dictionaries.
+> **For current request/response shapes use `NextAtlet.Api/NextAtlet.Api.http`** — some JSON
+> examples below predate the typed-section + MediatR changes. See `docs/08` (ADR) and `REFACTOR_PLAN.md`.
+
 ## Prerequisites
 
 - .NET 10 SDK
@@ -135,26 +142,32 @@ curl -X PUT http://localhost:5000/api/athletes/{id}/config/draft \
 
 ### Layers
 
-- **Domain** — Entities (User, AthleteProfile, ProfileLogin, Theme, SiteConfig, MediaAsset)
-- **Infrastructure** — DbContext, section registry, sanitization service
-- **Application** — Commands (CreateAthlete, UpdateDraftConfig), Queries (GetDraftConfig)
-- **API** — Controllers (AthletesController), dependency injection, middleware
+- **Domain** — Entities, enums, value objects (incl. typed `SectionData` hierarchy, `LocalizedText`)
+- **Application** — MediatR `IRequest`/handlers (CreateAthlete, UpdateDraftConfig, GetDraftConfig), repository + `IUnitOfWork` **interfaces**, service interfaces, DTOs. No EF here.
+- **Infrastructure** — `NextAtletDbContext`, repository + `EfUnitOfWork` implementations, section registry, sanitization service. References Application.
+- **API** — Controllers (thin, inject `ISender`), `GlobalExceptionHandler`, DI wiring in `Program.cs`
+
+> Dependency direction: `Api → Application ← Infrastructure`, both → `Domain`. Handlers never touch `DbContext`. See `docs/08`.
 
 ### Section Registry Pattern
 
 Extensible validator pattern for layout sections:
 
 ```csharp
+// ISectionValidator lives in Infrastructure; ValidationResult is an Application abstraction.
+// Validators receive the already-typed, polymorphically-deserialized payload.
 public interface ISectionValidator
 {
     string SectionType { get; }
-    ValidationResult Validate(Section section);
+    ValidationResult Validate(SectionData data);
 }
 
 // In registry:
 registry.Register(new HeroSectionValidator());
 registry.Register(new BioSectionValidator());
 // Step 4+: registry.Register(new ResultsSectionValidator());
+
+// Application talks to ISectionTypeRegistry (IsSupported + Validate), not to individual validators.
 ```
 
 ### Supported Section Types (Step 1)

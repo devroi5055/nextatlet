@@ -1,93 +1,52 @@
+using NextAtlet.Application.Abstractions.Persistence;
+using NextAtlet.Application.Abstractions.Services;
+using NextAtlet.Domain.ValueObjects.Sections;
+
 namespace NextAtlet.Infrastructure.Services.SectionRegistry;
 
 /// <summary>
-/// Validates Bio sections.
-/// Expected data structure:
-/// {
-///   "bio": { "da": "...", "en": "..." },
-///   "highlightItems": [
-///     { "label": { "da": "...", "en": "..." }, "value": "..." }
-///   ]
-/// }
+/// Validates Bio sections (<see cref="BioSectionData"/>).
+/// Shape is guaranteed by the type; this asserts business rules only.
 /// </summary>
 public class BioSectionValidator : ISectionValidator
 {
-    public string SectionType => "bio";
+    public string SectionType => BioSectionData.TypeId;
 
-    public ValidationResult Validate(Section section)
+    public ValidationResult Validate(SectionData data)
     {
         var result = new ValidationResult { IsValid = true };
 
-        if (section.Data == null)
+        if (data is not BioSectionData bio)
         {
             result.IsValid = false;
-            result.Errors.Add("Bio section data cannot be null");
+            result.Errors.Add($"Expected '{BioSectionData.TypeId}' section data but got '{data.TypeKey}'");
             return result;
         }
 
-        // Validate bio text (required, with translations)
-        if (!ValidateTranslatedField(section.Data, "bio"))
+        // Bio text is required and must carry at least one locale.
+        if (!bio.Bio.HasAnyValue)
         {
             result.IsValid = false;
-            result.Errors.Add("Bio text must be a localized object with 'da' and/or 'en' keys");
+            result.Errors.Add("Bio text must have at least one of 'da' or 'en'");
         }
 
-        // Validate highlightItems (optional array)
-        if (section.Data.TryGetValue("highlightItems", out var items) && items != null)
+        for (var i = 0; i < bio.HighlightItems.Count; i++)
         {
-            if (items is not System.Collections.IEnumerable enumItems)
+            var item = bio.HighlightItems[i];
+
+            if (!item.Label.HasAnyValue)
             {
                 result.IsValid = false;
-                result.Errors.Add("Bio highlightItems must be an array");
+                result.Errors.Add($"Bio highlightItem[{i}].label must have at least one of 'da' or 'en'");
             }
-            else
-            {
-                int itemIndex = 0;
-                foreach (var item in enumItems)
-                {
-                    if (item is Dictionary<string, object> highlightItem)
-                    {
-                        if (!ValidateTranslatedField(highlightItem, "label"))
-                        {
-                            result.IsValid = false;
-                            result.Errors.Add($"Bio highlightItem[{itemIndex}].label must be a localized object with 'da' and/or 'en' keys");
-                        }
 
-                        if (!highlightItem.TryGetValue("value", out var value) || value == null || value is not string)
-                        {
-                            result.IsValid = false;
-                            result.Errors.Add($"Bio highlightItem[{itemIndex}].value must be a non-empty string");
-                        }
-                    }
-                    itemIndex++;
-                }
+            if (string.IsNullOrWhiteSpace(item.Value))
+            {
+                result.IsValid = false;
+                result.Errors.Add($"Bio highlightItem[{i}].value must be a non-empty string");
             }
         }
 
         return result;
-    }
-
-    private bool ValidateTranslatedField(Dictionary<string, object> data, string fieldName)
-    {
-        if (!data.TryGetValue(fieldName, out var field) || field == null)
-            return false;
-
-        if (field is not Dictionary<string, object> translations)
-        {
-            // Try to deserialize if it's a JsonElement or similar
-            if (field is System.Text.Json.JsonElement jsonElement)
-            {
-                translations = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(jsonElement.GetRawText())
-                    ?? new Dictionary<string, object>();
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        // At least one of 'da' or 'en' must be present
-        var hasLocale = translations.ContainsKey("da") || translations.ContainsKey("en");
-        return hasLocale;
     }
 }

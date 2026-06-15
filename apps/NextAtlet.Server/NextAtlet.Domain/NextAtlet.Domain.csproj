@@ -10,4 +10,10 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Capabilities\" />
+    <Folder Include="Entities\Membership\" />
+    <Folder Include="Entities\Billing\" />
+  </ItemGroup>
+
 </Project>

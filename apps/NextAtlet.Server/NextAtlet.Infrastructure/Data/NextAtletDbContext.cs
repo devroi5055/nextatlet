@@ -1,146 +1,67 @@
 using Microsoft.EntityFrameworkCore;
-using NextAtlet.Domain.Entities;
+using NextAtlet.Application.Common.Time;
+using NextAtlet.Domain.Common;
+using NextAtlet.Domain.Entities.Athlete;
+using NextAtlet.Domain.Entities.AthleteProfile;
+using NextAtlet.Domain.Entities.Organization;
+using NextAtlet.Domain.Entities.Shared;
 
 namespace NextAtlet.Infrastructure.Data;
 
 public class NextAtletDbContext : DbContext
 {
-    public NextAtletDbContext(DbContextOptions<NextAtletDbContext> options) : base(options) { }
+    private readonly IClock _clock;
+
+    public NextAtletDbContext(DbContextOptions<NextAtletDbContext> options, IClock clock) 
+        : base(options) 
+    {
+        _clock = clock;
+    }
 
     public DbSet<User> Users { get; set; }
-    public DbSet<AthleteProfile> AthleteProfiles { get; set; }
+    public DbSet<AthleteSite> AthleteSites { get; set; }
     public DbSet<ProfileLogin> ProfileLogins { get; set; }
+    public DbSet<Invitation> Invitations { get; set; }
+    public DbSet<GuardianConsent> GuardianConsents { get; set; }
     public DbSet<Theme> Themes { get; set; }
-    public DbSet<SiteConfig> SiteConfigs { get; set; }
+    public DbSet<AthleteSiteSnapshot> AthleteSiteSnapshots { get; set; }
     public DbSet<MediaAsset> MediaAssets { get; set; }
+    public DbSet<Organization> Organizations { get; set; }
+    public DbSet<ChangeRequest> ChangeRequests { get; set; }
+    public DbSet<Membership> Memberships{ get; set; }
+    public DbSet<OrganizationLogin> OrganizationLogins { get; set; }
+    public DbSet<OrganizationSiteSnapshot> OrganizationSiteSnapShopts { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-
-        // User configuration
-        modelBuilder.Entity<User>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Email).IsRequired().HasMaxLength(256);
-            entity.Property(e => e.AuthProviderId).IsRequired().HasMaxLength(256);
-            entity.HasIndex(e => e.Email).IsUnique();
-            entity.HasIndex(e => e.AuthProviderId).IsUnique();
-        });
-
-        // AthleteProfile configuration
-        modelBuilder.Entity<AthleteProfile>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Slug).IsRequired().HasMaxLength(256);
-            entity.Property(e => e.DisplayName).IsRequired().HasMaxLength(256);
-            entity.Property(e => e.Sport).IsRequired().HasMaxLength(50).HasDefaultValue("judo");
-            entity.Property(e => e.DateOfBirth).IsRequired();
-            entity.Property(e => e.DefaultLocale).IsRequired().HasMaxLength(2).HasDefaultValue("da");
-            entity.Property(e => e.VisibilityState).IsRequired().HasMaxLength(20).HasDefaultValue("Public");
-            entity.HasIndex(e => e.Slug).IsUnique();
-            entity.HasIndex(e => e.Sport);
-            entity.HasIndex(e => e.CreatedUtc).IsDescending();
-        });
-
-        // ProfileLogin configuration
-        modelBuilder.Entity<ProfileLogin>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Role).IsRequired().HasMaxLength(50);
-            entity.Property(e => e.Status).IsRequired().HasMaxLength(20).HasDefaultValue("Active");
-            entity.HasIndex(e => new { e.UserId, e.AthleteProfileId }).IsUnique();
-            entity.HasIndex(e => e.UserId);
-            entity.HasIndex(e => e.AthleteProfileId);
-
-            entity.HasOne(e => e.User)
-                .WithMany(u => u.ProfileLogins)
-                .HasForeignKey(e => e.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasOne(e => e.AthleteProfile)
-                .WithMany(ap => ap.ProfileLogins)
-                .HasForeignKey(e => e.AthleteProfileId)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        // Theme configuration
-        modelBuilder.Entity<Theme>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Name).IsRequired().HasMaxLength(256);
-            entity.Property(e => e.Version).IsRequired().HasDefaultValue(1);
-            entity.Property(e => e.Manifest).IsRequired().HasColumnType("jsonb");
-            entity.Property(e => e.MinimumCapability).HasColumnType("jsonb");
-            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
-        });
-
-        // SiteConfig configuration
-        modelBuilder.Entity<SiteConfig>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.State).IsRequired().HasMaxLength(20).HasDefaultValue("Draft");
-            entity.Property(e => e.ThemeVersion).IsRequired().HasDefaultValue(1);
-            entity.Property(e => e.Layout).IsRequired().HasColumnType("jsonb");
-            entity.Property(e => e.GlobalSettings).HasColumnType("jsonb");
-            entity.Property(e => e.Version).IsRequired().HasDefaultValue(1);
-            entity.HasIndex(e => new { e.AthleteProfileId, e.State }).IsUnique();
-            entity.HasIndex(e => e.UpdatedUtc).IsDescending();
-
-            entity.HasOne(e => e.AthleteProfile)
-                .WithMany(ap => ap.SiteConfigs)
-                .HasForeignKey(e => e.AthleteProfileId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasOne(e => e.Theme)
-                .WithMany(t => t.SiteConfigs)
-                .HasForeignKey(e => e.ThemeId)
-                .OnDelete(DeleteBehavior.Restrict);
-        });
-
-        // MediaAsset configuration
-        modelBuilder.Entity<MediaAsset>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Type).IsRequired().HasMaxLength(20);
-            entity.Property(e => e.Origin).IsRequired().HasMaxLength(50).HasDefaultValue("SelfUpload");
-            entity.Property(e => e.IsClubBranding).IsRequired().HasDefaultValue(false);
-            entity.Property(e => e.StorageKey).IsRequired().HasMaxLength(512);
-            entity.Property(e => e.AltText).HasMaxLength(512);
-            entity.HasIndex(e => e.AthleteProfileId);
-
-            entity.HasOne(e => e.AthleteProfile)
-                .WithMany(ap => ap.MediaAssets)
-                .HasForeignKey(e => e.AthleteProfileId)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        // Seed data
-        SeedTheme(modelBuilder);
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(NextAtletDbContext).Assembly);
     }
 
-    private void SeedTheme(ModelBuilder modelBuilder)
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        var classicThemeId = new Guid("11111111-1111-1111-1111-111111111111");
-
-        var classicManifest = new Dictionary<string, object>
+        foreach (var entry in ChangeTracker.Entries<CreatedOnlyEntity>())
         {
-            { "name", "Classic" },
-            { "supportedSections", new[] { "hero", "bio" } },
-            { "colorSlots", new[] { "primary", "secondary", "accent" } },
-            { "fontSlots", new[] { "headingFont", "bodyFont" } }
-        };
+            if (entry.State == EntityState.Added)
+            {
+                entry.Property(e => e.CreatedUtc).CurrentValue = _clock.UtcNow;
+            }
+        }
 
-        modelBuilder.Entity<Theme>().HasData(new Theme
+        foreach (var entry in ChangeTracker.Entries<AuditableEntity>())
         {
-            Id = classicThemeId,
-            Name = "Classic",
-            Version = 1,
-            Manifest = classicManifest,
-            MinimumCapability = new Dictionary<string, object>(),
-            IsActive = true,
-            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-            UpdatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-        });
+            if (entry.State == EntityState.Added)
+            {
+                entry.Property(e => e.CreatedUtc).CurrentValue = _clock.UtcNow;
+                entry.Property(e => e.UpdatedUtc).CurrentValue = _clock.UtcNow;
+            }
+
+            if (entry.State == EntityState.Modified)
+            {
+                entry.Property(e => e.UpdatedUtc).CurrentValue = _clock.UtcNow;
+            }
+        }
+        return await base.SaveChangesAsync(cancellationToken);
     }
+
 }

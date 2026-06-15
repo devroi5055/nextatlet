@@ -1,12 +1,17 @@
 using System.Text.RegularExpressions;
+using NextAtlet.Application.Abstractions.Persistence;
+using NextAtlet.Application.Abstractions.Services;
+using NextAtlet.Domain.ValueObjects;
+using NextAtlet.Domain.ValueObjects.Sections;
 
 namespace NextAtlet.Infrastructure.Services;
 
 /// <summary>
 /// Sanitizes free-text fields to prevent XSS attacks.
-/// Applied to all text content before save.
+/// Applied to all text content before save. Operates on the typed layout model —
+/// each section type's text fields are sanitized in place.
 /// </summary>
-public class SanitizationService
+public class SanitizationService : ISanitizationService
 {
     private static readonly Regex HtmlTagsRegex = new(@"<[^>]*>", RegexOptions.Compiled);
     private static readonly Regex ScriptPatternRegex = new(@"javascript:", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -36,121 +41,43 @@ public class SanitizationService
     }
 
     /// <summary>
-    /// Sanitizes all text fields in a layout jsonb object.
-    /// Returns a new dictionary; does NOT mutate the input.
+    /// Sanitizes every text field in the layout, in place, and returns the same instance.
+    /// Safe because the layout comes from a freshly-deserialized request (not shared).
+    /// New section types add a case in <see cref="SanitizeSection"/>.
     /// </summary>
-    public Dictionary<string, object> SanitizeLayout(Dictionary<string, object> layout)
+    public SiteLayout SanitizeLayout(SiteLayout layout)
     {
-        if (layout == null || !layout.TryGetValue("sections", out var sectionsObj))
-            return new Dictionary<string, object>(layout ?? new Dictionary<string, object>());
+        foreach (var section in layout.Sections)
+            SanitizeSection(section.Data);
 
-        if (sectionsObj is not System.Collections.IEnumerable sections)
-            return new Dictionary<string, object>(layout);
+        return layout;
+    }
 
-        var sanitizedSections = new List<object>();
-
-        foreach (var section in sections)
+    private void SanitizeSection(SectionData data)
+    {
+        switch (data)
         {
-            if (section is Dictionary<string, object> sectionDict)
-            {
-                // Create a copy of the section to avoid mutating input
-                var sectionCopy = new Dictionary<string, object>(sectionDict);
+            case HeroSectionData hero:
+                SanitizeLocalized(hero.Headline);
+                if (hero.Subheading is not null)
+                    SanitizeLocalized(hero.Subheading);
+                break;
 
-                if (sectionCopy.TryGetValue("data", out var dataObj) && dataObj is Dictionary<string, object> data)
+            case BioSectionData bio:
+                SanitizeLocalized(bio.Bio);
+                foreach (var item in bio.HighlightItems)
                 {
-                    var sanitizedData = SanitizeSectionData(data);
-                    sectionCopy["data"] = sanitizedData;
+                    SanitizeLocalized(item.Label);
+                    item.Value = Sanitize(item.Value);
                 }
-
-                sanitizedSections.Add(sectionCopy);
-            }
-            else
-            {
-                sanitizedSections.Add(section);
-            }
+                break;
         }
-
-        // Return a new dictionary with sanitized sections
-        var result = new Dictionary<string, object>(layout);
-        result["sections"] = sanitizedSections;
-        return result;
     }
 
-    /// <summary>
-    /// Recursively sanitizes text fields in section data.
-    /// </summary>
-    private Dictionary<string, object> SanitizeSectionData(Dictionary<string, object> data)
+    /// <summary>Sanitizes each present locale; leaves a missing (null) locale untouched.</summary>
+    private void SanitizeLocalized(LocalizedText text)
     {
-        var sanitized = new Dictionary<string, object>();
-
-        foreach (var kvp in data)
-        {
-            if (kvp.Value is string strValue)
-            {
-                sanitized[kvp.Key] = Sanitize(strValue);
-            }
-            else if (kvp.Value is Dictionary<string, object> dictValue)
-            {
-                // Handle localized fields like { "da": "...", "en": "..." }
-                sanitized[kvp.Key] = SanitizeLocalizedField(dictValue);
-            }
-            else if (kvp.Value is System.Collections.IEnumerable enumValue && kvp.Key != "sections")
-            {
-                // Handle arrays (but not nested sections)
-                sanitized[kvp.Key] = SanitizeArray(enumValue);
-            }
-            else
-            {
-                sanitized[kvp.Key] = kvp.Value;
-            }
-        }
-
-        return sanitized;
-    }
-
-    private Dictionary<string, object> SanitizeLocalizedField(Dictionary<string, object> localized)
-    {
-        var sanitized = new Dictionary<string, object>();
-
-        foreach (var kvp in localized)
-        {
-            if (kvp.Value is string strValue)
-            {
-                sanitized[kvp.Key] = Sanitize(strValue);
-            }
-            else
-            {
-                sanitized[kvp.Key] = kvp.Value;
-            }
-        }
-
-        return sanitized;
-    }
-
-    private List<object> SanitizeArray(System.Collections.IEnumerable array)
-    {
-        var sanitized = new List<object>();
-
-        foreach (var item in array)
-        {
-            if (item is string strValue)
-            {
-                sanitized.Add(Sanitize(strValue));
-            }
-            else if (item is Dictionary<string, object> dictValue)
-            {
-                sanitized.Add(SanitizeSectionData(dictValue));
-            }
-            else if (item is System.Collections.IEnumerable enumValue)
-            {
-                sanitized.Add(SanitizeArray(enumValue));
-            }
-            else
-            {
-                sanitized.Add(item);
-            }
-        }
-
-        return sanitized;
+        if (text.Da is not null) text.Da = Sanitize(text.Da);
+        if (text.En is not null) text.En = Sanitize(text.En);
     }
 }

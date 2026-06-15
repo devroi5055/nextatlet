@@ -8,7 +8,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\NextAtlet.Domain\NextAtlet.Domain.csproj" />
-    <ProjectReference Include="..\NextAtlet.Infrastructure\NextAtlet.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MediatR" Version="13.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.0" />
   </ItemGroup>
 
 </Project>
