@@ -3,6 +3,7 @@ using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Application.Features.Athletes.Commands;
 using NextAtlet.Application.Tests.Shared;
+using NextAtlet.Domain.Entities.Organization;
 using NextAtlet.Domain.Entities.Shared;
 using NSubstitute;
 

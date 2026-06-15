@@ -1,6 +1,6 @@
 using NextAtlet.Domain.Entities.Athlete;
-using NextAtlet.Domain.Enumerations;
-using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
+using NextAtlet.Domain.Entities.AthleteProfile;
+using NextAtlet.Domain.Enumerations.AthleteProfile;
 
 namespace NextAtlet.Domain.Authorization;
 
@@ -15,16 +15,12 @@ public class PermissionResolver
         var isOwner = login.RoleId == ProfileRole.AthleteOwner.Id;
         var isGuardian = login.RoleId == ProfileRole.Guardian.Id;
 
-        return site.ControlMode switch
+        return site.ControlModeId switch
         {
-            // controller side — always full; other side observes
-            ControlMode.AthleteControlled        => isOwner ? SitePermissions.FullControl : isGuardian ? SitePermissions.ReadOnly : SitePermissions.None,
-            ControlMode.GuardianControlled       => isGuardian ? SitePermissions.FullControl : isOwner ? SitePermissions.ReadOnly : SitePermissions.None,
-
-            // shared variants — controller full; other side may edit the draft (+ media), never the senior acts
-            ControlMode.AthleteControlledShared  => isOwner ? SitePermissions.FullControl : isGuardian ? SitePermissions.EditOnly : SitePermissions.None,
-            ControlMode.GuardianControlledShared => isGuardian ? SitePermissions.FullControl : isOwner ? SitePermissions.EditOnly : SitePermissions.None,
-
+            "athlete_controlled"         => isOwner    ? SitePermissions.FullControl : isGuardian ? SitePermissions.ReadOnly : SitePermissions.None,
+            "guardian_controlled"        => isGuardian ? SitePermissions.FullControl : isOwner    ? SitePermissions.ReadOnly : SitePermissions.None,
+            "athlete_controlled_shared"  => isOwner    ? SitePermissions.FullControl : isGuardian ? SitePermissions.EditOnly : SitePermissions.None,
+            "guardian_controlled_shared" => isGuardian ? SitePermissions.FullControl : isOwner    ? SitePermissions.EditOnly : SitePermissions.None,
             _ => SitePermissions.None
         };
     }
@@ -38,10 +34,10 @@ public class PermissionResolver
         var isOwner = login.RoleId == ProfileRole.AthleteOwner.Id;
         var isGuardian = login.RoleId == ProfileRole.Guardian.Id;
 
-        return site.ControlMode switch
+        return site.ControlModeId switch
         {
-            ControlMode.AthleteControlled or ControlMode.AthleteControlledShared => isOwner,
-            ControlMode.GuardianControlled or ControlMode.GuardianControlledShared => isGuardian,
+            "athlete_controlled" or "athlete_controlled_shared"   => isOwner,
+            "guardian_controlled" or "guardian_controlled_shared" => isGuardian,
             _ => false
         };
     }

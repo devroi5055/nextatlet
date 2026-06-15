@@ -24,53 +24,41 @@ public class AthletesController : ControllerBase
     /// a guardian is invited if the caller is a minor).
     /// </summary>
     [HttpPost("self-register")]
-    public async Task<ActionResult<AthleteProfileDto>> SelfRegister([FromBody] RegisterOwnAthleteRequest request)
-    {
-        var dto = await _sender.Send(new SelfRegisterAthleteCommand(
+    public async Task<IActionResult> SelfRegister([FromBody] RegisterOwnAthleteRequest request)
+        => Ok(await _sender.Send(new SelfRegisterAthleteCommand(
             User.GetAuthProviderId(),
             User.GetEmail(),
             request.DisplayName,
             request.Slug,
             request.DateOfBirth,
             request.DefaultLocaleId,
-            request.GuardianEmail));
-
-        return Created($"/api/athletes/{dto.Id}", dto);
-    }
+            request.GuardianEmail)));
 
     /// <summary>
     /// Guardian registers a profile for their child: the authenticated caller becomes the Guardian.
     /// </summary>
     [HttpPost("guardian-register")]
-    public async Task<ActionResult<AthleteProfileDto>> GuardianRegister([FromBody] RegisterChildAthleteRequest request)
-    {
-        var dto = await _sender.Send(new GuardianRegisterAthleteCommand(
+    public async Task<IActionResult> GuardianRegister([FromBody] RegisterChildAthleteRequest request)
+        => Ok(await _sender.Send(new GuardianRegisterAthleteCommand(
             User.GetAuthProviderId(),
             User.GetEmail(),
             request.ChildDisplayName,
             request.Slug,
             request.ChildDateOfBirth,
-            request.DefaultLocaleId));
-
-        return Created($"/api/athletes/{dto.Id}", dto);
-    }
+            request.DefaultLocaleId)));
 
     /// <summary>
     /// Invite a person (by email) to this profile in a given role. Only a caller holding an active
     /// login on the profile may invite to it. The invited person claims it at /invitations/{id}/accept.
     /// </summary>
     [HttpPost("{id:guid}/invite")]
-    public async Task<ActionResult<InvitationDto>> Invite(Guid id, [FromBody] InviteToProfileRequest request)
-    {
-        var dto = await _sender.Send(new InviteToProfileCommand(
+    public async Task<IActionResult> Invite(Guid id, [FromBody] InviteToProfileRequest request)
+        => Ok(await _sender.Send(new InviteToProfileCommand(
             id,
             User.GetAuthProviderId(),
             User.GetEmail(),
             request.Email,
-            request.Role));
-
-        return Created($"/api/invitations/{dto.Id}/accept", dto);
-    }
+            request.Role)));
 
     /// <summary>
     /// Transfers control of the profile to the other party ("athlete" | "guardian"). Only the current
@@ -78,10 +66,7 @@ public class AthletesController : ControllerBase
     /// </summary>
     [HttpPost("{id:guid}/transfer-control")]
     public async Task<IActionResult> TransferControl(Guid id, [FromBody] TransferControlRequest request)
-    {
-        await _sender.Send(new TransferControlCommand(id, User.GetAuthProviderId(), request.To));
-        return NoContent();
-    }
+        => Ok(await _sender.Send(new TransferControlCommand(id, User.GetAuthProviderId(), request.To)));
 
     /// <summary>
     /// Enables/disables shared editing — lets the non-controlling party edit the draft (+ media) but
@@ -89,10 +74,7 @@ public class AthletesController : ControllerBase
     /// </summary>
     [HttpPost("{id:guid}/collaboration")]
     public async Task<IActionResult> SetCollaboration(Guid id, [FromBody] SetCollaborationRequest request)
-    {
-        await _sender.Send(new SetCollaborationCommand(id, User.GetAuthProviderId(), request.SharedEditing));
-        return NoContent();
-    }
+        => Ok(await _sender.Send(new SetCollaborationCommand(id, User.GetAuthProviderId(), request.SharedEditing)));
 
     /// <summary>
     /// Guardian gives consent (GDPR Art. 8) for a minor's profile by following the emailed link and
@@ -100,10 +82,7 @@ public class AthletesController : ControllerBase
     /// </summary>
     [HttpPost("{id:guid}/consent")]
     public async Task<IActionResult> GiveConsent(Guid id)
-    {
-        await _sender.Send(new RecordGuardianConsentCommand(id, User.GetAuthProviderId(), User.GetEmail()));
-        return NoContent();
-    }
+        => Ok(await _sender.Send(new RecordGuardianConsentCommand(id, User.GetAuthProviderId(), User.GetEmail())));
 
     /// <summary>
     /// Gets the draft site snapshot for an athlete profile.

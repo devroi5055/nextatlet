@@ -11,7 +11,7 @@ public static class ClassicTheme
     {
         Colors     = Palette(),
         Typography = new() { HeadingFont = FontStrings.Sora, BodyFont = FontStrings.Inter },
-        Components = Components(),
+        ComponentStyles = Components(),
         // no SectionStyleVariation — Classic uses defaults
     };
 

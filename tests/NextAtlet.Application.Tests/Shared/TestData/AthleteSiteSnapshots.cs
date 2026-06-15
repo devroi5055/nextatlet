@@ -1,9 +1,11 @@
 using AutoFixture;
 using NextAtlet.Domain.Entities.Athlete;
+using NextAtlet.Domain.Entities.Organization;
 using NextAtlet.Domain.Entities.Shared;
-using NextAtlet.Domain.Enumerations;
+using NextAtlet.Domain.Enumerations.Billing;
 using NextAtlet.Domain.ValueObjects;
 using NextAtlet.Domain.ValueObjects.Sections;
+using NextAtlet.Domain.ValueObjects.Theme.Builders;
 
 namespace NextAtlet.Application.Tests.Shared.TestData;
 
@@ -22,7 +24,7 @@ public static class AthleteSiteSnapshots
     public static AthleteSiteSnapshot ASiteSnapshot(DateTime? publishedUtc = null, Action<AthleteSiteSnapshot>? customize = null)
     {
         var snapshot = TestFixture.Create().Build<AthleteSiteSnapshot>()
-            .Without(c => c.AthleteProfile)
+            .Without(c => c.AthleteSite)
             .Without(c => c.Theme)
             .With(c => c.AthleteProfileId, Guid.NewGuid())
             .With(c => c.ThemeId, Guid.NewGuid())
@@ -60,12 +62,6 @@ public static class AthleteSiteSnapshots
         Id = Guid.NewGuid(),
         Version = 1,
         Name = "Classic",
-        MinimumTierId = AthleteTier.Free.Id,
-        Manifest = new ThemeManifest
-        {
-            SupportedSectionTypes = ["hero", "bio"],
-            ColorSlots = ["primary", "accent", "background"],
-            FontSlots = ["heading", "body"]
-        },
+        Manifest = ClassicTheme.Manifest()
     };
 }

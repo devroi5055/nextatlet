@@ -1,5 +1,5 @@
 using NextAtlet.Application.Abstractions.Persistence;
-using NextAtlet.Application.Abstractions.Services;
+using NextAtlet.Application.Common.Time;
 using NextAtlet.Domain.Entities.Shared;
 
 namespace NextAtlet.Application.Features.Account;
@@ -16,8 +16,13 @@ namespace NextAtlet.Application.Features.Account;
 public sealed class UserProvisioner
 {
     private readonly IUserRepository _users;
+    public IClock _clock;
 
-    public UserProvisioner(IUserRepository users) => _users = users;
+    public UserProvisioner(IUserRepository users, IClock clock)
+    {
+        _users = users;
+        _clock = clock;
+    }
 
     public async Task<User> GetOrCreateAsync(string email, string authProviderId, CancellationToken cancellationToken)
     {
@@ -26,6 +31,7 @@ public sealed class UserProvisioner
             return existing;
 
         var user = new User { Email = email, AuthProviderId = authProviderId };
+
         _users.Add(user);
         return user;
     }

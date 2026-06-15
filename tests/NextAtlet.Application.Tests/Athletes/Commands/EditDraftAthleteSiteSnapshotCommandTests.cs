@@ -1,8 +1,6 @@
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Features.Athletes.Commands;
 using NextAtlet.Application.Tests.Shared.TestData;
-using NextAtlet.Domain.Entities.Athlete;
-using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
 
@@ -11,7 +9,7 @@ namespace NextAtlet.Application.Tests.Athletes.Commands;
 public class EditDraftAthleteSiteSnapshotCommandTests
 {
     [Fact]
-    public async Task ThrowsError_WhenAthleteProfile_NotFound()
+    public async Task Fails_WhenAthleteProfile_NotFound()
     {
         var fixture = new EditDraftAthleteSiteSnapshotFixture();
 
@@ -22,14 +20,15 @@ public class EditDraftAthleteSiteSnapshotCommandTests
 
         var command = new EditDraftAthleteSiteSnapshotCommand(atheleteSiteId, layout, null, 2);
 
-        var ex = await Assert.ThrowsAsync<DomainException>(
-          () => fixture.Handler.Handle(command, CancellationToken.None));
+        // Business rejection — the caller addressed a site that isn't there.
+        var result = await fixture.Handler.Handle(command, CancellationToken.None);
 
-        Assert.Equal(ErrorCodes.ProfileNotFound, ex.ErrorCode);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorCodes.SiteNotFound, result.Error!.Code);
     }
 
     [Fact]
-    public async Task ThrowsError_WhenDraft_NotFound()
+    public async Task Throws_WhenDraft_NotFound()
     {
         var fixture = new EditDraftAthleteSiteSnapshotFixture();
 
@@ -42,14 +41,13 @@ public class EditDraftAthleteSiteSnapshotCommandTests
 
         var command = new EditDraftAthleteSiteSnapshotCommand(atheleteProfileId, layout, null, 2);
 
-        var ex = await Assert.ThrowsAsync<DomainException>(
+        // Broken invariant — an existing site must have a draft. Surfaces as an exception (→ 500), not a Result.
+        await Assert.ThrowsAsync<InvalidOperationException>(
           () => fixture.Handler.Handle(command, CancellationToken.None));
-
-        Assert.Equal(ErrorCodes.DraftConfigNotFound, ex.ErrorCode);
     }
 
     [Fact]
-    public async Task ThrowsError_WhenVersion_Conflict()
+    public async Task Fails_WhenVersion_Conflict()
     {
         var fixture = new EditDraftAthleteSiteSnapshotFixture();
 
@@ -64,14 +62,15 @@ public class EditDraftAthleteSiteSnapshotCommandTests
 
         var command = new EditDraftAthleteSiteSnapshotCommand(atheleteProfileId, layout, null, 2);
 
-        var ex = await Assert.ThrowsAsync<DomainException>(
-          () => fixture.Handler.Handle(command, CancellationToken.None));
+        // Optimistic concurrency is a user-recoverable rejection (reload + retry) → Result, not an exception.
+        var result = await fixture.Handler.Handle(command, CancellationToken.None);
 
-        Assert.Equal(ErrorCodes.DraftVersionConflict, ex.ErrorCode);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorCodes.DraftVersionConflict, result.Error!.Code);
     }
 
     [Fact]
-    public async Task ThrowsError_WhenLayoutSection_NotSupportedByTheme()
+    public async Task Throws_WhenSnapshotTheme_NotFound()
     {
         var fixture = new EditDraftAthleteSiteSnapshotFixture();
 
@@ -89,9 +88,8 @@ public class EditDraftAthleteSiteSnapshotCommandTests
 
         var command = new EditDraftAthleteSiteSnapshotCommand(atheleteProfileId, layout, null, 1);
 
-        var ex = await Assert.ThrowsAsync<DomainException>(
+        // The draft references a theme that must resolve — a broken invariant, surfaced as an exception.
+        await Assert.ThrowsAsync<InvalidOperationException>(
           () => fixture.Handler.Handle(command, CancellationToken.None));
-
-        Assert.Equal(ErrorCodes.ThemeNotFound, ex.ErrorCode);
     }
 }

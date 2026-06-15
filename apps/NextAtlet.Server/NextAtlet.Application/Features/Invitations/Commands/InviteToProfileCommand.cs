@@ -1,10 +1,11 @@
 using MediatR;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
+using NextAtlet.Application.Common.Results;
 using NextAtlet.Application.Common.Time;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Abstractions.Services;
-using NextAtlet.Domain.Enumerations;
+using NextAtlet.Domain.Enumerations.AthleteProfile;
 
 namespace NextAtlet.Application.Features.Invitations.Commands;
 
@@ -18,9 +19,9 @@ public record InviteToProfileCommand(
     string CallerAuthProviderId,
     string CallerEmail,
     string Email,
-    string Role) : IRequest<InvitationDto>;
+    string Role) : IRequest<Result<InvitationDto>>;
 
-public class InviteToProfileCommandHandler : IRequestHandler<InviteToProfileCommand, InvitationDto>
+public class InviteToProfileCommandHandler : IRequestHandler<InviteToProfileCommand, Result<InvitationDto>>
 {
     private readonly IUserRepository _users;
     private readonly IAthleteSiteRepository _sites;
@@ -48,30 +49,32 @@ public class InviteToProfileCommandHandler : IRequestHandler<InviteToProfileComm
         _clock = clock;
     }
 
-    public async Task<InvitationDto> Handle(InviteToProfileCommand request, CancellationToken cancellationToken)
+    public async Task<Result<InvitationDto>> Handle(InviteToProfileCommand request, CancellationToken cancellationToken)
     {
         // Role must be a known ProfileRole — reject early rather than create an unusable invitation.
         if (request.Role != ProfileRole.AthleteOwner.Id && request.Role != ProfileRole.Guardian.Id)
-            throw new DomainException(ErrorCodes.InvitationRoleInvalid, request.Role);
+            return Error.FromCode(ErrorCodes.InvitationRoleInvalid);
 
         // The caller must already be a known user; an unknown subject holds no rights anywhere.
-        var caller = await _users.GetByAuthProviderIdAsync(request.CallerAuthProviderId, cancellationToken)
-            ?? throw new DomainException(ErrorCodes.NotAuthorized);
+        var caller = await _users.GetByAuthProviderIdAsync(request.CallerAuthProviderId, cancellationToken);
+        if (caller is null)
+            return Error.FromCode(ErrorCodes.NotAuthorized);
 
-        var profile = await _sites.GetByIdAsync(request.ProfileId, cancellationToken)
-            ?? throw new DomainException(ErrorCodes.ProfileNotFound);
+        var profile = await _sites.GetByIdAsync(request.ProfileId, cancellationToken);
+        if (profile is null)
+            return Error.FromCode(ErrorCodes.SiteNotFound);
 
         // Authorization: only someone with an Active login on this profile may invite to it.
         if (await _logins.GetActiveLoginAsync(caller.Id, profile.Id, cancellationToken) is null)
-            throw new DomainException(ErrorCodes.NotAuthorized);
+            return Error.FromCode(ErrorCodes.NotAuthorized);
 
         // A guardian only makes sense for a minor — refuse to invite one onto an adult profile.
         if (request.Role == ProfileRole.Guardian.Id && !profile.IsMinor(_clock.UtcNow))
-            throw new DomainException(ErrorCodes.GuardianCannotRegisterAdult);
+            return Error.FromCode(ErrorCodes.GuardianCannotRegisterAdult);
 
         // Don't double-invite the same email+role on the same profile.
         if (await _invitations.HasPendingAsync(profile.Id, request.Email, request.Role, cancellationToken))
-            throw new DomainException(ErrorCodes.InvitationAlreadyPending);
+            return Error.FromCode(ErrorCodes.InvitationAlreadyPending);
 
         var invitation = _inviter.Issue(profile.Id, request.Email, request.Role, caller.Id);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

@@ -1,4 +1,4 @@
-using NextAtlet.Domain.Entities.Athlete;
+using NextAtlet.Domain.Entities.AthleteProfile;
 
 namespace NextAtlet.Application.Abstractions.Persistence;
 

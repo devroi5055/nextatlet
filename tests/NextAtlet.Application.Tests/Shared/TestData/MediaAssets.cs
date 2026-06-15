@@ -1,6 +1,7 @@
 using AutoFixture;
 using NextAtlet.Domain.Entities.Shared;
 using NextAtlet.Domain.Enumerations;
+using NextAtlet.Domain.Enumerations.Media;
 
 namespace NextAtlet.Application.Tests.Shared.TestData;
 
@@ -14,10 +15,10 @@ public static class MediaAssets
     public static MediaAsset AMediaAsset(Action<MediaAsset>? customize = null)
     {
         var asset = TestFixture.Create().Build<MediaAsset>()
-            .Without(m => m.AthleteProfile)
+            .Without(m => m.AthleteSite)
             .Without(m => m.OrganizationId) // owner XOR → athlete-owned
-            .With(m => m.AthleteProfileId, Guid.NewGuid())
-            .With(m => m.Type, MediaAssetType.Image)
+            .With(m => m.AthleteSiteId, Guid.NewGuid())
+            .With(m => m.TypeId, MediaAssetType.Image.Id)
             .With(m => m.OriginId, MediaOrigin.SelfUpload.Id)
             .With(m => m.IsClubBranding, false)
             .Create();

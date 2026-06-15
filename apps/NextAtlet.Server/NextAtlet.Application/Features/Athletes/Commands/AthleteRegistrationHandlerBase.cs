@@ -2,13 +2,15 @@ using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Extensions;
+using NextAtlet.Application.Common.Results;
 using NextAtlet.Application.Common.Time;
 using NextAtlet.Application.Features.Account;
 using NextAtlet.Application.Features.Invitations;
 using NextAtlet.Domain.Entities.Athlete;
+using NextAtlet.Domain.Entities.AthleteProfile;
 using NextAtlet.Domain.Entities.Shared;
-using NextAtlet.Domain.Enumerations;
-using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
+using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Domain.Enumerations.Shared;
 using NextAtlet.Domain.ValueObjects;
 using NextAtlet.Domain.ValueObjects.Sections;
 
@@ -59,15 +61,16 @@ public abstract class AthleteRegistrationHandlerBase
     /// default draft AthleteSiteSnapshot. Returns the tracked profile with NO logins attached — the
     /// caller attaches owner/guardian logins per its flow.
     /// </summary>
-    protected async Task<AthleteSite> CreateAthleteProfileCoreAsync(
+    protected async Task<Result<AthleteSite>> CreateAthleteProfileCoreAsync(
         string slug, string displayName, DateTime dateOfBirth, string defaultLocaleId, ControlMode controlMode, CancellationToken cancellationToken)
     {
         slug = slug.ToLowerInvariant();
 
+        // Business rejections — recoverable, user-facing.
         if (await Sites.SlugExistsAsync(slug, cancellationToken))
-            throw new DomainException(ErrorCodes.SlugAlreadyTaken, slug);
+            return Error.FromCode(ErrorCodes.SlugAlreadyTaken);
         if (ReservedSlugs.Contains(slug))
-            throw new DomainException(ErrorCodes.SlugReserved, slug);
+            return Error.FromCode(ErrorCodes.SlugReserved);
 
         var profile = new AthleteSite
         {
@@ -77,7 +80,7 @@ public abstract class AthleteRegistrationHandlerBase
             DateOfBirth = DateOnly.FromDateTime(dateOfBirth),
             DefaultLocaleId = defaultLocaleId,
             VisibilityStateId = "public",
-            ControlMode = controlMode
+            ControlModeId = controlMode.Id
         };
         Sites.Add(profile);
 
@@ -89,14 +92,14 @@ public abstract class AthleteRegistrationHandlerBase
     protected Task<User> GetOrCreateUserAsync(string email, string authProviderId, CancellationToken cancellationToken)
         => UserProvisioner.GetOrCreateAsync(email, authProviderId, cancellationToken);
 
-    protected AthleteProfileDto MapToDto(AthleteSite profile) => new()
+    protected AthleteSiteDto MapToDto(AthleteSite profile) => new()
     {
         Id = profile.Id,
         Slug = profile.Slug,
         DisplayName = profile.DisplayName,
         DateOfBirth = profile.DateOfBirth,
         IsMinor = profile.IsMinor(Clock.UtcNow),
-        ControlMode = profile.ControlMode,
+        ControlMode = ControlMode.FromId(profile.ControlModeId),
         DefaultLocale = Locale.FromId(profile.DefaultLocaleId).ToDto()
     };
 

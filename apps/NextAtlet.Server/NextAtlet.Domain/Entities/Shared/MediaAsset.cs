@@ -1,6 +1,6 @@
 using NextAtlet.Domain.Common;
-using NextAtlet.Domain.Entities.Athlete;
-using NextAtlet.Domain.Enumerations;
+using NextAtlet.Domain.Entities.AthleteProfile;
+using NextAtlet.Domain.Enumerations.Media;
 
 namespace NextAtlet.Domain.Entities.Shared;
 
@@ -15,7 +15,7 @@ public class MediaAsset : CreatedOnlyEntity
     public Guid? AthleteSiteId { get; set; }
     public Guid? OrganizationId { get; set; }
 
-    public required MediaAssetType Type { get; set; }
+    public required string TypeId { get; set; } = MediaAssetType.Image.Id;
     public string OriginId { get; set; } = MediaOrigin.SelfUpload.Id;
 
     /// <summary>

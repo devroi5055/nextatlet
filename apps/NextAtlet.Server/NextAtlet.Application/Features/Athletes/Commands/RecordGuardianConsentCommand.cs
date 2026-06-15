@@ -1,12 +1,12 @@
 using MediatR;
 using Microsoft.Extensions.Options;
+using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Options;
+using NextAtlet.Application.Common.Results;
 using NextAtlet.Application.Features.Account;
-using NextAtlet.Application.Abstractions.Persistence;
-using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Domain.Entities.Athlete;
-using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
+using NextAtlet.Domain.Enumerations.AthleteProfile;
 
 namespace NextAtlet.Application.Features.Athletes.Commands;
 
@@ -20,9 +20,9 @@ namespace NextAtlet.Application.Features.Athletes.Commands;
 public record RecordGuardianConsentCommand(
     Guid ProfileId,
     string AuthProviderId,
-    string Email) : IRequest;
+    string Email) : IRequest<Result<Guid?>>;
 
-public class RecordGuardianConsentCommandHandler : IRequestHandler<RecordGuardianConsentCommand>
+public class RecordGuardianConsentCommandHandler : IRequestHandler<RecordGuardianConsentCommand, Result<Guid?>>
 {
     private readonly IAthleteSiteRepository _sites;
     private readonly IGuardianConsentRepository _consents;
@@ -44,15 +44,16 @@ public class RecordGuardianConsentCommandHandler : IRequestHandler<RecordGuardia
         _unitOfWork = unitOfWork;
     }
 
-    public async Task Handle(RecordGuardianConsentCommand request, CancellationToken cancellationToken)
+    public async Task<Result<Guid?>> Handle(RecordGuardianConsentCommand request, CancellationToken cancellationToken)
     {
-        var profile = await _sites.GetByIdAsync(request.ProfileId, cancellationToken)
-            ?? throw new DomainException(ErrorCodes.ProfileNotFound);
+        var profile = await _sites.GetByIdAsync(request.ProfileId, cancellationToken);
+        if (profile is null)
+            return Error.FromCode(ErrorCodes.SiteNotFound);
 
         // Idempotent + scoped: only a profile awaiting consent transitions. Already-Consented or
-        // NotRequired profiles are a no-op (no duplicate audit row).
-        if (profile.ConsentState != ConsentState.PendingGuardianConsent)
-            return;
+        // NotRequired profiles need no consent — an empty success (nothing recorded).
+        if (profile.ConsentStateId != ConsentState.PendingGuardianConsent.Id)
+            return Result<Guid?>.Success(null);
 
         // The authenticated guardian — resolved/provisioned from verified token claims.
         var guardian = await _userProvisioner.GetOrCreateAsync(request.Email, request.AuthProviderId, cancellationToken);
@@ -60,15 +61,16 @@ public class RecordGuardianConsentCommandHandler : IRequestHandler<RecordGuardia
         {
             AthleteProfileId = profile.Id,
             GuardianUserId = guardian.Id,          // WHO //TODO: who needs to contain the guardians name
-            Method = ConsentMethod.VerifiedEmail,  // HOW
+            MethodId = ConsentMethod.VerifiedEmail.Id,  // HOW
             TermsVersion = _terms.CurrentVersion,  // WHAT
         };
 
-        consent.SetCreated();
         _consents.Add(consent);
         
-        profile.ConsentState = ConsentState.Consented; // lifts the publish gate
+        profile.ConsentStateId = ConsentState.Consented.Id; // lifts the publish gate
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return consent.Id; // created consent id → 200 with the id
     }
 }

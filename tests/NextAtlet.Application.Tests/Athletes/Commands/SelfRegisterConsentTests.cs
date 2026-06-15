@@ -1,9 +1,9 @@
 using NextAtlet.Application.Common.Errors;
-using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Features.Athletes.Commands;
 using NextAtlet.Domain.Entities.Athlete;
-using NextAtlet.Domain.Enumerations;
-using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
+using NextAtlet.Domain.Entities.AthleteProfile;
+using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Domain.Enumerations.Shared;
 using NSubstitute;
 
 namespace NextAtlet.Application.Tests.Athletes.Commands;
@@ -28,7 +28,7 @@ public class SelfRegisterConsentTests
 
         // Profile is publish-gated...
         fixture.AthleteRepository.Received(1)
-            .Add(Arg.Is<AthleteProfile>(p => p.ConsentState == ConsentState.PendingGuardianConsent));
+            .Add(Arg.Is<AthleteSite>(p => p.ConsentStateId == ConsentState.PendingGuardianConsent.Id));
         // ...and the guardian gets a consent-request EMAIL (not a profile invitation).
         await fixture.EmailService.Received(1).SendConsentRequestAsync("guardian@test.com", Arg.Any<Guid>(), Arg.Any<CancellationToken>());
         fixture.InvitationRepository.DidNotReceive().Add(Arg.Any<Invitation>());
@@ -40,9 +40,9 @@ public class SelfRegisterConsentTests
         var fixture = new SelfRegisterAthleteFixture();
         var dob = fixture.Clock.UtcNow.AddYears(-14);
 
-        var ex = await Assert.ThrowsAsync<DomainException>(
-            () => fixture.Handler.Handle(Command(dob, guardianEmail: null), CancellationToken.None));
-        Assert.Equal(ErrorCodes.GuardianEmailRequired, ex.ErrorCode);
+        var result = await fixture.Handler.Handle(Command(dob, guardianEmail: null), CancellationToken.None);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorCodes.GuardianEmailRequired, result.Error!.Code);
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public class SelfRegisterConsentTests
         await fixture.Handler.Handle(Command(dob, guardianEmail: null), CancellationToken.None);
 
         fixture.AthleteRepository.Received(1)
-            .Add(Arg.Is<AthleteProfile>(p => p.ConsentState == ConsentState.NotRequired));
+            .Add(Arg.Is<AthleteSite>(p => p.ConsentStateId == ConsentState.NotRequired.Id));
         fixture.InvitationRepository.DidNotReceive().Add(Arg.Any<Invitation>());
     }
 
@@ -64,8 +64,8 @@ public class SelfRegisterConsentTests
         var fixture = new SelfRegisterAthleteFixture();
         var dob = fixture.Clock.UtcNow.AddYears(-10); // below AbsoluteMinimumAge 13 → cannot register
 
-        var ex = await Assert.ThrowsAsync<DomainException>(
-            () => fixture.Handler.Handle(Command(dob, "guardian@test.com"), CancellationToken.None));
-        Assert.Equal(ErrorCodes.BelowMinimumAge, ex.ErrorCode);
+        var result = await fixture.Handler.Handle(Command(dob, "guardian@test.com"), CancellationToken.None);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorCodes.BelowMinimumAge, result.Error!.Code);
     }
 }

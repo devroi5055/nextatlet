@@ -1,5 +1,6 @@
-using NextAtlet.Domain.Enumerations;
-using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
+using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Domain.Enumerations.Media;
+using NextAtlet.Domain.Enumerations.Shared;
 using NextAtlet.Domain.Policies;
 
 namespace NextAtlet.Application.Tests.Shared.TestData;
@@ -34,15 +35,15 @@ public class TestDataBuildersTests
         var athlete = TestAthletes.AnAthlete();
 
         Assert.False(string.IsNullOrWhiteSpace(athlete.Slug));
-        Assert.Equal(ControlMode.AthleteControlled, athlete.ControlMode);
+        Assert.Equal(ControlMode.AthleteControlled.Id, athlete.ControlModeId);
     }
 
     [Theory]
-    [InlineData(nameof(TestAthletes.AnUnder13Athlete), AgeBand.BelowMinimum, true)]
-    [InlineData(nameof(TestAthletes.AYoungMinorAthlete), AgeBand.YoungMinor, true)]
-    [InlineData(nameof(TestAthletes.AnOlderMinorAthlete), AgeBand.OlderMinor, true)]
-    [InlineData(nameof(TestAthletes.AnAdultAthlete), AgeBand.Adult, false)]
-    public void AgeBandVariants_ProduceTheExpectedBand(string variant, AgeBand expectedBand, bool expectedMinor)
+    [InlineData(nameof(TestAthletes.AnUnder13Athlete), "below_minimum", true)]
+    [InlineData(nameof(TestAthletes.AYoungMinorAthlete), "young_minor", true)]
+    [InlineData(nameof(TestAthletes.AnOlderMinorAthlete), "older_minor", true)]
+    [InlineData(nameof(TestAthletes.AnAdultAthlete), "adult", false)]
+    public void AgeBandVariants_ProduceTheExpectedBand(string variant, string expectedBand, bool expectedMinor)
     {
         var now = DateTime.UtcNow;
         var athlete = variant switch
@@ -53,26 +54,26 @@ public class TestDataBuildersTests
             _ => TestAthletes.AnAdultAthlete(now)
         };
 
-        Assert.Equal(expectedBand, AgePolicy.BandToday(athlete.DateOfBirth, now));
+        Assert.Equal(AgeBand.FromId(expectedBand), AgePolicy.BandToday(athlete.DateOfBirth, now));
         Assert.Equal(expectedMinor, athlete.IsMinor(now));
     }
 
     [Theory]
-    [InlineData(ControlMode.AthleteControlled)]
-    [InlineData(ControlMode.GuardianControlled)]
-    [InlineData(ControlMode.AthleteControlledShared)]
-    [InlineData(ControlMode.GuardianControlledShared)]
-    public void ControlModeVariants_SetTheExpectedMode(ControlMode mode)
+    [InlineData("athlete_controlled")]
+    [InlineData("guardian_controlled")]
+    [InlineData("athlete_controlled_shared")]
+    [InlineData("guardian_controlled_shared")]
+    public void ControlModeVariants_SetTheExpectedMode(string modeId)
     {
-        var athlete = mode switch
+        var athlete = modeId switch
         {
-            ControlMode.AthleteControlled => TestAthletes.AnAthleteControlledProfile(),
-            ControlMode.GuardianControlled => TestAthletes.AGuardianControlledProfile(),
-            ControlMode.AthleteControlledShared => TestAthletes.AnAthleteControlledSharedProfile(),
+            "athlete_controlled" => TestAthletes.AnAthleteControlledProfile(),
+            "guardian_controlled" => TestAthletes.AGuardianControlledProfile(),
+            "athlete_controlled_shared" => TestAthletes.AnAthleteControlledSharedProfile(),
             _ => TestAthletes.AGuardianControlledSharedProfile()
         };
 
-        Assert.Equal(mode, athlete.ControlMode);
+        Assert.Equal(modeId, athlete.ControlModeId);
     }
 
     [Fact]
@@ -82,16 +83,16 @@ public class TestDataBuildersTests
         var guardian = ProfileLogins.AGuardianLogin();
 
         Assert.Equal(ProfileRole.AthleteOwner.Id, owner.RoleId);
-        Assert.Equal(ProfileLoginStatus.Active, owner.Status);
+        Assert.Equal(ProfileLoginStatus.Active.Id, owner.StatusId);
         Assert.Equal(ProfileRole.Guardian.Id, guardian.RoleId);
-        Assert.Equal(ProfileLoginStatus.Active, guardian.Status);
+        Assert.Equal(ProfileLoginStatus.Active.Id, guardian.StatusId);
     }
 
     [Fact]
     public void RevokedLogin_IsRevoked()
     {
-        Assert.Equal(ProfileLoginStatus.Revoked, ProfileLogins.ARevokedOwnerLogin().Status);
-        Assert.Equal(ProfileLoginStatus.Revoked, ProfileLogins.ARevokedGuardianLogin().Status);
+        Assert.Equal(ProfileLoginStatus.Revoked.Id, ProfileLogins.ARevokedOwnerLogin().StatusId);
+        Assert.Equal(ProfileLoginStatus.Revoked.Id, ProfileLogins.ARevokedGuardianLogin().StatusId);
     }
 
     [Fact]
@@ -99,7 +100,7 @@ public class TestDataBuildersTests
     {
         var invitation = Invitations.APendingInvitation();
 
-        Assert.Equal(InvitationStatus.Pending, invitation.Status);
+        Assert.Equal(InvitationStatus.Pending.Id, invitation.StatusId);
         Assert.Equal(ProfileRole.Guardian.Id, invitation.RoleId);
         Assert.False(string.IsNullOrWhiteSpace(invitation.Email));
         Assert.False(invitation.IsExpired);
@@ -114,13 +115,13 @@ public class TestDataBuildersTests
     {
         var invitation = Invitations.AnAcceptedInvitation();
 
-        Assert.Equal(InvitationStatus.Accepted, invitation.Status);
+        Assert.Equal(InvitationStatus.Accepted.Id, invitation.StatusId);
         Assert.NotNull(invitation.AcceptedUtc);
     }
 
     [Fact]
     public void ARevokedInvitation_IsRevoked()
-        => Assert.Equal(InvitationStatus.Revoked, Invitations.ARevokedInvitation().Status);
+        => Assert.Equal(InvitationStatus.Revoked.Id, Invitations.ARevokedInvitation().StatusId);
 
     [Fact]
     public void AClubFundedAsset_StaysWithTheAthlete()
@@ -129,7 +130,7 @@ public class TestDataBuildersTests
 
         Assert.Equal(MediaOrigin.ClubFundedShoot.Id, asset.OriginId);
         Assert.False(asset.IsClubBranding);
-        Assert.NotNull(asset.AthleteProfileId);
+        Assert.NotNull(asset.AthleteSiteId);
         Assert.Null(asset.OrganizationId);
     }
 
@@ -140,9 +141,8 @@ public class TestDataBuildersTests
     [Fact]
     public void ADraftSiteConfig_IsDraftWithValidLayout()
     {
-        var config = SiteConfigs.ADraftSiteConfig();
+        var config = AthleteSiteSnapshots.ADraftSiteSnapshot();
 
-        Assert.True(config.IsDraft);
         Assert.Null(config.PublishedUtc);
         Assert.NotNull(config.Layout);
         Assert.Equal(2, config.Layout.Sections.Count);
@@ -152,9 +152,8 @@ public class TestDataBuildersTests
     [Fact]
     public void APublishedSiteConfig_IsPublished()
     {
-        var config = SiteConfigs.APublishedSiteConfig();
+        var config = AthleteSiteSnapshots.APublishedSiteSnapshot();
 
-        Assert.False(config.IsDraft);
         Assert.NotNull(config.PublishedUtc);
     }
 }

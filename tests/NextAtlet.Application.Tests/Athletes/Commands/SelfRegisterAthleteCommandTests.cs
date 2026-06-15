@@ -2,9 +2,10 @@ using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Features.Athletes.Commands;
 using NextAtlet.Application.Tests.Shared.TestData;
 using NextAtlet.Domain.Entities.Athlete;
+using NextAtlet.Domain.Entities.AthleteProfile;
 using NextAtlet.Domain.Entities.Shared;
-using NextAtlet.Domain.Enumerations;
-using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
+using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Domain.Enumerations.Shared;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
 
@@ -28,7 +29,7 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
         [InlineData(12)]
         [InlineData(11)]
         [InlineData(5)]
-        public async Task Throws_When_BelowMinimumAge(int age)
+        public async Task Fails_When_BelowMinimumAge(int age)
         {
             var fixture = new SelfRegisterAthleteFixture();
 
@@ -36,8 +37,10 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
 
             var command = CreateCommand(dob, guardianEmail: null);
 
-            await Assert.ThrowsAsync<DomainException>(
-                () => fixture.Handler.Handle(command, CancellationToken.None));
+            var result = await fixture.Handler.Handle(command, CancellationToken.None);
+
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ErrorCodes.BelowMinimumAge, result.Error!.Code);
         }
 
         [Theory]
@@ -58,14 +61,15 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
                 guardianEmail: "john@john.com");
 
             //fails without guardian email
-            await Assert.ThrowsAsync<DomainException>(
-                () => fixture.Handler.Handle(commandFail, CancellationToken.None));
+            var failure = await fixture.Handler.Handle(commandFail, CancellationToken.None);
+            Assert.False(failure.IsSuccess);
+            Assert.Equal(ErrorCodes.GuardianEmailRequired, failure.Error!.Code);
 
             //success with guardian email
-            var dto = await fixture.Handler.Handle(
+            var success = await fixture.Handler.Handle(
                 commandSuccess, CancellationToken.None);
 
-            Assert.NotNull(dto);
+            Assert.True(success.IsSuccess);
         }
 
         [Theory]
@@ -81,11 +85,11 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
                 dob,
                 guardianEmail: null);
 
-            var dto = await fixture.Handler.Handle(
+            var result = await fixture.Handler.Handle(
                 command,
                 CancellationToken.None);
 
-            Assert.NotNull(dto);
+            Assert.True(result.IsSuccess);
         }
 
         [Theory]
@@ -102,19 +106,20 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
                 dob,
                 guardianEmail: null);
 
-            var dto = await fixture.Handler.Handle(
+            var result = await fixture.Handler.Handle(
                 command,
                 CancellationToken.None);
 
-            Assert.NotNull(dto);
+            Assert.True(result.IsSuccess);
         }
 
         [Fact]
-        public async Task ThrowsError_WhenSlug_ExistsAlready()
+        public async Task Fails_WhenSlug_ExistsAlready()
         {
             var fixture = new SelfRegisterAthleteFixture();
 
-            var dob = fixture.Clock.UtcNow.AddYears(-15);
+            // Adult so the consent gate doesn't short-circuit before the slug check.
+            var dob = fixture.Clock.UtcNow.AddYears(-25);
             var slug = "john-doe";
 
             fixture.AthleteRepository.SlugExistsAsync(slug).Returns(true);
@@ -129,6 +134,10 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
                 GuardianEmail: null
             );
 
+            var result = await fixture.Handler.Handle(command, CancellationToken.None);
+
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ErrorCodes.SlugAlreadyTaken, result.Error!.Code);
         }
 
         [Fact]
@@ -154,13 +163,18 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
                 guardianEmail
             );
 
-            var dto = fixture.Handler.Handle(command, CancellationToken.None);
-            Assert.Equal(slug, dto.Result.Slug);
-            Assert.Equal(diplayName, dto.Result.DisplayName);
-            Assert.Equal(DateOnly.FromDateTime(dob), dto.Result.DateOfBirth);
-            Assert.True(dto.Result.IsMinor);
-            Assert.Equal(ControlMode.AthleteControlled, dto.Result.ControlMode);
-            Assert.Same(Locale.Da.Id, dto.Result.DefaultLocale.Id);
+            
+            var result = await fixture.Handler.Handle(command, CancellationToken.None);
+
+            Assert.True(result.IsSuccess);
+            var dto = result.Value!;
+
+            Assert.Equal(slug, dto.Slug);
+            Assert.Equal(diplayName, dto.DisplayName);
+            Assert.Equal(DateOnly.FromDateTime(dob), dto.DateOfBirth);
+            Assert.True(dto.IsMinor);
+            Assert.Equal(ControlMode.AthleteControlled, dto.ControlMode);
+            Assert.Same(Locale.Da.Id, dto.DefaultLocale.Id);
 
         }
 
@@ -223,7 +237,7 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
         }
 
         [Fact]
-        public async Task ThrowError_WhenUser_HaveExistingProfile()
+        public async Task Fails_WhenUser_HaveExistingProfile()
         {
             var fixture = new SelfRegisterAthleteFixture();
 
@@ -251,10 +265,12 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
                 guardianEmail
             );
 
-            await Assert.ThrowsAsync<DomainException>(
-                () => fixture.Handler.Handle(command, CancellationToken.None));
+            var result = await fixture.Handler.Handle(command, CancellationToken.None);
 
-            fixture.AthleteRepository.Received(0).Add(Arg.Any<AthleteProfile>());
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ErrorCodes.SiteAlreadyExists, result.Error!.Code);
+
+            fixture.AthleteRepository.Received(0).Add(Arg.Any<AthleteSite>());
             fixture.SiteSnapshotRepository.Received(0).Add(Arg.Any<AthleteSiteSnapshot>());
             fixture.ProfileLoginRepository.Received(0).Add(Arg.Any<ProfileLogin>());
         }
@@ -290,7 +306,7 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
 
             await fixture.Handler.Handle(command, CancellationToken.None);
 
-            fixture.AthleteRepository.Received(1).Add(Arg.Any<AthleteProfile>());
+            fixture.AthleteRepository.Received(1).Add(Arg.Any<AthleteSite>());
             fixture.SiteSnapshotRepository.Received(1).Add(Arg.Any<AthleteSiteSnapshot>());
             fixture.ProfileLoginRepository.Received(1).Add(Arg.Any<ProfileLogin>());
         }

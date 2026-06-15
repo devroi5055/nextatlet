@@ -1,6 +1,5 @@
 using NextAtlet.Domain.Entities.Athlete;
-using NextAtlet.Domain.Enumerations;
-using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
+using NextAtlet.Domain.Enumerations.AthleteProfile;
 
 namespace NextAtlet.Application.Tests.Shared.TestData;
 
@@ -43,7 +42,7 @@ public static class Invitations
     public static Invitation ARevokedInvitation(string? roleId = null, string? email = null)
     {
         var invitation = APendingInvitation(roleId, email);
-        invitation.Status = InvitationStatus.Revoked;
+        invitation.StatusId = InvitationStatus.Revoked.Id;
         return invitation;
     }
 }

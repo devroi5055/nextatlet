@@ -1,9 +1,6 @@
 ﻿using FluentAssertions;
 using NextAtlet.Domain.Entities.Athlete;
-using NextAtlet.Domain.Enumerations;
-using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
-using System.Globalization;
-using Xunit;
+using NextAtlet.Domain.Enumerations.AthleteProfile;
 
 namespace NextAtlet.Domain.Tests.Entities;
 
@@ -14,7 +11,7 @@ public class InvitationTests
         TargetProfileId = Guid.NewGuid(),
         RoleId = roleId,
         Email = "parent@example.com",
-        Status = InvitationStatus.Pending,
+        StatusId = InvitationStatus.Pending.Id  ,
         ExpiresUtc = DateTime.UtcNow.AddDays(expiresInDays),
         InvitedByUserId = Guid.NewGuid()
     };
@@ -32,7 +29,7 @@ public class InvitationTests
     {
         var invitation = APendingInvitation();
 
-        invitation.Status.Should().Be(InvitationStatus.Pending);
+        invitation.StatusId.Should().Be(InvitationStatus.Pending.Id);
     }
 
     [Fact]

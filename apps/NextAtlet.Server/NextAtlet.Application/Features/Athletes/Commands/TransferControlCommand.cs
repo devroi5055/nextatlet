@@ -1,10 +1,12 @@
 using MediatR;
 using NextAtlet.Application.Common.Errors;
+using NextAtlet.Application.Common.Results;
 using NextAtlet.Application.Common.Time;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Domain.Authorization;
-using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
+using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Domain.Enumerations.Shared;
 using NextAtlet.Domain.Policies;
 
 namespace NextAtlet.Application.Features.Athletes.Commands;
@@ -20,9 +22,9 @@ namespace NextAtlet.Application.Features.Athletes.Commands;
 public record TransferControlCommand(
     Guid ProfileId,
     string CallerAuthProviderId,
-    string TransferTo) : IRequest; // "athlete" | "guardian"
+    string TransferTo) : IRequest<Result<Unit>>; // "athlete" | "guardian"
 
-public class TransferControlCommandHandler : IRequestHandler<TransferControlCommand>
+public class TransferControlCommandHandler : IRequestHandler<TransferControlCommand, Result<Unit>>
 {
     public const string ToAthlete = "athlete";
     public const string ToGuardian = "guardian";
@@ -50,44 +52,45 @@ public class TransferControlCommandHandler : IRequestHandler<TransferControlComm
         _clock = clock;
     }
 
-    public async Task Handle(TransferControlCommand request, CancellationToken cancellationToken)
+    public async Task<Result<Unit>> Handle(TransferControlCommand request, CancellationToken cancellationToken)
     {
         if (request.TransferTo is not (ToAthlete or ToGuardian))
-            throw new DomainException(ErrorCodes.TransferTargetInvalid, request.TransferTo);
+            return Error.FromCode(ErrorCodes.TransferTargetInvalid);
 
-        var profile = await _sites.GetByIdAsync(request.ProfileId, cancellationToken)
-            ?? throw new DomainException(ErrorCodes.ProfileNotFound);
+        var profile = await _sites.GetByIdAsync(request.ProfileId, cancellationToken);
+        if (profile is null)
+            return Error.FromCode(ErrorCodes.SiteNotFound);
 
-        var caller = await _users.GetByAuthProviderIdAsync(request.CallerAuthProviderId, cancellationToken)
-            ?? throw new DomainException(ErrorCodes.NotAuthorized);
+        var caller = await _users.GetByAuthProviderIdAsync(request.CallerAuthProviderId, cancellationToken);
+        if (caller is null)
+            return Error.FromCode(ErrorCodes.NotAuthorized);
 
-        var login = await _logins.GetActiveLoginAsync(caller.Id, request.ProfileId, cancellationToken)
-            ?? throw new DomainException(ErrorCodes.NotAuthorized);
-
+        var login = await _logins.GetActiveLoginAsync(caller.Id, request.ProfileId, cancellationToken);
         // Only the current controller may initiate a transfer.
-        if (!_permissions.IsController(login, profile))
-            throw new DomainException(ErrorCodes.NotAuthorized);
+        if (login is null || !_permissions.IsController(login, profile))
+            return Error.FromCode(ErrorCodes.NotAuthorized);
 
         if (request.TransferTo == ToAthlete)
         {
             // Age gate: control can only go to an athlete who is at least 13.
             if (AgePolicy.BandToday(profile.DateOfBirth, _clock.UtcNow) == AgeBand.BelowMinimum)
-                throw new DomainException(ErrorCodes.AthleteTooYoungForControl);
+                return Error.FromCode(ErrorCodes.AthleteTooYoungForControl);
 
             // Can't hand control to a ghost — an athlete owner login must exist.
             if (!await _logins.HasActiveOwnerLoginAsync(request.ProfileId, cancellationToken))
-                throw new DomainException(ErrorCodes.NoAthleteLoginExists);
+                return Error.FromCode(ErrorCodes.NoAthleteLoginExists);
 
-            profile.ControlMode = ControlMode.AthleteControlled;
+            profile.ControlModeId = ControlMode.AthleteControlled.Id;
         }
         else
         {
             if (!await _logins.HasActiveGuardianLoginAsync(request.ProfileId, cancellationToken))
-                throw new DomainException(ErrorCodes.NoGuardianLoginExists);
+                return Error.FromCode(ErrorCodes.NoGuardianLoginExists);
 
-            profile.ControlMode = ControlMode.GuardianControlled;
+            profile.ControlModeId = ControlMode.GuardianControlled.Id;
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return Unit.Value;
     }
 }

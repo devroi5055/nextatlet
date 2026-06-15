@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Domain.Entities.Athlete;
-using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
+using NextAtlet.Domain.Enumerations.AthleteProfile;
 using NextAtlet.Infrastructure.Data;
 
 namespace NextAtlet.Infrastructure.Persistence.Repositories;
@@ -20,15 +20,15 @@ public class InvitationRepository : IInvitationRepository
 
     public Task<bool> HasPendingAsync(Guid profileId, string email, string roleId, CancellationToken cancellationToken = default)
     {
-        const InvitationStatus pending = InvitationStatus.Pending;
+        var pending = InvitationStatus.Pending.Id;
         return _context.Invitations.AnyAsync(
-            i => i.TargetProfileId == profileId && i.Email == email && i.RoleId == roleId && i.Status == pending,
+            i => i.TargetProfileId == profileId && i.Email == email && i.RoleId == roleId && i.StatusId == pending,
             cancellationToken);
     }
 
     public Task<int> CountPendingByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
-        const InvitationStatus pending = InvitationStatus.Pending;
-        return _context.Invitations.CountAsync(i => i.Email == email && i.Status == pending, cancellationToken);
+        var pending = InvitationStatus.Pending.Id;
+        return _context.Invitations.CountAsync(i => i.Email == email && i.StatusId == pending, cancellationToken);
     }
 }

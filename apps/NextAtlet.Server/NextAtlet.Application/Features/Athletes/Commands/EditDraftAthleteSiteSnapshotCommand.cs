@@ -4,6 +4,7 @@ using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Mapping;
+using NextAtlet.Application.Common.Results;
 using NextAtlet.Domain.Entities.Athlete;
 using NextAtlet.Domain.Entities.Shared;
 using NextAtlet.Domain.ValueObjects;
@@ -14,14 +15,14 @@ public record EditDraftAthleteSiteSnapshotCommand(
     Guid AthleteProfileId,
     SiteLayout Layout,
     GlobalSettings? GlobalSettings,
-    int ExpectedVersion) : IRequest<AthleteSiteSnapshotDto>;
+    int ExpectedVersion) : IRequest<Result<AthleteSiteSnapshotDto>>;
 
 /// <summary>
 /// Replaces the draft snapshot: optimistic concurrency check, theme + section validation,
 /// sanitization. Creates a new immutable snapshot and updates the profile's draft pointer.
 /// Reads/writes via repositories, commits once.
 /// </summary>
-public class EditDraftAthleteSiteSnapshotCommandHandler : IRequestHandler<EditDraftAthleteSiteSnapshotCommand, AthleteSiteSnapshotDto>
+public class EditDraftAthleteSiteSnapshotCommandHandler : IRequestHandler<EditDraftAthleteSiteSnapshotCommand, Result<AthleteSiteSnapshotDto>>
 {
     private readonly IAthleteSiteRepository _profiles;
     private readonly IAthleteSiteSnapshotRepository _siteSnapshots;
@@ -47,21 +48,24 @@ public class EditDraftAthleteSiteSnapshotCommandHandler : IRequestHandler<EditDr
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<AthleteSiteSnapshotDto> Handle(EditDraftAthleteSiteSnapshotCommand request, CancellationToken cancellationToken)
+    public async Task<Result<AthleteSiteSnapshotDto>> Handle(EditDraftAthleteSiteSnapshotCommand request, CancellationToken cancellationToken)
     {
-        var profile = await _profiles.GetByIdAsync(request.AthleteProfileId, cancellationToken)
-            ?? throw new DomainException(ErrorCodes.ProfileNotFound, request.AthleteProfileId);
+        // Business rejection: the caller addressed a profile that isn't there.
+        var profile = await _profiles.GetByIdAsync(request.AthleteProfileId, cancellationToken);
+        if (profile is null)
+            return Error.FromCode(ErrorCodes.SiteNotFound);
 
+        // Broken invariant: an existing profile always has a draft (created atomically at registration).
         var current = await _siteSnapshots.GetDraftByProfileIdAsync(request.AthleteProfileId, cancellationToken)
-            ?? throw new DomainException(ErrorCodes.DraftConfigNotFound, request.AthleteProfileId);
+            ?? throw new InvalidOperationException($"Draft snapshot missing for profile {request.AthleteProfileId}.");
 
-        // Optimistic concurrency check
+        // Business rejection: optimistic concurrency — the client edited a stale version, reload + retry.
         if (current.Version != request.ExpectedVersion)
-            throw new DomainException(ErrorCodes.DraftVersionConflict, request.ExpectedVersion, current.Version);
+            return Error.FromCode(ErrorCodes.DraftVersionConflict);
 
-        // System/infra: the snapshot references a theme that should exist — not a user error.
+        // Broken invariant: the snapshot references a theme that must resolve — not a user error.
         var theme = await _themes.GetByIdAsync(current.ThemeId, cancellationToken)
-            ?? throw new DomainException(ErrorCodes.ThemeNotFound, current.ThemeId);
+            ?? throw new InvalidOperationException($"Theme {current.ThemeId} referenced by draft not found.");
 
         // Validate against theme + per-type business rules (shape is guaranteed by the type)
         //ValidateLayout(request.Layout, theme);

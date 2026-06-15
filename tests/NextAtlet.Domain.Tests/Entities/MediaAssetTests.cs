@@ -2,14 +2,14 @@
 
 using FluentAssertions;
 using NextAtlet.Domain.Entities.Shared;
-using NextAtlet.Domain.Enumerations;
+using NextAtlet.Domain.Enumerations.Media;
 
 public class MediaAssetTests
 {
     private static MediaAsset AClubFundedAsset(bool isClubBranding) => new()
     {
-        AthleteProfileId = Guid.NewGuid(),
-        Type = MediaAssetType.Image,
+        AthleteSiteId = Guid.NewGuid(),
+        TypeId = MediaAssetType.Image.Id,
         OriginId = MediaOrigin.ClubFundedShoot.Id,
         IsClubBranding = isClubBranding,
         StorageKey = "abc123",
@@ -23,7 +23,7 @@ public class MediaAssetTests
     {
         var asset = AClubFundedAsset(isClubBranding: false);
 
-        asset.AthleteProfileId.Should().NotBe(Guid.Empty);
+        asset.AthleteSiteId.Should().NotBe(Guid.Empty);
         asset.IsClubBranding.Should().BeFalse();
     }
 

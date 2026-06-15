@@ -1,6 +1,6 @@
 ﻿using FluentAssertions;
-using NextAtlet.Domain.Entities.Athlete;
-using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
+using NextAtlet.Domain.Entities.AthleteProfile;
+using NextAtlet.Domain.Enumerations.AthleteProfile;
 using NextAtlet.Domain.Tests.Shared;
 
 namespace NextAtlet.Domain.Tests.Entities;
@@ -19,7 +19,7 @@ public class AthleteProfileTests
 {
     // Helper: build a valid profile with an overridable date of birth.
     // Adjust the initialiser to match your actual entity's required members.
-    private static AthleteProfile AProfile(DateOnly? dob = null) => new()
+    private static AthleteSite AProfile(DateOnly? dob = null) => new()
     {
         Slug = "maria-jensen",
         DisplayName = "Maria Jensen",
@@ -112,21 +112,21 @@ public class AthleteProfileTests
     {
         var profile = AProfile();
 
-        profile.ControlMode.Should().Be(ControlMode.AthleteControlled);
+        profile.ControlModeId.Should().Be(ControlMode.AthleteControlled.Id);
     }
 
     [Theory]
-    [InlineData(ControlMode.AthleteControlled)]
-    [InlineData(ControlMode.GuardianControlled)]
-    [InlineData(ControlMode.AthleteControlledShared)]
-    [InlineData(ControlMode.GuardianControlledShared)]
-    public void ControlMode_AcceptsEveryDefinedMode(ControlMode mode)
+    [InlineData("athlete_controlled")]
+    [InlineData("guardian_controlled")]
+    [InlineData("athlete_controlled_shared")]
+    [InlineData("guardian_controlled_shared")]
+    public void ControlMode_AcceptsEveryDefinedMode(string modeId)
     {
         var profile = AProfile();
 
-        profile.ControlMode = mode;
+        profile.ControlModeId = modeId;
 
-        profile.ControlMode.Should().Be(mode);
+        profile.ControlModeId.Should().Be(modeId);
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -192,7 +192,7 @@ public class AthleteProfileTests
     [Fact(Skip = "Confirm whether AthleteProfile guards against an empty slug.")]
     public void Construction_WithEmptySlug_IsRejected()
     {
-        var act = () => new AthleteProfile { Slug = "", DisplayName = "X", DateOfBirth = new DateOnly(5776, 2, 8) };
+        var act = () => new AthleteSite { Slug = "", DisplayName = "X", DateOfBirth = new DateOnly(5776, 2, 8) };
 
         act.Should().Throw<ArgumentException>();
     }

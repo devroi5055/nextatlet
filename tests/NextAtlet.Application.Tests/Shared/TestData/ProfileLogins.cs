@@ -1,5 +1,5 @@
 using NextAtlet.Domain.Entities.Athlete;
-using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
+using NextAtlet.Domain.Enumerations.AthleteProfile;
 
 namespace NextAtlet.Application.Tests.Shared.TestData;
 
@@ -23,7 +23,7 @@ public static class ProfileLogins
 
     private static ProfileLogin Revoke(ProfileLogin login)
     {
-        login.Status = ProfileLoginStatus.Revoked;
+        login.StatusId = ProfileLoginStatus.Revoked.Id;
         return login;
     }
 }

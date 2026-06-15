@@ -1,7 +1,6 @@
 using FluentAssertions;
-using NextAtlet.Domain.Entities.Athlete;
-using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
-using Xunit;
+using NextAtlet.Domain.Entities.AthleteProfile;
+using NextAtlet.Domain.Enumerations.AthleteProfile;
 
 namespace NextAtlet.Domain.Tests.Entities;
 
@@ -11,23 +10,23 @@ namespace NextAtlet.Domain.Tests.Entities;
 /// </summary>
 public class AthleteProfileConsentTests
 {
-    private static AthleteProfile AProfile(ConsentState state) => new()
+    private static AthleteSite AProfile(ConsentState state) => new()
     {
         Slug = "maria",
         DisplayName = "Maria",
         DateOfBirth = new DateOnly(2015, 1, 1),
-        ConsentState = state
+        ConsentStateId = state.Id
     };
 
     [Fact]
     public void NewProfile_DefaultsToConsentNotRequired()
-        => new AthleteProfile { Slug = "x", DisplayName = "X", DateOfBirth = new DateOnly(2015, 1, 1) }
-            .ConsentState.Should().Be(ConsentState.NotRequired);
+        => new AthleteSite { Slug = "x", DisplayName = "X", DateOfBirth = new DateOnly(2015, 1, 1) }
+            .ConsentStateId.Should().Be(ConsentState.NotRequired.Id);
 
     [Theory]
-    [InlineData(ConsentState.PendingGuardianConsent, true)]
-    [InlineData(ConsentState.Consented, false)]
-    [InlineData(ConsentState.NotRequired, false)]
-    public void AwaitsGuardianConsent_TrueOnlyWhilePending(ConsentState state, bool expected)
-        => AProfile(state).AwaitsGuardianConsent.Should().Be(expected);
+    [InlineData("pending_guardian_consent", true)]
+    [InlineData("consented", false)]
+    [InlineData("not_required", false)]
+    public void AwaitsGuardianConsent_TrueOnlyWhilePending(string stateId, bool expected)
+        => AProfile(ConsentState.FromId(stateId)).AwaitsGuardianConsent.Should().Be(expected);
 }

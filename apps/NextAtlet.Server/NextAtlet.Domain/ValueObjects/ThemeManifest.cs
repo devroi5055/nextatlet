@@ -15,7 +15,7 @@ public class ThemeManifest
     // component style overrides: optional but HIGHLY ENCOURAGED
     // used for making components fit specific themes
     // goes to frontend defaults if none is applied
-    public required Dictionary<string, StyleableElement> Components { get; set; }
+    public Dictionary<string, StyleableElement> ComponentStyles { get; set; } = [];
 
     // keyed by "sectionType.variant" ("gallery.carousel")
     // variant overrides: optional, sparse, only when theme has an opinion

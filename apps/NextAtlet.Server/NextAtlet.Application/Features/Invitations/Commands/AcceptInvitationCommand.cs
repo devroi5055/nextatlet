@@ -1,12 +1,12 @@
 using MediatR;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
+using NextAtlet.Application.Common.Results;
 using NextAtlet.Application.Features.Account;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Domain.Entities.Athlete;
-using NextAtlet.Domain.Enumerations;
-using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
+using NextAtlet.Domain.Enumerations.AthleteProfile;
 
 namespace NextAtlet.Application.Features.Invitations.Commands;
 
@@ -20,9 +20,9 @@ namespace NextAtlet.Application.Features.Invitations.Commands;
 public record AcceptInvitationCommand(
     Guid InvitationId,
     string AuthProviderId,
-    string Email) : IRequest<InvitationAcceptedDto>;
+    string Email) : IRequest<Result<InvitationAcceptedDto>>;
 
-public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCommand, InvitationAcceptedDto>
+public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCommand, Result<InvitationAcceptedDto>>
 {
     private readonly IInvitationRepository _invitations;
     private readonly IProfileLoginRepository _logins;
@@ -41,21 +41,22 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<InvitationAcceptedDto> Handle(AcceptInvitationCommand request, CancellationToken cancellationToken)
+    public async Task<Result<InvitationAcceptedDto>> Handle(AcceptInvitationCommand request, CancellationToken cancellationToken)
     {
-        var invite = await _invitations.GetByIdAsync(request.InvitationId, cancellationToken)
-            ?? throw new DomainException(ErrorCodes.InvitationNotFound);
+        var invite = await _invitations.GetByIdAsync(request.InvitationId, cancellationToken);
+        if (invite is null)
+            return Error.FromCode(ErrorCodes.InvitationNotFound);
 
         // Expiry is checked on use (no background sweeper needed for MVP).
         if (invite.IsExpired)
-            throw new DomainException(ErrorCodes.InvitationExpired);
+            return Error.FromCode(ErrorCodes.InvitationExpired);
 
-        if (invite.Status != InvitationStatus.Pending)
-            throw new DomainException(ErrorCodes.InvitationAlreadyUsed);
+        if (invite.StatusId != InvitationStatus.Pending.Id)
+            return Error.FromCode(ErrorCodes.InvitationAlreadyUsed);
 
         // Email match is the implicit proof of inbox access — the low-risk security gate.
         if (!string.Equals(invite.Email, request.Email, StringComparison.OrdinalIgnoreCase))
-            throw new DomainException(ErrorCodes.InvitationEmailMismatch);
+            return Error.FromCode(ErrorCodes.InvitationEmailMismatch);
 
         // GetOrCreate the user — may already exist (returning user) or be new.
         var user = await _userProvisioner.GetOrCreateAsync(request.Email, request.AuthProviderId, cancellationToken);

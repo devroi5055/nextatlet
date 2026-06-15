@@ -2,7 +2,8 @@ using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Features.Athletes.Commands;
 using NextAtlet.Application.Tests.Shared.TestData;
 using NextAtlet.Domain.Entities.Athlete;
-using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
+using NextAtlet.Domain.Entities.AthleteProfile;
+using NextAtlet.Domain.Enumerations.AthleteProfile;
 using NSubstitute;
 
 namespace NextAtlet.Application.Tests.Athletes.Commands;
@@ -21,16 +22,19 @@ public class RecordGuardianConsentTests
         var profile = TestAthletes.APendingGuardianConsentAthlete();
         fixture.AthleteRepository.GetByIdAsync(profile.Id, Arg.Any<CancellationToken>()).Returns(profile);
 
-        await fixture.Handler.Handle(
+        var result = await fixture.Handler.Handle(
             new RecordGuardianConsentCommand(profile.Id, guardian.AuthProviderId!, guardian.Email), CancellationToken.None);
 
+        // Recorded consent → success carrying the new consent id.
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        // CreatedUtc is stamped during SaveChangesAsync (mocked here), so it isn't asserted at Add time.
         fixture.GuardianConsentRepository.Received(1).Add(Arg.Is<GuardianConsent>(c =>
             c.AthleteProfileId == profile.Id &&
             c.GuardianUserId == guardian.Id &&
-            c.Method == ConsentMethod.VerifiedEmail &&
-            c.TermsVersion == RecordGuardianConsentFixture.TermsVersion &&
-            c.CreatedUtc != default));
-        Assert.Equal(ConsentState.Consented, profile.ConsentState);
+            c.MethodId == ConsentMethod.VerifiedEmail.Id &&
+            c.TermsVersion == RecordGuardianConsentFixture.TermsVersion));
+        Assert.Equal(ConsentState.Consented.Id, profile.ConsentStateId);
     }
 
     [Fact]
@@ -41,21 +45,26 @@ public class RecordGuardianConsentTests
         var profile = TestAthletes.AnAthlete(); // ConsentState NotRequired
         fixture.AthleteRepository.GetByIdAsync(profile.Id, Arg.Any<CancellationToken>()).Returns(profile);
 
-        await fixture.Handler.Handle(
+        var result = await fixture.Handler.Handle(
             new RecordGuardianConsentCommand(profile.Id, guardian.AuthProviderId!, guardian.Email), CancellationToken.None);
 
+        // Consent not needed → empty success (nothing recorded, gate unchanged).
+        Assert.True(result.IsSuccess);
+        Assert.Null(result.Value);
         fixture.GuardianConsentRepository.DidNotReceive().Add(Arg.Any<GuardianConsent>());
-        Assert.Equal(ConsentState.NotRequired, profile.ConsentState);
+        Assert.Equal(ConsentState.NotRequired.Id, profile.ConsentStateId);
     }
 
     [Fact]
     public async Task UnknownProfile_IsRejected()
     {
         var fixture = new RecordGuardianConsentFixture();
-        fixture.AthleteRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((AthleteProfile?)null);
+        fixture.AthleteRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((AthleteSite?)null);
 
-        var ex = await Assert.ThrowsAsync<DomainException>(() =>
-            fixture.Handler.Handle(new RecordGuardianConsentCommand(Guid.NewGuid(), "auth0|x", "g@test.local"), CancellationToken.None));
-        Assert.Equal(ErrorCodes.ProfileNotFound, ex.ErrorCode);
+        var result = await fixture.Handler.Handle(
+            new RecordGuardianConsentCommand(Guid.NewGuid(), "auth0|x", "g@test.local"), CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorCodes.SiteNotFound, result.Error!.Code);
     }
 }

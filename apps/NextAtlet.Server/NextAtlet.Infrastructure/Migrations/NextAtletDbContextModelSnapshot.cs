@@ -22,7 +22,7 @@ namespace NextAtlet.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.AthleteProfile", b =>
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.AthleteSite", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -101,7 +101,7 @@ namespace NextAtlet.Infrastructure.Migrations
 
                     b.HasIndex("SportId");
 
-                    b.ToTable("AthleteProfiles");
+                    b.ToTable("AthleteSites");
                 });
 
             modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.AthleteSiteSnapshot", b =>
@@ -288,7 +288,7 @@ namespace NextAtlet.Infrastructure.Migrations
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)");
 
-                    b.Property<Guid?>("AthleteProfileId")
+                    b.Property<Guid?>("AthleteSiteId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedUtc")
@@ -327,7 +327,7 @@ namespace NextAtlet.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AthleteProfileId");
+                    b.HasIndex("AthleteSiteId");
 
                     b.ToTable("MediaAssets");
                 });
@@ -373,7 +373,7 @@ namespace NextAtlet.Infrastructure.Migrations
                             Id = new Guid("11111111-1111-1111-1111-111111111111"),
                             CreatedUtc = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             IsActive = true,
-                            Manifest = "{\"supportedSectionTypes\":[\"hero\",\"bio\"],\"colorSlots\":[\"primary\",\"accent\",\"background\"],\"fontSlots\":[\"heading\",\"body\"]}",
+                            Manifest = "{\"colors\":{\"primary\":\"#BA4336\",\"secondary\":\"#874942\",\"accent\":\"#EC2A15\",\"background\":\"#FAF8F7\",\"surface\":\"#FFFFFF\",\"text\":\"#332E2D\"},\"typography\":{\"headingFont\":\"Sora\",\"bodyFont\":\"Inter\",\"headingWeight\":\"700\",\"bodyWeight\":\"400\"},\"components\":{\"buttons\":{\"overrides\":{\"radius\":\"rounded\"},\"options\":[{\"key\":\"sharp\",\"displayName\":\"Sharp Edges\",\"styles\":{\"radius\":\"none\"}}]},\"cards\":{\"overrides\":{\"radius\":\"medium\"},\"options\":[]}},\"sectionStyles\":{}}",
                             Name = "Classic",
                             Version = 1
                         });
@@ -413,7 +413,7 @@ namespace NextAtlet.Infrastructure.Migrations
 
             modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.AthleteSiteSnapshot", b =>
                 {
-                    b.HasOne("NextAtlet.Domain.Entities.Athlete.AthleteProfile", "AthleteProfile")
+                    b.HasOne("NextAtlet.Domain.Entities.Athlete.AthleteSite", "AthleteSite")
                         .WithMany()
                         .HasForeignKey("AthleteProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -425,14 +425,14 @@ namespace NextAtlet.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("AthleteProfile");
+                    b.Navigation("AthleteSite");
 
                     b.Navigation("Theme");
                 });
 
             modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.GuardianConsent", b =>
                 {
-                    b.HasOne("NextAtlet.Domain.Entities.Athlete.AthleteProfile", "AthleteProfile")
+                    b.HasOne("NextAtlet.Domain.Entities.Athlete.AthleteSite", "AthleteSite")
                         .WithMany()
                         .HasForeignKey("AthleteProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -444,7 +444,7 @@ namespace NextAtlet.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("AthleteProfile");
+                    b.Navigation("AthleteSite");
 
                     b.Navigation("Guardian");
                 });
@@ -457,7 +457,7 @@ namespace NextAtlet.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("NextAtlet.Domain.Entities.Athlete.AthleteProfile", "TargetProfile")
+                    b.HasOne("NextAtlet.Domain.Entities.Athlete.AthleteSite", "TargetSite")
                         .WithMany()
                         .HasForeignKey("TargetProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -465,12 +465,12 @@ namespace NextAtlet.Infrastructure.Migrations
 
                     b.Navigation("InvitedBy");
 
-                    b.Navigation("TargetProfile");
+                    b.Navigation("TargetSite");
                 });
 
             modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.ProfileLogin", b =>
                 {
-                    b.HasOne("NextAtlet.Domain.Entities.Athlete.AthleteProfile", "AthleteProfile")
+                    b.HasOne("NextAtlet.Domain.Entities.Athlete.AthleteSite", "AthleteSite")
                         .WithMany("ProfileLogins")
                         .HasForeignKey("AthleteProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -482,22 +482,22 @@ namespace NextAtlet.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("AthleteProfile");
+                    b.Navigation("AthleteSite");
 
                     b.Navigation("User");
                 });
 
             modelBuilder.Entity("NextAtlet.Domain.Entities.Shared.MediaAsset", b =>
                 {
-                    b.HasOne("NextAtlet.Domain.Entities.Athlete.AthleteProfile", "AthleteProfile")
+                    b.HasOne("NextAtlet.Domain.Entities.Athlete.AthleteSite", "AthleteSite")
                         .WithMany("MediaAssets")
-                        .HasForeignKey("AthleteProfileId")
+                        .HasForeignKey("AthleteSiteId")
                         .OnDelete(DeleteBehavior.Cascade);
 
-                    b.Navigation("AthleteProfile");
+                    b.Navigation("AthleteSite");
                 });
 
-            modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.AthleteProfile", b =>
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.AthleteSite", b =>
                 {
                     b.Navigation("MediaAssets");
 

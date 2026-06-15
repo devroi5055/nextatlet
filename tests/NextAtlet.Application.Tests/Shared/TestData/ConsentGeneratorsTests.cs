@@ -1,5 +1,4 @@
-using NextAtlet.Domain.Enumerations;
-using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
+using NextAtlet.Domain.Enumerations.AthleteProfile;
 
 namespace NextAtlet.Application.Tests.Shared.TestData;
 
@@ -11,7 +10,7 @@ public class ConsentGeneratorsTests
     {
         var athlete = TestAthletes.APendingGuardianConsentAthlete();
 
-        Assert.Equal(ConsentState.PendingGuardianConsent, athlete.ConsentState);
+        Assert.Equal(ConsentState.PendingGuardianConsent.Id, athlete.ConsentStateId);
         Assert.True(athlete.AwaitsGuardianConsent);
     }
 
@@ -21,9 +20,9 @@ public class ConsentGeneratorsTests
         var consent = GuardianConsents.AGuardianConsent();
 
         Assert.NotEqual(Guid.Empty, consent.GuardianUserId);        // who
-        Assert.Equal(ConsentMethod.VerifiedEmail, consent.Method);  // how
+        Assert.Equal(ConsentMethod.VerifiedEmail.Id, consent.MethodId);  // how
         Assert.False(string.IsNullOrWhiteSpace(consent.TermsVersion)); // what
-        Assert.NotEqual(default, consent.ConsentedUtc);             // when
+        // "when" (CreatedUtc) is stamped by the DbContext at SaveChanges, not at construction.
         Assert.NotEqual(Guid.Empty, consent.AthleteProfileId);
     }
 }

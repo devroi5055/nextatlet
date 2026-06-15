@@ -10,7 +10,6 @@ public static class ErrorCodes
     public const string SlugAlreadyTaken        = "slug.already_taken";
     public const string SlugReserved            = "slug.reserved";
     public const string GuardianEmailRequired   = "guardian.email_required";
-    public const string ProfileNotFound         = "profile.not_found";
     public const string DraftConfigNotFound     = "config.draft.not_found";
     public const string DraftVersionConflict    = "config.draft.version_conflict";
     public const string SectionTypeNotSupported = "section.type_not_supported";
@@ -18,7 +17,8 @@ public static class ErrorCodes
     public const string SectionValidationFailed = "section.validation_failed";
     public const string ThemeNotFound           = "theme.not_found";
     public const string ThemeNotPermitted       = "theme.not_permitted";
-    public const string ProfileAlreadyExists    = "profile.already_exists";
+    public const string SiteNotFound         = "site.not_found";
+    public const string SiteAlreadyExists    = "site.already_exists";
     public const string GuardianCannotRegisterAdult = "guardian.cannot_register_adult";
 
     // Age gating + consent (ControlMode plan).
@@ -27,6 +27,8 @@ public static class ErrorCodes
 
     /// <summary>Publish blocked while a minor profile awaits guardian consent (GDPR Art. 8).</summary>
     public const string GuardianConsentRequired = "consent.guardian_required";
+    public const string ConsentNotNeeded = "consent.not_needed";
+
 
     // Control transfer / collaboration.
     public const string AthleteTooYoungForControl = "control.athlete_too_young";

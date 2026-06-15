@@ -3,7 +3,7 @@ using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Domain.Authorization;
-using NextAtlet.Domain.Enumerations;
+using NextAtlet.Domain.Enumerations.AthleteProfile;
 
 namespace NextAtlet.Application.Features.Account.Queries;
 
@@ -67,7 +67,7 @@ public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, M
             var canEdit = ownerLogin is not null && _permissions.Resolve(ownerLogin, ownedProfile).CanEditContent;
 
             return new MeDto(Registered: true, Role: ProfileRole.AthleteOwner.Id, ProfileId: ownedProfile.Id,
-                ControlMode: ownedProfile.ControlMode, IsInControl: isInControl, CanEdit: canEdit,
+                ControlMode: ControlMode.FromId(ownedProfile.ControlModeId), IsInControl: isInControl, CanEdit: canEdit,
                 GuardedProfileIds: guardedProfileIds, PendingGuardianInvites: pendingInvites);
         }
 

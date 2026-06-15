@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using NextAtlet.Api;
+using NextAtlet.Api.Filters;
 using NextAtlet.Application;
 using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Common.Time;
@@ -26,7 +27,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
+builder.Services.AddControllers(options => options.Filters.Add<ResultFilter>());
 builder.Services.AddOpenApi(options => options.AddDocumentTransformer<OAuthSecuritySchemeTransformer>());
 
 // Dual-scheme auth: cookie (production / Next.js session) + JWT bearer (Swagger, service clients).
@@ -182,6 +183,7 @@ if (app.Environment.IsDevelopment())
     using (var scope = app.Services.CreateScope())
     {
         var dbContext = scope.ServiceProvider.GetRequiredService<NextAtletDbContext>();
+        dbContext.Database.EnsureDeleted();
         dbContext.Database.Migrate();
     }
 }

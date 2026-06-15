@@ -10,10 +10,11 @@ using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Application.Tests.Shared;
 using NextAtlet.Domain.Entities.Shared;
 using NSubstitute;
+using NextAtlet.Domain.Entities.Organization;
 
 public class SelfRegisterAthleteFixture
 {
-    public IAthleteProfileRepository AthleteRepository { get; }
+    public IAthleteSiteRepository AthleteRepository { get; }
     public IProfileLoginRepository ProfileLoginRepository { get; }
     public IUserRepository UserRepository { get; }
     public IInvitationRepository InvitationRepository { get; }
@@ -48,7 +49,7 @@ public class SelfRegisterAthleteFixture
         //makes today 2018
         Clock = MockFactory.CreateClock(new DateTime(2018, 1, 1));
 
-        AthleteRepository = Substitute.For<IAthleteProfileRepository>();
+        AthleteRepository = Substitute.For<IAthleteSiteRepository>();
         ProfileLoginRepository = Substitute.For<IProfileLoginRepository>();
         ThemeRepository = Substitute.For<IThemeRepository>();
         SiteSnapshotRepository = Substitute.For<IAthleteSiteSnapshotRepository>();
@@ -57,7 +58,7 @@ public class SelfRegisterAthleteFixture
         EmailService = Substitute.For<IEmailService>();
         UnitOfWork = Substitute.For<IUnitOfWork>();
 
-        UserProvisioner = new UserProvisioner(UserRepository);
+        UserProvisioner = new UserProvisioner(UserRepository, Clock);
 
         InvitationIssuer = new InvitationIssuer(
             InvitationRepository,

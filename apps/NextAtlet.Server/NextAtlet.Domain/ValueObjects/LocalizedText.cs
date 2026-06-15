@@ -1,5 +1,5 @@
 using System.Text.Json.Serialization;
-using NextAtlet.Domain.Enumerations;
+using NextAtlet.Domain.Enumerations.Shared;
 
 namespace NextAtlet.Domain.ValueObjects;
 

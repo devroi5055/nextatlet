@@ -1,5 +1,4 @@
 using NextAtlet.Domain.Entities.Athlete;
-using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
 
 namespace NextAtlet.Application.Tests.Shared.TestData;
 
@@ -12,15 +11,14 @@ public static class GuardianConsents
     public static GuardianConsent AGuardianConsent(
         Guid? athleteProfileId = null,
         Guid? guardianUserId = null,
-        ConsentMethod method = ConsentMethod.VerifiedEmail,
+        string method = "verified_email",
         string termsVersion = "2026-01",
         DateTime? consentedUtc = null)
         => new()
         {
             AthleteProfileId = athleteProfileId ?? Guid.NewGuid(),
             GuardianUserId = guardianUserId ?? Guid.NewGuid(),
-            Method = method,
+            MethodId = method,
             TermsVersion = termsVersion,
-            ConsentedUtc = consentedUtc ?? DateTime.UtcNow
         };
 }

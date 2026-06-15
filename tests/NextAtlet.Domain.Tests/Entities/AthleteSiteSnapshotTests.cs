@@ -1,11 +1,7 @@
 using FluentAssertions;
 using NextAtlet.Domain.Entities.Athlete;
-using NextAtlet.Domain.Enumerations;
-using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
 using NextAtlet.Domain.ValueObjects;
 using NextAtlet.Domain.ValueObjects.Sections;
-using System.Globalization;
-using Xunit;
 
 namespace NextAtlet.Domain.Tests.Entities;
 
@@ -37,7 +33,6 @@ public class AthleteSiteSnapshotTests
     private static AthleteSiteSnapshot ADraftSnapshot() => new()
     {
         AthleteProfileId = Guid.NewGuid(),
-        IsDraft = true,
         ThemeId = Guid.NewGuid(),
         ThemeVersion = 1,
         Layout = AValidLayout(),

@@ -1,4 +1,4 @@
-using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
+using NextAtlet.Domain.Enumerations.AthleteProfile;
 using NextAtlet.Domain.ValueObjects;
 
 namespace NextAtlet.Application.Common.DTOs;
@@ -25,14 +25,14 @@ public class RegisterChildAthleteRequest
     public string DefaultLocaleId { get; set; } = default!;
 }
 
-public class AthleteProfileDto
+public class AthleteSiteDto
 {
     public Guid Id { get; set; }
     public required string Slug { get; set; }
     public required string DisplayName { get; set; }
     public required DateOnly DateOfBirth { get; set; }
     public bool IsMinor { get; set; }
-    public ControlMode ControlMode { get; set; }
+    public required ControlMode ControlMode { get; set; }
     public EnumerationDto DefaultLocale { get; set; } = default!;
 }
 
