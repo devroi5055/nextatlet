@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/apps/" />
+  <Folder Name="/apps/NextAtlet.Server/">
+    <Project Path="apps/NextAtlet.Server/NextAtlet.Api/NextAtlet.Api.csproj" />
+    <Project Path="apps/NextAtlet.Server/NextAtlet.Application/NextAtlet.Application.csproj" />
+    <Project Path="apps/NextAtlet.Server/NextAtlet.Domain/NextAtlet.Domain.csproj" />
+    <Project Path="apps/NextAtlet.Server/NextAtlet.Infrastructure/NextAtlet.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/NextAtlet.Api.Tests/NextAtlet.Api.Tests.csproj" />
+    <Project Path="tests/NextAtlet.Application.Tests/NextAtlet.Application.Tests.csproj" />
+    <Project Path="tests/NextAtlet.Domain.Tests/NextAtlet.Domain.Tests.csproj" />
+    <Project Path="tests/NextAtlet.Infrastructure.Tests/NextAtlet.Infrastructure.Tests.csproj" />
+  </Folder>
+</Solution>

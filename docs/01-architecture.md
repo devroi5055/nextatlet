@@ -45,7 +45,7 @@ The public athlete and club pages live or die on **SEO and load speed** — disc
    └──────────────┘      └───────────────────────────────────────────┘     └──────────────┘
 ```
 
-## 3. Read/write path separation (CQRS-lite)
+## 3. Read/write path separation
 
 Two fundamentally different read paths. Do **not** share a model between them.
 
@@ -53,6 +53,23 @@ Two fundamentally different read paths. Do **not** share a model between them.
 2. **Public path** (anonymous): returns only the **published public data contract** — sanitized, with resolved CDN media URLs and the theme manifest. Aggressively cached; invalidated on publish.
 
 The same separation applies to organizations: club staff edit a draft club page; visitors see the published one.
+
+**Implementation.** The write/editor path runs through **MediatR** — controllers dispatch `IRequest` commands/queries via `ISender`; handlers orchestrate **repositories** + domain services and commit once through `IUnitOfWork`. Repository interfaces and handlers live in the Application layer; EF Core implementations live in Infrastructure (which references Application). No handler touches `DbContext` directly. See `docs/07` §1 and the `docs/08` ADR.
+
+### API error contract (errors as codes)
+
+The backend emits **error codes, never localized strings** — the frontend owns the `da`/`en` catalog and resolves codes to text. Every error response is the single shape:
+
+```jsonc
+// HTTP 400 (user-facing) or 500 (system)
+{ "errorCode": "slug.already_taken", "parameters": ["maria-jensen"] }
+```
+
+- **User-facing failures** (slug taken, guardian email required, profile not found, version conflict, invalid section) are thrown as `DomainException(code, params)` and mapped to **400** with their code.
+- **System failures** (missing seed theme, DB down) stay plain exceptions — logged, returned as a generic **500** `{ "errorCode": "internal_error" }` that leaks no internal detail.
+- Status codes start coarse (400 for all domain errors, 500 otherwise); finer codes (404/409/403) are a later refinement only if the frontend benefits.
+
+This is **Model A** (error codes + one global handler). Rationale, the two-category split, and the deferred upgrades (Result pattern, RFC 9457 Problem Details) are in `docs/07` and the `error-handling-implementation-plan.md`.
 
 **Draft vs Published is a hard rule.** Editing never mutates what the public (or an affiliated club page) sees until publish. This matters doubly for the B2B side: club pages consume the athlete's **published** contract only — never drafts, never private fields (see `03`).
 

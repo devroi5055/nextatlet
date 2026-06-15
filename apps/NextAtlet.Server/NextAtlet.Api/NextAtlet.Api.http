@@ -1,6 +1,87 @@
 @NextAtlet.Api_HostAddress = http://localhost:5278
+@profileId = 00000000-0000-0000-0000-000000000000
 
-GET {{NextAtlet.Api_HostAddress}}/weatherforecast/
+# All /api endpoints require a bearer token now. Easiest: open /swagger, click "Authorize",
+# log in via Auth0, then copy the access token here (or grab one from Auth0 directly).
+@token = PASTE_ACCESS_TOKEN_HERE
+
+### Self-registration — the caller registers their own profile (minor → guardian invited)
+# Identity (email + IdP subject) comes from the authenticated caller, not the body.
+# defaultLocale is an EnumerationDto — only `id` is required.
+POST {{NextAtlet.Api_HostAddress}}/api/athletes/register
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "displayName": "Maria Jensen",
+  "slug": "maria-jensen",
+  "dateOfBirth": "2007-06-15",
+  "defaultLocale": { "id": "da" },
+  "guardianEmail": "aunt@example.dk"
+}
+
+### Guardian registers a profile for their child — the caller becomes the Guardian
+POST {{NextAtlet.Api_HostAddress}}/api/athletes/register-child
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "childDisplayName": "Lukas Jensen",
+  "slug": "lukas-jensen",
+  "childDateOfBirth": "2015-03-20",
+  "defaultLocale": { "id": "da" }
+}
+
+### Who am I? (registration gate: Registered + Role + PendingGuardianInvites)
+GET {{NextAtlet.Api_HostAddress}}/api/me
 Accept: application/json
+Authorization: Bearer {{token}}
+
+### Accept guardianship (invited guardian claims account + activates pending guardian logins)
+# Log in as the guardian (the email named at the child's registration), then call this.
+POST {{NextAtlet.Api_HostAddress}}/api/guardianships/accept
+Authorization: Bearer {{token}}
+
+### Get the draft config (copy the id from the create response into @profileId)
+GET {{NextAtlet.Api_HostAddress}}/api/athletes/{{profileId}}/config/draft
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### Update the draft config
+# NOTE: the polymorphic section "type" discriminator lives inside `data` and MUST be its
+# first property (System.Text.Json polymorphism requirement).
+PUT {{NextAtlet.Api_HostAddress}}/api/athletes/{{profileId}}/config/draft
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "layout": {
+    "sections": [
+      {
+        "id": "hero-1",
+        "order": 0,
+        "data": {
+          "type": "hero",
+          "headline": { "da": "Velkommen", "en": "Welcome" },
+          "subheading": { "da": "Min judoprofil", "en": "My judo profile" },
+          "backgroundImageAssetId": null
+        }
+      },
+      {
+        "id": "bio-1",
+        "order": 1,
+        "data": {
+          "type": "bio",
+          "bio": { "da": "Jeg er...", "en": "I am..." },
+          "highlightItems": [
+            { "label": { "da": "Bælte", "en": "Belt" }, "value": "2. dan" }
+          ]
+        }
+      }
+    ]
+  },
+  "globalSettings": { "accentColor": "#ffd700", "fontFamily": "Inter" },
+  "expectedVersion": 1
+}
 
 ###

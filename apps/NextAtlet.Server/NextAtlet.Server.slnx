@@ -1,6 +1,0 @@
-<Solution>
-  <Project Path="NextAtlet.Api/NextAtlet.Api.csproj" />
-  <Project Path="NextAtlet.Application/NextAtlet.Application.csproj" />
-  <Project Path="NextAtlet.Domain/NextAtlet.Domain.csproj" />
-  <Project Path="NextAtlet.Infrastructure/NextAtlet.Infrastructure.csproj" />
-</Solution>

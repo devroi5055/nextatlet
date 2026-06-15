@@ -1,128 +1,105 @@
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using NextAtlet.Application.DTOs;
+using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Features.Athletes.Commands;
 using NextAtlet.Application.Features.Athletes.Queries;
+using NextAtlet.Application.Features.Invitations.Commands;
+
+// ClaimsPrincipalExtensions (User.GetAuthProviderId()/GetEmail()) live in the NextAtlet.Api namespace.
 
 namespace NextAtlet.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class AthletesController : ControllerBase
 {
-    private readonly CreateAthleteCommand _createAthleteCommand;
-    private readonly GetDraftConfigQuery _getDraftConfigQuery;
-    private readonly UpdateDraftConfigCommand _updateDraftConfigCommand;
+    private readonly ISender _sender;
 
-    public AthletesController(
-        CreateAthleteCommand createAthleteCommand,
-        GetDraftConfigQuery getDraftConfigQuery,
-        UpdateDraftConfigCommand updateDraftConfigCommand)
-    {
-        _createAthleteCommand = createAthleteCommand;
-        _getDraftConfigQuery = getDraftConfigQuery;
-        _updateDraftConfigCommand = updateDraftConfigCommand;
-    }
+    public AthletesController(ISender sender) => _sender = sender;
 
     /// <summary>
-    /// Creates a new athlete profile with an AthleteOwner login and (if minor) a Pending guardian link.
+    /// Self-registration: the authenticated caller registers their own profile (becomes AthleteOwner;
+    /// a guardian is invited if the caller is a minor).
     /// </summary>
-    [HttpPost]
-    public async Task<ActionResult<AthleteProfileDto>> CreateAthlete([FromBody] CreateAthleteRequest request)
-    {
-        try
-        {
-            // TODO: In production, extract these from JWT token claims
-            var authProviderId = Guid.NewGuid().ToString(); // Placeholder
-            var userEmail = request.Email;
-
-            var profile = await _createAthleteCommand.ExecuteAsync(
-                userEmail,
-                authProviderId,
-                request.DisplayName,
-                request.Slug,
-                request.DateOfBirth,
-                request.DefaultLocale,
-                request.GuardianEmail);
-
-            var dto = new AthleteProfileDto
-            {
-                Id = profile.Id,
-                Slug = profile.Slug,
-                DisplayName = profile.DisplayName,
-                DateOfBirth = profile.DateOfBirth,
-                IsMinor = profile.IsMinor,
-                DefaultLocale = profile.DefaultLocale
-            };
-
-            return Created($"/api/athletes/{profile.Id}", dto);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new ErrorResponse { StatusCode = 400, Message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new ErrorResponse { StatusCode = 500, Message = "Internal server error", Details = new List<string> { ex.Message } });
-        }
-    }
+    [HttpPost("self-register")]
+    public async Task<IActionResult> SelfRegister([FromBody] RegisterOwnAthleteRequest request)
+        => Ok(await _sender.Send(new SelfRegisterAthleteCommand(
+            User.GetAuthProviderId(),
+            User.GetEmail(),
+            request.DisplayName,
+            request.Slug,
+            request.DateOfBirth,
+            request.DefaultLocaleId,
+            request.GuardianEmail)));
 
     /// <summary>
-    /// Gets the draft SiteConfig for an athlete profile.
+    /// Guardian registers a profile for their child: the authenticated caller becomes the Guardian.
+    /// </summary>
+    [HttpPost("guardian-register")]
+    public async Task<IActionResult> GuardianRegister([FromBody] RegisterChildAthleteRequest request)
+        => Ok(await _sender.Send(new GuardianRegisterAthleteCommand(
+            User.GetAuthProviderId(),
+            User.GetEmail(),
+            request.ChildDisplayName,
+            request.Slug,
+            request.ChildDateOfBirth,
+            request.DefaultLocaleId)));
+
+    /// <summary>
+    /// Invite a person (by email) to this profile in a given role. Only a caller holding an active
+    /// login on the profile may invite to it. The invited person claims it at /invitations/{id}/accept.
+    /// </summary>
+    [HttpPost("{id:guid}/invite")]
+    public async Task<IActionResult> Invite(Guid id, [FromBody] InviteToProfileRequest request)
+        => Ok(await _sender.Send(new InviteToProfileCommand(
+            id,
+            User.GetAuthProviderId(),
+            User.GetEmail(),
+            request.Email,
+            request.Role)));
+
+    /// <summary>
+    /// Transfers control of the profile to the other party ("athlete" | "guardian"). Only the current
+    /// controller may initiate; guardian→athlete is age-gated; the receiving side's login must exist.
+    /// </summary>
+    [HttpPost("{id:guid}/transfer-control")]
+    public async Task<IActionResult> TransferControl(Guid id, [FromBody] TransferControlRequest request)
+        => Ok(await _sender.Send(new TransferControlCommand(id, User.GetAuthProviderId(), request.To)));
+
+    /// <summary>
+    /// Enables/disables shared editing — lets the non-controlling party edit the draft (+ media) but
+    /// never publish, approve, or transfer. Does not change who controls. Only the controller may toggle it.
+    /// </summary>
+    [HttpPost("{id:guid}/collaboration")]
+    public async Task<IActionResult> SetCollaboration(Guid id, [FromBody] SetCollaborationRequest request)
+        => Ok(await _sender.Send(new SetCollaborationCommand(id, User.GetAuthProviderId(), request.SharedEditing)));
+
+    /// <summary>
+    /// Guardian gives consent (GDPR Art. 8) for a minor's profile by following the emailed link and
+    /// authenticating. Records the consent and lifts the publish gate. Does not join the profile.
+    /// </summary>
+    [HttpPost("{id:guid}/consent")]
+    public async Task<IActionResult> GiveConsent(Guid id)
+        => Ok(await _sender.Send(new RecordGuardianConsentCommand(id, User.GetAuthProviderId(), User.GetEmail())));
+
+    /// <summary>
+    /// Gets the draft site snapshot for an athlete profile.
     /// </summary>
     [HttpGet("{id:guid}/config/draft")]
-    public async Task<ActionResult<SiteConfigDto>> GetDraftConfig(Guid id)
-    {
-        try
-        {
-            // TODO: In production, verify the caller has access to this profile
-            var config = await _getDraftConfigQuery.ExecuteAsync(id);
-            return Ok(config);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return NotFound(new ErrorResponse { StatusCode = 404, Message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new ErrorResponse { StatusCode = 500, Message = "Internal server error", Details = new List<string> { ex.Message } });
-        }
-    }
+    public async Task<ActionResult<AthleteSiteSnapshotDto>> GetDraftConfig(Guid id)
+        => Ok(await _sender.Send(new GetDraftAthleteSiteSnapshotQuery(id)));
 
     /// <summary>
-    /// Updates the draft SiteConfig for an athlete profile.
+    /// Replaces the draft site snapshot for an athlete profile.
     /// Runs validation, sanitization, and optimistic concurrency checks.
     /// </summary>
     [HttpPut("{id:guid}/config/draft")]
-    public async Task<ActionResult<SiteConfigDto>> UpdateDraftConfig(Guid id, [FromBody] UpdateSiteConfigRequest request)
-    {
-        try
-        {
-            // TODO: In production, verify the caller has edit permission on this profile
-            var config = await _updateDraftConfigCommand.ExecuteAsync(
-                id,
-                request.Layout,
-                request.GlobalSettings,
-                request.ExpectedVersion);
-
-            var dto = new SiteConfigDto
-            {
-                Id = config.Id,
-                AthleteProfileId = config.AthleteProfileId,
-                State = config.State,
-                Layout = config.Layout,
-                GlobalSettings = config.GlobalSettings,
-                Version = config.Version
-            };
-
-            return Ok(dto);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new ErrorResponse { StatusCode = 400, Message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new ErrorResponse { StatusCode = 500, Message = "Internal server error", Details = new List<string> { ex.Message } });
-        }
-    }
+    public async Task<ActionResult<AthleteSiteSnapshotDto>> UpdateDraftConfig(Guid id, [FromBody] UpdateAthleteSiteSnapshotRequest request)
+        => Ok(await _sender.Send(new EditDraftAthleteSiteSnapshotCommand(
+            id,
+            request.Layout,
+            request.GlobalSettings,
+            request.ExpectedVersion)));
 }

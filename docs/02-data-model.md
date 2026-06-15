@@ -45,7 +45,7 @@ The login credential. One real person *may* hold one login used across roles, or
 |--------|------|-------|
 | Id | uuid PK | |
 | Email | varchar unique | |
-| AuthProviderId | varchar | external IdP subject, if used |
+| AuthProviderId | varchar **null** | external IdP subject (Auth0 `sub`). **Null = unclaimed** — a placeholder created by an invite (e.g. a guardian who hasn't signed up yet); backfilled when they first authenticate. `IsClaimed` (computed: `AuthProviderId` present) tells the two apart. |
 
 ### `AthleteProfile`
 One profile = one athlete. The owned, B2C core.
@@ -72,10 +72,12 @@ Implements **one profile + multiple linked roles** (`03`).
 | UserId | uuid FK | |
 | AthleteProfileId | uuid FK | |
 | Role | enum | `AthleteOwner`, `Guardian` |
-| Permissions | jsonb | guardian edit/publish/approval config (`03`) |
-| Status | enum | `Active` / `Revoked` |
+| Permissions | jsonb | guardian edit/publish/approval config (`03`); null for `AthleteOwner` |
+| Status | enum | `Pending` (invited, not yet accepted) / `Active` / `Revoked` |
 
-> Unique constraint on (`UserId`, `AthleteProfileId`). A minor profile must have ≥1 active `Guardian` login.
+> Unique constraint on (`UserId`, `AthleteProfileId`). Because `ProfileLogin` is decoupled from `AthleteProfile`, a profile can carry **{AthleteOwner + Guardian}**, **{AthleteOwner only}** (adult self-registered), or **{Guardian only}** (a guardian created the profile for a child — no child login in v1; see `03` §1, `05`).
+>
+> **A minor profile must always have ≥1 `Guardian` login, created in the same transaction as the profile — never after.** In the self-minor flow the guardian is `Pending` (invited); in the guardian-creates-child flow the caller *is* the (active) guardian. Going **public** additionally requires an *active* guardian (`03`).
 
 ---
 
@@ -260,7 +262,7 @@ Recommendation: **per-field locale maps** for short text fields; fall back to `A
 - Every save validates the `Layout` payload against each section type's schema **and** against the profile's **effective capability** (own plan + active club perks). Never trust client-claimed tier.
 - Free-text fields are **sanitized** before publish (public XSS surface).
 - Slug uniqueness + reserved words (`admin`, `api`, `about`, …) for both profiles and organizations.
-- Minor/adult status is recomputed from `DateOfBirth` (never read from a stored flag); a minor `AthleteProfile` requires ≥1 active `Guardian` `ProfileLogin`.
+- Minor/adult status is recomputed from `DateOfBirth` (never read from a stored flag); a minor `AthleteProfile` is created **atomically** with ≥1 `Guardian` `ProfileLogin` (same transaction, never after). The guardian may be `Pending` at creation; **publishing** a minor profile requires an *active* guardian holding `canPublish` (`03`).
 - An organization cannot affiliate more slot-occupying athletes than its (denormalized) `AthleteSlotCount`.
 - Optimistic concurrency via `Version` on configs.
 - Club showcase resolution must read **published + public** athlete data only; a `Private`/unpublished athlete renders as a placeholder.
