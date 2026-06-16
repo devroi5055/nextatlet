@@ -1,5 +1,5 @@
 ﻿using FluentAssertions;
-using NextAtlet.Domain.Entities.Athlete;
+using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.AthleteProfile;
 
 namespace NextAtlet.Domain.Tests.Entities;
@@ -8,7 +8,7 @@ public class InvitationTests
 {
     private static Invitation APendingInvitation(string roleId = "guardian", int expiresInDays = 7) => new()
     {
-        TargetProfileId = Guid.NewGuid(),
+        TargetSiteId = Guid.NewGuid(),
         RoleId = roleId,
         Email = "parent@example.com",
         StatusId = InvitationStatus.Pending.Id  ,

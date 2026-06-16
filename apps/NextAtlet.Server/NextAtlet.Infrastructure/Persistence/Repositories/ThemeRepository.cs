@@ -12,7 +12,7 @@ public class ThemeRepository : IThemeRepository
     public ThemeRepository(NextAtletDbContext context) => _context = context;
 
     public Task<Theme?> GetActiveByNameAsync(string name, CancellationToken cancellationToken = default)
-        => _context.Themes.FirstOrDefaultAsync(t => t.Name == name && t.IsActive, cancellationToken);
+        => _context.Themes.FirstOrDefaultAsync(t => t.Name == name && t.RetiredUtc == null, cancellationToken);
 
     public async Task<Theme?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => await _context.Themes.FindAsync([id], cancellationToken);

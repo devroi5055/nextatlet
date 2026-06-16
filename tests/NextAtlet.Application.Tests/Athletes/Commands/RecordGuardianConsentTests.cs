@@ -1,8 +1,7 @@
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Features.Athletes.Commands;
 using NextAtlet.Application.Tests.Shared.TestData;
-using NextAtlet.Domain.Entities.Athlete;
-using NextAtlet.Domain.Entities.AthleteProfile;
+using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.AthleteProfile;
 using NSubstitute;
 
@@ -32,9 +31,9 @@ public class RecordGuardianConsentTests
         fixture.GuardianConsentRepository.Received(1).Add(Arg.Is<GuardianConsent>(c =>
             c.AthleteProfileId == profile.Id &&
             c.GuardianUserId == guardian.Id &&
-            c.MethodId == ConsentMethod.VerifiedEmail.Id &&
+            c.MethodId == ConsentMethods.VerifiedEmail.Id &&
             c.TermsVersion == RecordGuardianConsentFixture.TermsVersion));
-        Assert.Equal(ConsentState.Consented.Id, profile.ConsentStateId);
+        Assert.Equal(ConsentStates.Consented.Id, profile.ConsentStateId);
     }
 
     [Fact]
@@ -52,19 +51,19 @@ public class RecordGuardianConsentTests
         Assert.True(result.IsSuccess);
         Assert.Null(result.Value);
         fixture.GuardianConsentRepository.DidNotReceive().Add(Arg.Any<GuardianConsent>());
-        Assert.Equal(ConsentState.NotRequired.Id, profile.ConsentStateId);
+        Assert.Equal(ConsentStates.NotRequired.Id, profile.ConsentStateId);
     }
 
     [Fact]
     public async Task UnknownProfile_IsRejected()
     {
         var fixture = new RecordGuardianConsentFixture();
-        fixture.AthleteRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((AthleteSite?)null);
+        fixture.AthleteRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((AthleteProfile?)null);
 
         var result = await fixture.Handler.Handle(
             new RecordGuardianConsentCommand(Guid.NewGuid(), "auth0|x", "g@test.local"), CancellationToken.None);
 
         Assert.False(result.IsSuccess);
-        Assert.Equal(ErrorCodes.SiteNotFound, result.Error!.Code);
+        Assert.Equal(ErrorCodes.AthleteProfileNotFound, result.Error!.Code);
     }
 }

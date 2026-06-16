@@ -1,5 +1,5 @@
 using NextAtlet.Domain.Common;
-using NextAtlet.Domain.Entities.AthleteProfile;
+using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.Media;
 
 namespace NextAtlet.Domain.Entities.Shared;
@@ -34,7 +34,7 @@ public class MediaAsset : CreatedOnlyEntity
     public string? AltText { get; set; }
 
     // Navigation — nullable because owner is XOR
-    public AthleteSite? AthleteSite { get; set; }
+    public AthleteProfile? AthleteSite { get; set; }
 
     //TODO: implement Organization
     // public Organization.Organization? Organization { get; set; }

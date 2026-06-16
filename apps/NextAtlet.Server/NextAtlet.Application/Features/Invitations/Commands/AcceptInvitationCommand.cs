@@ -1,11 +1,10 @@
 using MediatR;
+using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Results;
 using NextAtlet.Application.Features.Account;
-using NextAtlet.Application.Abstractions.Persistence;
-using NextAtlet.Application.Abstractions.Services;
-using NextAtlet.Domain.Entities.Athlete;
+using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.AthleteProfile;
 
 namespace NextAtlet.Application.Features.Invitations.Commands;
@@ -25,13 +24,13 @@ public record AcceptInvitationCommand(
 public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCommand, Result<InvitationAcceptedDto>>
 {
     private readonly IInvitationRepository _invitations;
-    private readonly IProfileLoginRepository _logins;
+    private readonly ISiteLoginRepository _logins;
     private readonly UserProvisioner _userProvisioner;
     private readonly IUnitOfWork _unitOfWork;
 
     public AcceptInvitationCommandHandler(
         IInvitationRepository invitations,
-        IProfileLoginRepository logins,
+        ISiteLoginRepository logins,
         UserProvisioner userProvisioner,
         IUnitOfWork unitOfWork)
     {
@@ -63,13 +62,13 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
 
         // Materialize the ProfileLogin (Active) with the role the invitation specified. Permissions
         // are derived from the profile's ControlMode at request time — none are stored here.
-        _logins.Add(invite.RoleId == ProfileRole.Guardian.Id
-            ? ProfileLogin.CreateGuardian(user.Id, invite.TargetProfileId)
-            : ProfileLogin.CreateOwner(user.Id, invite.TargetProfileId));
+        _logins.Add(invite.RoleId == ProfileRoles.Guardian.Id
+            ? SiteLogin.CreateGuardian(user.Id, invite.TargetSiteId)
+            : SiteLogin.CreateAthlete(user.Id, invite.TargetSiteId));
 
         invite.Accept();
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return new InvitationAcceptedDto(invite.TargetProfileId, invite.RoleId);
+        return new InvitationAcceptedDto(invite.TargetSiteId, invite.RoleId);
     }
 }

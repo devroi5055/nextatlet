@@ -2,7 +2,7 @@ using Microsoft.Extensions.Options;
 using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Abstractions.Services;
-using NextAtlet.Domain.Entities.Athlete;
+using NextAtlet.Domain.Entities.Sites;
 
 namespace NextAtlet.Application.Features.Invitations;
 
@@ -29,10 +29,10 @@ public sealed class InvitationIssuer
     }
 
     /// <summary>Stages a Pending invitation (commit is the caller's via IUnitOfWork). Returns the tracked row.</summary>
-    public Invitation Issue(Guid profileId, string email, string roleId, Guid invitedByUserId)
+    public Invitation Issue(Guid siteId, string email, string roleId, Guid invitedByUserId)
     {
         var invitation = Invitation.Issue(
-            profileId, email, roleId, invitedByUserId,
+            siteId, email, roleId, invitedByUserId,
             expiresUtc: DateTime.UtcNow.AddDays(_options.ExpiryDays));
 
         _invitations.Add(invitation);

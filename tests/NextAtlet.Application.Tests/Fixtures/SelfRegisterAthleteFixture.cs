@@ -10,16 +10,16 @@ using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Application.Tests.Shared;
 using NextAtlet.Domain.Entities.Shared;
 using NSubstitute;
-using NextAtlet.Domain.Entities.Organization;
 
 public class SelfRegisterAthleteFixture
 {
-    public IAthleteSiteRepository AthleteRepository { get; }
-    public IProfileLoginRepository ProfileLoginRepository { get; }
+    public ISiteRepository SiteRepository { get; }
+    public IAthleteProfileRepository AthleteProfileRepository { get; }
+    public ISiteLoginRepository SiteLoginRepository { get; }
     public IUserRepository UserRepository { get; }
     public IInvitationRepository InvitationRepository { get; }
     public IThemeRepository ThemeRepository { get; }
-    public IAthleteSiteSnapshotRepository SiteSnapshotRepository { get;  }
+    public ISiteSnapshotRepository SiteSnapshotRepository { get;  }
     public IEmailService EmailService { get; }
     public IUnitOfWork UnitOfWork { get; }
     public IClock Clock { get; }
@@ -49,10 +49,11 @@ public class SelfRegisterAthleteFixture
         //makes today 2018
         Clock = MockFactory.CreateClock(new DateTime(2018, 1, 1));
 
-        AthleteRepository = Substitute.For<IAthleteSiteRepository>();
-        ProfileLoginRepository = Substitute.For<IProfileLoginRepository>();
+        SiteRepository = Substitute.For<ISiteRepository>();
+        AthleteProfileRepository = Substitute.For<IAthleteProfileRepository>();
+        SiteLoginRepository = Substitute.For<ISiteLoginRepository>();
         ThemeRepository = Substitute.For<IThemeRepository>();
-        SiteSnapshotRepository = Substitute.For<IAthleteSiteSnapshotRepository>();
+        SiteSnapshotRepository = Substitute.For<ISiteSnapshotRepository>();
         UserRepository = Substitute.For<IUserRepository>();
         InvitationRepository = Substitute.For<IInvitationRepository>();
         EmailService = Substitute.For<IEmailService>();
@@ -70,8 +71,9 @@ public class SelfRegisterAthleteFixture
             .Returns(fixture.Create<Theme>());
 
         Handler = new SelfRegisterAthleteCommandHandler(
-            AthleteRepository,
-            ProfileLoginRepository,
+            SiteRepository,
+            SiteLoginRepository,
+            AthleteProfileRepository,
             ThemeRepository,
             SiteSnapshotRepository,
             UserProvisioner,

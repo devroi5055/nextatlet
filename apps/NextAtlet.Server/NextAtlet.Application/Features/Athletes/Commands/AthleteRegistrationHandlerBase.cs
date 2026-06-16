@@ -2,15 +2,16 @@ using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Extensions;
+using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Common.Results;
 using NextAtlet.Application.Common.Time;
 using NextAtlet.Application.Features.Account;
 using NextAtlet.Application.Features.Invitations;
-using NextAtlet.Domain.Entities.Athlete;
-using NextAtlet.Domain.Entities.AthleteProfile;
 using NextAtlet.Domain.Entities.Shared;
+using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.AthleteProfile;
 using NextAtlet.Domain.Enumerations.Shared;
+using NextAtlet.Domain.Policies;
 using NextAtlet.Domain.ValueObjects;
 using NextAtlet.Domain.ValueObjects.Sections;
 
@@ -27,33 +28,39 @@ public abstract class AthleteRegistrationHandlerBase
     protected static readonly string[] ReservedSlugs =
         ["admin", "api", "about", "contact", "terms", "privacy", "login", "signup", "settings", "dashboard"];
 
-    protected readonly IAthleteSiteRepository Sites;
-    protected readonly IProfileLoginRepository Logins;
-    protected readonly IThemeRepository Themes;
-    protected readonly IAthleteSiteSnapshotRepository SiteSnapshots;
-    protected readonly UserProvisioner UserProvisioner;
-    protected readonly InvitationIssuer Inviter;
-    protected readonly IClock Clock;
-    protected readonly IUnitOfWork UnitOfWork;
+    protected readonly ISiteRepository _sites;
+    protected readonly ISiteLoginRepository _logins;
+    protected readonly IAthleteProfileRepository _athleteProfiles;
+    protected readonly IThemeRepository _themes;
+    protected readonly ISiteSnapshotRepository _siteSnapshots;
+    protected readonly UserProvisioner _userProvisioner;
+    protected readonly InvitationIssuer _inviter;
+    protected readonly IClock _clock;
+    protected readonly AgeThresholdOptions _threshold;
+    protected readonly IUnitOfWork _unitOfWork;
 
     protected AthleteRegistrationHandlerBase(
-        IAthleteSiteRepository sites,
-        IProfileLoginRepository logins,
+        ISiteRepository sites,
+        ISiteLoginRepository logins,
+        IAthleteProfileRepository athleteProfiles,
         IThemeRepository themes,
-        IAthleteSiteSnapshotRepository siteSnapshots,
+        ISiteSnapshotRepository siteSnapshots,
         UserProvisioner userProvisioner,
         InvitationIssuer inviter,
         IClock clock,
+        AgeThresholdOptions threshold,
         IUnitOfWork unitOfWork)
     {
-        Sites = sites;
-        Logins = logins;
-        Themes = themes;
-        SiteSnapshots = siteSnapshots;
-        UserProvisioner = userProvisioner;
-        Inviter = inviter;
-        Clock = clock;
-        UnitOfWork = unitOfWork;
+        _sites = sites;
+        _logins = logins;
+        _athleteProfiles = athleteProfiles;
+        _themes = themes;
+        _siteSnapshots = siteSnapshots;
+        _userProvisioner = userProvisioner;
+        _inviter = inviter;
+        _clock = clock;
+        _threshold = threshold;
+        _unitOfWork = unitOfWork;
     }
 
     /// <summary>
@@ -61,64 +68,70 @@ public abstract class AthleteRegistrationHandlerBase
     /// default draft AthleteSiteSnapshot. Returns the tracked profile with NO logins attached — the
     /// caller attaches owner/guardian logins per its flow.
     /// </summary>
-    protected async Task<Result<AthleteSite>> CreateAthleteProfileCoreAsync(
-        string slug, string displayName, DateTime dateOfBirth, string defaultLocaleId, ControlMode controlMode, CancellationToken cancellationToken)
+    protected async Task<Result<SiteDto>> CreateAthleteProfileCoreAsync(
+        string slug, string displayName, DateTime dateOfBirth, string defaultLocaleId, ControlModes controlMode, CancellationToken cancellationToken)
     {
         slug = slug.ToLowerInvariant();
 
         // Business rejections — recoverable, user-facing.
-        if (await Sites.SlugExistsAsync(slug, cancellationToken))
+        if (await _sites.SlugExistsAsync(slug, cancellationToken))
             return Error.FromCode(ErrorCodes.SlugAlreadyTaken);
         if (ReservedSlugs.Contains(slug))
             return Error.FromCode(ErrorCodes.SlugReserved);
 
-        var profile = new AthleteSite
+        var site = new Site
         {
             Slug = slug,
             DisplayName = displayName,
+            VisibilityStateId = "public",
+            DefaultLocaleId = defaultLocaleId,
+
+        };
+        _sites.Add(site);
+        
+
+        var consentIsRequired = AgePolicy.RequiresGuardianConsent(DateOnly.FromDateTime(dateOfBirth), _clock.UtcNow, _threshold.SelfConsentAge);
+        var profile = new AthleteProfile
+        {
+            SiteId = site.Id,
             SportId = "judo",
             DateOfBirth = DateOnly.FromDateTime(dateOfBirth),
-            DefaultLocaleId = defaultLocaleId,
-            VisibilityStateId = "public",
+            ConsentStateId = consentIsRequired ? ConsentStates.PendingGuardianConsent.Id : ConsentStates.NotRequired.Id,
             ControlModeId = controlMode.Id
-        };
-        Sites.Add(profile);
 
-        await AttachDefaultDraftSnapshotAsync(profile, cancellationToken);
-        return profile;
+        };
+        _athleteProfiles.Add(profile);
+
+        await AttachDefaultDraftSnapshotAsync(site, cancellationToken);
+        return MapToDto(site);
     }
 
     /// <summary>Resolve the authenticated caller's domain user, provisioning just-in-time (see <see cref="UserProvisioner"/>).</summary>
     protected Task<User> GetOrCreateUserAsync(string email, string authProviderId, CancellationToken cancellationToken)
-        => UserProvisioner.GetOrCreateAsync(email, authProviderId, cancellationToken);
+        => _userProvisioner.GetOrCreateAsync(email, authProviderId, cancellationToken);
 
-    protected AthleteSiteDto MapToDto(AthleteSite profile) => new()
+    protected SiteDto MapToDto(Site site) => new()
     {
-        Id = profile.Id,
-        Slug = profile.Slug,
-        DisplayName = profile.DisplayName,
-        DateOfBirth = profile.DateOfBirth,
-        IsMinor = profile.IsMinor(Clock.UtcNow),
-        ControlMode = ControlMode.FromId(profile.ControlModeId),
-        DefaultLocale = Locale.FromId(profile.DefaultLocaleId).ToDto()
+        Id = site.Id,
+        Slug = site.Slug,
+        DisplayName = site.DisplayName,
+        DefaultLocale = Locale.FromId(site.DefaultLocaleId).ToDto()
     };
 
-    private async Task AttachDefaultDraftSnapshotAsync(AthleteSite profile, CancellationToken cancellationToken)
+    private async Task AttachDefaultDraftSnapshotAsync(Site site, CancellationToken cancellationToken)
     {
-        var theme = await Themes.GetActiveByNameAsync("Classic", cancellationToken)
+        var theme = await _themes.GetActiveByNameAsync("Classic", cancellationToken)
             ?? throw new InvalidOperationException("Classic theme not found"); // system/seed failure → 500
 
-        var snapshot = new AthleteSiteSnapshot
+        var snapshot = new SiteSnapshot
         {
-            AthleteProfileId = profile.Id,
+            SiteId = site.Id,
             ThemeId = theme.Id,
-            ThemeVersion = theme.Version,
             Layout = CreateDefaultLayout(),
             GlobalSettings = new GlobalSettings { AccentColor = "#ffd700", FontFamily = "Inter" },
-            Version = 1
         };
-        SiteSnapshots.Add(snapshot);
-        profile.CurrentDraftSnapshotId = snapshot.Id;
+        _siteSnapshots.Add(snapshot);
+        site.CurrentDraftSnapshotId = snapshot.Id;
     }
 
     private static SiteLayout CreateDefaultLayout() => new()

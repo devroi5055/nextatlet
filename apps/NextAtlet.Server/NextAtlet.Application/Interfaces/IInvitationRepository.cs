@@ -1,4 +1,4 @@
-using NextAtlet.Domain.Entities.Athlete;
+using NextAtlet.Domain.Entities.Sites;
 
 namespace NextAtlet.Application.Abstractions.Persistence;
 
@@ -10,7 +10,7 @@ public interface IInvitationRepository
     Task<Invitation?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>True if a Pending invitation already exists for this profile + email + role (anti double-send).</summary>
-    Task<bool> HasPendingAsync(Guid profileId, string email, string roleId, CancellationToken cancellationToken = default);
+    Task<bool> HasPendingAsync(Guid siteId, string email, string roleId, CancellationToken cancellationToken = default);
 
     /// <summary>Count of Pending invitations addressed to this email — surfaces "accept" prompts in /me.</summary>
     Task<int> CountPendingByEmailAsync(string email, CancellationToken cancellationToken = default);

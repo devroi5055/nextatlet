@@ -1,13 +1,13 @@
 using MediatR;
 using NextAtlet.Application.Abstractions.Persistence;
-using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
+using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Common.Results;
 using NextAtlet.Application.Common.Time;
 using NextAtlet.Application.Features.Account;
 using NextAtlet.Application.Features.Invitations;
-using NextAtlet.Domain.Entities.Athlete;
+using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.AthleteProfile;
 using NextAtlet.Domain.Enumerations.Shared;
 using NextAtlet.Domain.Policies;
@@ -27,43 +27,45 @@ public record GuardianRegisterAthleteCommand(
     string ChildDisplayName,
     string Slug,
     DateTime ChildDateOfBirth,
-    string DefaultLocaleId) : IRequest<Result<AthleteSiteDto>>;
+    string DefaultLocaleId) : IRequest<Result<SiteDto>>;
 
 public class GuardianRegisterAthleteCommandHandler
-    : AthleteRegistrationHandlerBase, IRequestHandler<GuardianRegisterAthleteCommand, Result<AthleteSiteDto>>
+    : AthleteRegistrationHandlerBase, IRequestHandler<GuardianRegisterAthleteCommand, Result<SiteDto>>
 {
     public GuardianRegisterAthleteCommandHandler(
-        IAthleteSiteRepository sites,
-        IProfileLoginRepository logins,
+        ISiteRepository sites,
+        ISiteLoginRepository logins,
+        IAthleteProfileRepository profiles,
         IThemeRepository themes,
-        IAthleteSiteSnapshotRepository siteSnapshots,
+        ISiteSnapshotRepository siteSnapshots,
         UserProvisioner userProvisioner,
         InvitationIssuer inviter,
         IClock clock,
+        AgeThresholdOptions threshold,
         IUnitOfWork unitOfWork)
-        : base(sites, logins, themes, siteSnapshots, userProvisioner, inviter, clock, unitOfWork) { }
+        : base(sites, logins, profiles, themes, siteSnapshots, userProvisioner, inviter, clock, threshold, unitOfWork) {}
 
-    public async Task<Result<AthleteSiteDto>> Handle(GuardianRegisterAthleteCommand request, CancellationToken cancellationToken)
+    public async Task<Result<SiteDto>> Handle(GuardianRegisterAthleteCommand request, CancellationToken cancellationToken)
     {
         // v1: this flow is for minors. An adult must self-register. Under-13 IS allowed here — that is
         // the intended path for very young children (the age floor only applies to self-register).
-        if (AgePolicy.BandToday(request.ChildDateOfBirth, Clock.UtcNow) == AgeBand.Adult)
+        if (AgePolicy.BandToday(request.ChildDateOfBirth, _clock.UtcNow) == AgeBand.Adult)
             return Error.FromCode(ErrorCodes.GuardianCannotRegisterAdult);
 
         var guardian = await GetOrCreateUserAsync(request.Email, request.AuthProviderId, cancellationToken);
 
         // Guardian-register always starts GuardianControlled — the guardian created the profile.
-        var created = await CreateAthleteProfileCoreAsync(
+        var siteDtoResult = await CreateAthleteProfileCoreAsync(
             request.Slug, request.ChildDisplayName, request.ChildDateOfBirth, request.DefaultLocaleId,
-            ControlMode.GuardianControlled, cancellationToken);
-        if (!created.IsSuccess)
-            return created.Error!;
-        var profile = created.Value!;
+            ControlModes.GuardianControlled, cancellationToken);
+        if (!siteDtoResult.IsSuccess)
+            return siteDtoResult.Error!;
+        var siteDto = siteDtoResult.Value!;
 
         // Caller becomes the Guardian (Active by construction). The child's AthleteOwner login is deferred.
-        Logins.Add(ProfileLogin.CreateGuardian(guardian.Id, profile.Id));
+        _logins.Add(SiteLogin.CreateGuardian(guardian.Id, siteDto.Id));
 
-        await UnitOfWork.SaveChangesAsync(cancellationToken);
-        return MapToDto(profile);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return siteDto;
     }
 }

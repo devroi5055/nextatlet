@@ -9,7 +9,7 @@ namespace NextAtlet.Application.Features.Account;
 /// verified token claims. Shared by registration and invitation-accept so the rule lives in one place.
 ///
 /// We never create a User before the person authenticates — an invite stores only an
-/// <see cref="NextAtlet.Domain.Entities.Athlete.Invitation"/>, which is the single source of pending
+/// <see cref="Domain.Entities.Sites.Invitation"/>, which is the single source of pending
 /// state. So a User row always carries a real subject (no null <c>AuthProviderId</c> in the DB, no
 /// backfill, no claim-by-email): match by subject, else create from claims.
 /// </summary>

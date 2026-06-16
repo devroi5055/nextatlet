@@ -1,5 +1,5 @@
-﻿using FluentAssertions;
-using NextAtlet.Domain.Entities.AthleteProfile;
+using FluentAssertions;
+using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.AthleteProfile;
 using NextAtlet.Domain.Tests.Shared;
 
@@ -8,30 +8,21 @@ namespace NextAtlet.Domain.Tests.Entities;
 /// <summary>
 /// Pure domain tests for <see cref="AthleteProfile"/> — no DB, no I/O.
 /// These cover only behaviour the entity OWNS: computed minor status, age-derived
-/// state, and any invariant guards. Property get/set with no logic is deliberately
-/// NOT tested (that would only test the compiler).
-///
-/// NOTE: several tests assume entity behaviour established in the design docs
-/// (computed IsMinor, ControlMode default, slug normalisation). Where the real
-/// entity differs, adjust the test — each such assumption is flagged inline.
+/// state, and the stored control fact. Site-level identity (slug, display name,
+/// visibility) now lives on <see cref="Site"/> and is tested there.
 /// </summary>
 public class AthleteProfileTests
 {
     // Helper: build a valid profile with an overridable date of birth.
-    // Adjust the initialiser to match your actual entity's required members.
-    private static AthleteSite AProfile(DateOnly? dob = null) => new()
+    private static AthleteProfile AProfile(DateOnly? dob = null) => new()
     {
-        Slug = "maria-jensen",
-        DisplayName = "Maria Jensen",
+        SiteId = Guid.NewGuid(),
         SportId = "judo",
         DateOfBirth = dob ?? new DateOnly(2000, 1, 1),
-        DefaultLocaleId = "da",
-        VisibilityStateId = "public"
+        ConsentStateId = ConsentStates.NotRequired.Id
     };
 
     // A fixed "today" so boundary tests are deterministic regardless of when they run.
-    // If IsMinor uses DateTime.UtcNow internally (not injectable), these date-relative
-    // tests should compute DOB relative to DateTime.UtcNow instead — see note below.
     private static readonly DateOnly Today = DateOnly.FromDateTime(TestTime.UtcNow);
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -77,10 +68,6 @@ public class AthleteProfileTests
     [Fact]
     public void IsMinor_IsRecomputed_NotStored()
     {
-        // The same DateOfBirth must always yield the same answer from the property,
-        // proving it's derived rather than read from a frozen backing field.
-        // (If a regression introduces a stored bool, this still passes — the stronger
-        //  guarantee is the exact-birthday test above. This documents intent.)
         var profile = AProfile(Today.AddYears(-14));
 
         profile.IsMinor(TestTime.UtcNow).Should().Be(profile.IsMinor(TestTime.UtcNow));          // stable
@@ -94,7 +81,6 @@ public class AthleteProfileTests
         // current year has no Feb 29. Someone born 2008-02-29 is an adult by 2026.
         var profile = AProfile(new DateOnly(2008, 2, 29));
 
-        // 2008 leap-day baby is 18 in 2026 — assert against the actual current date.
         var expectedMinor = new DateOnly(2008, 2, 29).AddYears(18) > Today;
         profile.IsMinor(TestTime.UtcNow).Should().Be(expectedMinor);
         profile.IsMinor(TestTime.UtcNow).Should().Be(expectedMinor);
@@ -102,9 +88,6 @@ public class AthleteProfileTests
 
     // ──────────────────────────────────────────────────────────────────────────
     // ControlMode — stored, explicit, defaulted (control-mode plan §1–2).
-    // ASSUMPTION: a newly constructed profile defaults to AthleteControlled, and the
-    // registration handlers set it explicitly. If your entity has no default and the
-    // handler always sets it, move these assertions to the handler integration tests.
     // ──────────────────────────────────────────────────────────────────────────
 
     [Fact]
@@ -112,7 +95,7 @@ public class AthleteProfileTests
     {
         var profile = AProfile();
 
-        profile.ControlModeId.Should().Be(ControlMode.AthleteControlled.Id);
+        profile.ControlModeId.Should().Be(ControlModes.AthleteControlled.Id);
     }
 
     [Theory]
@@ -128,73 +111,4 @@ public class AthleteProfileTests
 
         profile.ControlModeId.Should().Be(modeId);
     }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // Slug — normalisation / identity (02 AthleteProfile.Slug).
-    // ASSUMPTION: slug normalisation (lower-casing, trimming) lives in the entity or a
-    // value object. If it lives in the command handler instead, delete these and test
-    // there. They're here because slug is part of the profile's identity contract.
-    // ──────────────────────────────────────────────────────────────────────────
-
-    [Fact]
-    public void Slug_IsStoredAsProvided_WhenAlreadyNormalised()
-    {
-        var profile = AProfile();
-        profile.Slug = "maria-jensen";
-
-        profile.Slug.Should().Be("maria-jensen");
-    }
-
-    // If normalisation is an entity responsibility, a test like this should pass.
-    // Marked Skip until you confirm where normalisation lives.
-    [Fact(Skip = "Confirm whether slug normalisation is an entity responsibility or a handler one.")]
-    public void Slug_IsLowerCased_OnAssignment()
-    {
-        var profile = AProfile();
-        profile.Slug = "Maria-Jensen";
-
-        profile.Slug.Should().Be("maria-jensen");
-    }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // VisibilityState — gates the public/club contract (02, 03 §4).
-    // ──────────────────────────────────────────────────────────────────────────
-
-    [Fact]
-    public void VisibilityState_CanBeSetPrivate()
-    {
-        var profile = AProfile();
-
-        profile.VisibilityStateId = "private";
-
-        profile.VisibilityStateId.Should().Be("private");
-    }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // Invariant guards — ONLY if the entity enforces them itself.
-    // The "a minor must have a guardian" rule is an aggregate/handler invariant
-    // (it spans ProfileLogin), NOT something AthleteProfile can enforce alone, so it
-    // is intentionally NOT tested here — it belongs in the registration integration
-    // tests. Documented so the omission is deliberate, not forgotten.
-    // ──────────────────────────────────────────────────────────────────────────
-
-    // If your entity has a guarded constructor/factory (e.g. rejects an empty slug or
-    // a future DOB), tests like the following belong here. Marked Skip until confirmed.
-
-    [Fact(Skip = "Confirm whether AthleteProfile guards against a future DateOfBirth.")]
-    public void Construction_WithFutureDateOfBirth_IsRejected()
-    {
-        var act = () => AProfile(Today.AddDays(1));
-
-        act.Should().Throw<ArgumentException>();
-    }
-
-    [Fact(Skip = "Confirm whether AthleteProfile guards against an empty slug.")]
-    public void Construction_WithEmptySlug_IsRejected()
-    {
-        var act = () => new AthleteSite { Slug = "", DisplayName = "X", DateOfBirth = new DateOnly(5776, 2, 8) };
-
-        act.Should().Throw<ArgumentException>();
-    }
 }
-    

@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using NextAtlet.Application.Abstractions.Persistence;
-using NextAtlet.Application.Abstractions.Services;
-using NextAtlet.Domain.Entities.Athlete;
+using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.AthleteProfile;
 using NextAtlet.Infrastructure.Data;
 
@@ -18,11 +17,11 @@ public class InvitationRepository : IInvitationRepository
     public async Task<Invitation?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => await _context.Invitations.FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
 
-    public Task<bool> HasPendingAsync(Guid profileId, string email, string roleId, CancellationToken cancellationToken = default)
+    public Task<bool> HasPendingAsync(Guid siteId, string email, string roleId, CancellationToken cancellationToken = default)
     {
         var pending = InvitationStatus.Pending.Id;
         return _context.Invitations.AnyAsync(
-            i => i.TargetProfileId == profileId && i.Email == email && i.RoleId == roleId && i.StatusId == pending,
+            i => i.TargetSiteId == siteId && i.Email == email && i.RoleId == roleId && i.StatusId == pending,
             cancellationToken);
     }
 

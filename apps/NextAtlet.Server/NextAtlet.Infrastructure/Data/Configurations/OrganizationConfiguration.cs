@@ -1,15 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using NextAtlet.Domain.Entities.Organization;
+using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.AthleteProfile;
 using NextAtlet.Domain.Enumerations.Billing;
 using NextAtlet.Domain.Enumerations.Organization;
 
 namespace NextAtlet.Infrastructure.Data.Configurations;
 
-public class OrganizationConfiguration : IEntityTypeConfiguration<Organization>
+public class OrganizationConfiguration : IEntityTypeConfiguration<OrganizationProfile>
 {
-    public void Configure(EntityTypeBuilder<Organization> entity)
+    public void Configure(EntityTypeBuilder<OrganizationProfile> entity)
     {
         //Keys
         entity.HasKey(e => e.Id);
@@ -25,17 +25,17 @@ public class OrganizationConfiguration : IEntityTypeConfiguration<Organization>
         //ENUM
         entity.Property(e => e.OrganizationTypeId).IsRequired().HasMaxLength(50);
         entity.Property(e => e.OrganizationTierId).IsRequired().HasMaxLength(50).HasDefaultValue(OrganizationTier.Free.Id);
-        entity.Property(e => e.VisibilityStateId).IsRequired().HasMaxLength(50).HasDefaultValue(VisibilityState.Public.Id);
+        entity.Property(e => e.VisibilityStateId).IsRequired().HasMaxLength(50).HasDefaultValue(VisibilityStates.Public.Id);
         entity.Property(e => e.VerificationStatusId).IsRequired().HasMaxLength(50).HasDefaultValue(VerificationStatus.Pending.Id);
 
         //OWNED TYPES
         entity.OwnsOne(e => e.Verification, v =>
         {
             v.Property(p => p.MethodId).HasMaxLength(50);
+            v.Property(p => p.CVR).HasMaxLength(8);
         });
 
         //RELATIONS 1:N
-        entity.HasMany(e => e.Logins).WithOne(l => l.Organization).HasForeignKey(l => l.OrganizationId);
 
         //INDEXES
         entity.HasIndex(e => e.Slug).IsUnique();

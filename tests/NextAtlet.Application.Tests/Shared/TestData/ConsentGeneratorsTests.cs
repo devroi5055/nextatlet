@@ -10,7 +10,7 @@ public class ConsentGeneratorsTests
     {
         var athlete = TestAthletes.APendingGuardianConsentAthlete();
 
-        Assert.Equal(ConsentState.PendingGuardianConsent.Id, athlete.ConsentStateId);
+        Assert.Equal(ConsentStates.PendingGuardianConsent.Id, athlete.ConsentStateId);
         Assert.True(athlete.AwaitsGuardianConsent);
     }
 
@@ -20,7 +20,7 @@ public class ConsentGeneratorsTests
         var consent = GuardianConsents.AGuardianConsent();
 
         Assert.NotEqual(Guid.Empty, consent.GuardianUserId);        // who
-        Assert.Equal(ConsentMethod.VerifiedEmail.Id, consent.MethodId);  // how
+        Assert.Equal(ConsentMethods.VerifiedEmail.Id, consent.MethodId);  // how
         Assert.False(string.IsNullOrWhiteSpace(consent.TermsVersion)); // what
         // "when" (CreatedUtc) is stamped by the DbContext at SaveChanges, not at construction.
         Assert.NotEqual(Guid.Empty, consent.AthleteProfileId);

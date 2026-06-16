@@ -6,7 +6,7 @@ namespace NextAtlet.Domain.Common
     {
         public Guid? VerifiedByUserId { get; set; }
         public string? MethodId { get; set; }
-        public int? CVR { get; set; }
+        public string? CVR { get; set; }
         public DateTime VerifiedUtc {  get; set; }
     }
 }

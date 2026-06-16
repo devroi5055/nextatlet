@@ -19,8 +19,8 @@ public class ThemeConfiguration : IEntityTypeConfiguration<Theme>
         entity.Property(e => e.PreviewImageUrl).HasMaxLength(512);
 
         //SIMPLE SCALARS
-        entity.Property(e => e.Version).IsRequired().HasDefaultValue(1);
-        entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+        entity.Property(e => e.RetiredUtc);
+        entity.Ignore(e => e.IsRetired); // computed from RetiredUtc
 
         //JSONB
         entity.Property(e => e.Manifest).HasJsonbConversion().IsRequired();
@@ -30,9 +30,7 @@ public class ThemeConfiguration : IEntityTypeConfiguration<Theme>
         {
             Id = ClassicThemeId,
             Name = "Classic",
-            Version = 1,
             Manifest = ClassicTheme.Manifest(),
-            IsActive = true,
         });
     }
 }

@@ -25,21 +25,29 @@ public class RegisterChildAthleteRequest
     public string DefaultLocaleId { get; set; } = default!;
 }
 
-public class AthleteSiteDto
+
+public class SiteDto
+{
+    public Guid Id { get; set; }
+    public required string Slug { get; set; }
+    public required string DisplayName { get; set; }
+    public required EnumerationDto DefaultLocale { get; set; } = default!;
+}
+
+public class AthleteProfileDto
 {
     public Guid Id { get; set; }
     public required string Slug { get; set; }
     public required string DisplayName { get; set; }
     public required DateOnly DateOfBirth { get; set; }
     public bool IsMinor { get; set; }
-    public required ControlMode ControlMode { get; set; }
-    public EnumerationDto DefaultLocale { get; set; } = default!;
+    public required ControlModes ControlMode { get; set; }
 }
 
-public class AthleteSiteSnapshotDto
+public class SiteSnapshotDto
 {
     public Guid Id { get; set; }
-    public Guid AthleteProfileId { get; set; }
+    public Guid SiteId { get; set; }
 
     // Typed value objects shared with the domain — no parallel DTO hierarchy, no dicts.
     public SiteLayout Layout { get; set; } = new();
@@ -69,7 +77,7 @@ public record MeDto(
     bool Registered,
     string? Role,
     Guid? ProfileId,
-    ControlMode? ControlMode,
+    ControlModes? ControlMode,
     bool IsInControl,
     bool CanEdit,
     IReadOnlyList<Guid> GuardedProfileIds,

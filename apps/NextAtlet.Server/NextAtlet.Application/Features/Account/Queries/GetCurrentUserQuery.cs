@@ -4,6 +4,8 @@ using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Domain.Authorization;
 using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Application.Common.Results;
+using NextAtlet.Application.Common.Errors;
 
 namespace NextAtlet.Application.Features.Account.Queries;
 
@@ -19,19 +21,22 @@ public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, M
     private static readonly IReadOnlyList<Guid> None = [];
 
     private readonly IUserRepository _users;
-    private readonly IAthleteSiteRepository _sites;
-    private readonly IProfileLoginRepository _logins;
+    private readonly IAthleteProfileRepository _profiles;
+    private readonly ISiteRepository _sites;
+    private readonly ISiteLoginRepository _logins;
     private readonly IInvitationRepository _invitations;
     private readonly PermissionResolver _permissions;
 
     public GetCurrentUserQueryHandler(
         IUserRepository users,
-        IAthleteSiteRepository sites,
-        IProfileLoginRepository logins,
+        IAthleteProfileRepository profiles,
+        ISiteRepository sites,
+        ISiteLoginRepository logins,
         IInvitationRepository invitations,
         PermissionResolver permissions)
     {
         _users = users;
+        _profiles = profiles;
         _sites = sites;
         _logins = logins;
         _invitations = invitations;
@@ -50,32 +55,37 @@ public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, M
         if (user is null)
         {
             // No presence yet — but a pending invite still means "you're being invited as a guardian".
-            var role = pendingInvites > 0 ? ProfileRole.Guardian.Id : null;
+            var role = pendingInvites > 0 ? ProfileRoles.Guardian.Id : null;
             return new MeDto(Registered: false, Role: role, ProfileId: null, ControlMode: null,
                 IsInControl: false, CanEdit: false, GuardedProfileIds: None, PendingGuardianInvites: pendingInvites);
         }
 
-        var ownedProfile = await _sites.GetOwnedByUserIdAsync(user.Id, cancellationToken);
-        var guardedProfileIds = await _logins.GetActiveGuardianProfileIdsByUserIdAsync(user.Id, cancellationToken);
+        var guardedSiteIds = await _logins.GetActiveGuardianSiteIdsByUserIdAsync(user.Id, cancellationToken);
 
         // Owning a profile is "registered"; the caller may also guard children (both states at once).
         // Control fields describe the caller's own owned profile (resolved via PermissionResolver).
-        if (ownedProfile is not null)
+        var site = await _sites.GetOwnedByUserIdAsync(user.Id, cancellationToken);
+        if (site is null)
         {
-            var ownerLogin = await _logins.GetActiveLoginAsync(user.Id, ownedProfile.Id, cancellationToken);
-            var isInControl = ownerLogin is not null && _permissions.IsController(ownerLogin, ownedProfile);
-            var canEdit = ownerLogin is not null && _permissions.Resolve(ownerLogin, ownedProfile).CanEditContent;
+            if (guardedSiteIds.Count > 0 || pendingInvites > 0)
+                return new MeDto(Registered: false, Role: ProfileRoles.Guardian.Id, ProfileId: null, ControlMode: null,
+                    IsInControl: false, CanEdit: false, GuardedProfileIds: guardedSiteIds, PendingGuardianInvites: pendingInvites);
 
-            return new MeDto(Registered: true, Role: ProfileRole.AthleteOwner.Id, ProfileId: ownedProfile.Id,
-                ControlMode: ControlMode.FromId(ownedProfile.ControlModeId), IsInControl: isInControl, CanEdit: canEdit,
-                GuardedProfileIds: guardedProfileIds, PendingGuardianInvites: pendingInvites);
+            return new MeDto(Registered: false, Role: null, ProfileId: null, ControlMode: null,
+                IsInControl: false, CanEdit: false, GuardedProfileIds: None, PendingGuardianInvites: pendingInvites);
         }
 
-        if (guardedProfileIds.Count > 0 || pendingInvites > 0)
-            return new MeDto(Registered: false, Role: ProfileRole.Guardian.Id, ProfileId: null, ControlMode: null,
-                IsInControl: false, CanEdit: false, GuardedProfileIds: guardedProfileIds, PendingGuardianInvites: pendingInvites);
+        var profile = await _profiles.GetBySiteIdAsync(site.Id, cancellationToken);
+        if (profile is null)
+            throw new DomainException(ErrorCodes.ProfileNotFound);
+            
+        var siteLogin = await _logins.GetActiveLoginAsync(user.Id, site.Id, cancellationToken);
+        var isInControl = siteLogin is not null && _permissions.IsController(siteLogin, profile);
+        var canEdit = siteLogin is not null && _permissions.Resolve(siteLogin, profile).CanEditContent;
 
-        return new MeDto(Registered: false, Role: null, ProfileId: null, ControlMode: null,
-            IsInControl: false, CanEdit: false, GuardedProfileIds: None, PendingGuardianInvites: pendingInvites);
+        return new MeDto(Registered: true, Role: ProfileRoles.AthleteOwner.Id, ProfileId: profile.Id,
+            ControlMode: ControlModes.FromId(profile.ControlModeId), IsInControl: isInControl, CanEdit: canEdit,
+            GuardedProfileIds: guardedSiteIds, PendingGuardianInvites: pendingInvites);
+            
     }
 }

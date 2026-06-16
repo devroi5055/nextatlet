@@ -1,7 +1,6 @@
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Features.Athletes.Commands;
-using NextAtlet.Domain.Entities.Athlete;
-using NextAtlet.Domain.Entities.AthleteProfile;
+using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.AthleteProfile;
 using NextAtlet.Domain.Enumerations.Shared;
 using NSubstitute;
@@ -27,8 +26,8 @@ public class SelfRegisterConsentTests
         await fixture.Handler.Handle(Command(dob, "guardian@test.com"), CancellationToken.None);
 
         // Profile is publish-gated...
-        fixture.AthleteRepository.Received(1)
-            .Add(Arg.Is<AthleteSite>(p => p.ConsentStateId == ConsentState.PendingGuardianConsent.Id));
+        fixture.AthleteProfileRepository.Received(1)
+            .Add(Arg.Is<AthleteProfile>(p => p.ConsentStateId == ConsentStates.PendingGuardianConsent.Id));
         // ...and the guardian gets a consent-request EMAIL (not a profile invitation).
         await fixture.EmailService.Received(1).SendConsentRequestAsync("guardian@test.com", Arg.Any<Guid>(), Arg.Any<CancellationToken>());
         fixture.InvitationRepository.DidNotReceive().Add(Arg.Any<Invitation>());
@@ -53,8 +52,8 @@ public class SelfRegisterConsentTests
 
         await fixture.Handler.Handle(Command(dob, guardianEmail: null), CancellationToken.None);
 
-        fixture.AthleteRepository.Received(1)
-            .Add(Arg.Is<AthleteSite>(p => p.ConsentStateId == ConsentState.NotRequired.Id));
+        fixture.AthleteProfileRepository.Received(1)
+            .Add(Arg.Is<AthleteProfile>(p => p.ConsentStateId == ConsentStates.NotRequired.Id));
         fixture.InvitationRepository.DidNotReceive().Add(Arg.Any<Invitation>());
     }
 

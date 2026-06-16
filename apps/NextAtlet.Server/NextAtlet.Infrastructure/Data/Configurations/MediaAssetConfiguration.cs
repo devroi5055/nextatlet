@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using NextAtlet.Domain.Entities.Shared;
+using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.Media;
 
 namespace NextAtlet.Infrastructure.Data.Configurations;
@@ -25,9 +26,10 @@ public class MediaAssetConfiguration : IEntityTypeConfiguration<MediaAsset>
         entity.Property(e => e.TypeId).IsRequired().HasMaxLength(20);
         entity.Property(e => e.OriginId).IsRequired().HasMaxLength(50).HasDefaultValue(MediaOrigin.SelfUpload.Id);
 
-        //RELATIONS N:1
-        entity.HasOne(e => e.AthleteSite)
-            .WithMany(ap => ap.MediaAssets)
+        //RELATIONS N:1 — AthleteSiteId is the Site FK (legacy name); the AthleteSite nav is stale.
+        entity.Ignore(e => e.AthleteSite);
+        entity.HasOne<Site>()
+            .WithMany(s => s.MediaAssets)
             .HasForeignKey(e => e.AthleteSiteId)
             .OnDelete(DeleteBehavior.Cascade);
 

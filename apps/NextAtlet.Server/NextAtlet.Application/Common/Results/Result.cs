@@ -36,7 +36,6 @@ public class Result<T> : IResult
 
     public static Result<T> Success(T value) => new(value);
     public static Result<T> Failure(Error e) => new(e);
-    public static Result<T> FailureFromCode(string code) => new(Error.FromCode(code));
 
     // ergonomics: lets you `return dto;` or `return new Error(...);`
     public static implicit operator Result<T>(T value) => new(value);

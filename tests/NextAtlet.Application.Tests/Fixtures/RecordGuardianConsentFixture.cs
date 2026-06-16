@@ -12,7 +12,8 @@ public class RecordGuardianConsentFixture
 {
     public const string TermsVersion = "2026-01";
 
-    public IAthleteSiteRepository AthleteRepository { get; }
+    public IAthleteProfileRepository AthleteRepository { get; }
+    public ISiteRepository SiteRepository { get; }
     public IGuardianConsentRepository GuardianConsentRepository { get; }
     public IUserRepository UserRepository { get; }
     public IUnitOfWork UnitOfWork { get; }
@@ -24,7 +25,8 @@ public class RecordGuardianConsentFixture
 
     public RecordGuardianConsentFixture()
     {
-        AthleteRepository = Substitute.For<IAthleteSiteRepository>();
+        AthleteRepository = Substitute.For<IAthleteProfileRepository>();
+        SiteRepository = Substitute.For<ISiteRepository>();
         GuardianConsentRepository = Substitute.For<IGuardianConsentRepository>();
         UserRepository = Substitute.For<IUserRepository>();
         UnitOfWork = Substitute.For<IUnitOfWork>();
@@ -33,11 +35,12 @@ public class RecordGuardianConsentFixture
         UserProvisioner = new UserProvisioner(UserRepository, Clock);
 
         Handler = new RecordGuardianConsentCommandHandler(
-            AthleteRepository,
+            SiteRepository,
             GuardianConsentRepository,
             UserProvisioner,
             Options.Create(new TermsOptions { CurrentVersion = TermsVersion }),
-            UnitOfWork
+            UnitOfWork,
+            AthleteRepository
         );
     }
 

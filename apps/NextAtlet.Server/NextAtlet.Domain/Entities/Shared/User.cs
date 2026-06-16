@@ -1,5 +1,5 @@
 using NextAtlet.Domain.Common;
-using NextAtlet.Domain.Entities.Athlete;
+using NextAtlet.Domain.Entities.Sites;
 
 namespace NextAtlet.Domain.Entities.Shared;
 
@@ -28,7 +28,7 @@ public class User : AuditableEntity
     public bool IsClaimed => !string.IsNullOrWhiteSpace(AuthProviderId);
 
     // Navigation
-    public ICollection<ProfileLogin> ProfileLogins { get; set; } = [];
+    public ICollection<SiteLogin> SiteLogins { get; set; } = [];
 
     //TODO: implement OrganizationLogin and add navigation here
     //public ICollection<OrganizationLogin> OrganizationLogins { get; set; } = [];

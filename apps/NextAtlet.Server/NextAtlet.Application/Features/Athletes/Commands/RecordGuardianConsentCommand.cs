@@ -5,7 +5,7 @@ using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Common.Results;
 using NextAtlet.Application.Features.Account;
-using NextAtlet.Domain.Entities.Athlete;
+using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.AthleteProfile;
 
 namespace NextAtlet.Application.Features.Athletes.Commands;
@@ -24,35 +24,36 @@ public record RecordGuardianConsentCommand(
 
 public class RecordGuardianConsentCommandHandler : IRequestHandler<RecordGuardianConsentCommand, Result<Guid?>>
 {
-    private readonly IAthleteSiteRepository _sites;
+    private readonly IAthleteProfileRepository _profiles;
     private readonly IGuardianConsentRepository _consents;
     private readonly UserProvisioner _userProvisioner;
     private readonly TermsOptions _terms;
     private readonly IUnitOfWork _unitOfWork;
 
     public RecordGuardianConsentCommandHandler(
-        IAthleteSiteRepository sites,
+        ISiteRepository sites,
         IGuardianConsentRepository consents,
         UserProvisioner userProvisioner,
         IOptions<TermsOptions> terms,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IAthleteProfileRepository profiles)
     {
-        _sites = sites;
         _consents = consents;
         _userProvisioner = userProvisioner;
         _terms = terms.Value;
         _unitOfWork = unitOfWork;
+        _profiles = profiles;
     }
 
     public async Task<Result<Guid?>> Handle(RecordGuardianConsentCommand request, CancellationToken cancellationToken)
     {
-        var profile = await _sites.GetByIdAsync(request.ProfileId, cancellationToken);
+        var profile = await _profiles.GetByIdAsync(request.ProfileId, cancellationToken);
         if (profile is null)
-            return Error.FromCode(ErrorCodes.SiteNotFound);
+            return Error.FromCode(ErrorCodes.AthleteProfileNotFound);
 
         // Idempotent + scoped: only a profile awaiting consent transitions. Already-Consented or
         // NotRequired profiles need no consent — an empty success (nothing recorded).
-        if (profile.ConsentStateId != ConsentState.PendingGuardianConsent.Id)
+        if (profile.ConsentStateId != ConsentStates.PendingGuardianConsent.Id)
             return Result<Guid?>.Success(null);
 
         // The authenticated guardian — resolved/provisioned from verified token claims.
@@ -61,13 +62,13 @@ public class RecordGuardianConsentCommandHandler : IRequestHandler<RecordGuardia
         {
             AthleteProfileId = profile.Id,
             GuardianUserId = guardian.Id,          // WHO //TODO: who needs to contain the guardians name
-            MethodId = ConsentMethod.VerifiedEmail.Id,  // HOW
+            MethodId = ConsentMethods.VerifiedEmail.Id,  // HOW
             TermsVersion = _terms.CurrentVersion,  // WHAT
         };
 
         _consents.Add(consent);
         
-        profile.ConsentStateId = ConsentState.Consented.Id; // lifts the publish gate
+        profile.ConsentStateId = ConsentStates.Consented.Id; // lifts the publish gate
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 

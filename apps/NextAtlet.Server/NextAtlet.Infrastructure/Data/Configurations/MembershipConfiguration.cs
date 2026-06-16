@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using NextAtlet.Domain.Entities.AthleteProfile;
-using NextAtlet.Domain.Entities.Organization;
+using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.Membership;
 
 namespace NextAtlet.Infrastructure.Data.Configurations;
@@ -24,11 +23,11 @@ public class MembershipConfiguration : IEntityTypeConfiguration<Membership>
         entity.Property(e => e.statusId).IsRequired().HasMaxLength(20).HasDefaultValue(MembershipStatus.Active.Id);
 
         //RELATIONS N:1
-        entity.HasOne<AthleteSite>()
+        entity.HasOne<AthleteProfile>()
             .WithMany()
             .HasForeignKey(e => e.AthleteProfileId)
             .OnDelete(DeleteBehavior.Cascade);
-        entity.HasOne<Organization>()
+        entity.HasOne<OrganizationProfile>()
             .WithMany()
             .HasForeignKey(e => e.OrganizationId)
             .OnDelete(DeleteBehavior.Cascade);

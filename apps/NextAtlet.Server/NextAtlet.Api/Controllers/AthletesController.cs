@@ -88,18 +88,21 @@ public class AthletesController : ControllerBase
     /// Gets the draft site snapshot for an athlete profile.
     /// </summary>
     [HttpGet("{id:guid}/config/draft")]
-    public async Task<ActionResult<AthleteSiteSnapshotDto>> GetDraftConfig(Guid id)
+    public async Task<ActionResult<SiteSnapshotDto>> GetDraftConfig(Guid id)
         => Ok(await _sender.Send(new GetDraftAthleteSiteSnapshotQuery(id)));
 
+    // TODO: Re-enable once the draft-edit write path is rebuilt. EditDraftAthleteSiteSnapshotCommand was
+    // removed during the Site/SiteSnapshot refactor (SiteSnapshot no longer carries a Version for the
+    // optimistic-concurrency check this endpoint relied on).
     /// <summary>
     /// Replaces the draft site snapshot for an athlete profile.
     /// Runs validation, sanitization, and optimistic concurrency checks.
     /// </summary>
-    [HttpPut("{id:guid}/config/draft")]
-    public async Task<ActionResult<AthleteSiteSnapshotDto>> UpdateDraftConfig(Guid id, [FromBody] UpdateAthleteSiteSnapshotRequest request)
-        => Ok(await _sender.Send(new EditDraftAthleteSiteSnapshotCommand(
-            id,
-            request.Layout,
-            request.GlobalSettings,
-            request.ExpectedVersion)));
+    //[HttpPut("{id:guid}/config/draft")]
+    //public async Task<ActionResult<SiteSnapshotDto>> UpdateDraftConfig(Guid id, [FromBody] UpdateAthleteSiteSnapshotRequest request)
+    //    => Ok(await _sender.Send(new EditDraftAthleteSiteSnapshotCommand(
+    //        id,
+    //        request.Layout,
+    //        request.GlobalSettings,
+    //        request.ExpectedVersion)));
 }

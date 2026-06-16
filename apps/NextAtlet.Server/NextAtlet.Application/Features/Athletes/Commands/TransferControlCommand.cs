@@ -1,9 +1,8 @@
 using MediatR;
+using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Results;
 using NextAtlet.Application.Common.Time;
-using NextAtlet.Application.Abstractions.Persistence;
-using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Domain.Authorization;
 using NextAtlet.Domain.Enumerations.AthleteProfile;
 using NextAtlet.Domain.Enumerations.Shared;
@@ -29,20 +28,22 @@ public class TransferControlCommandHandler : IRequestHandler<TransferControlComm
     public const string ToAthlete = "athlete";
     public const string ToGuardian = "guardian";
 
-    private readonly IAthleteSiteRepository _sites;
-    private readonly IProfileLoginRepository _logins;
+    private readonly ISiteRepository _sites;
+    private readonly IAthleteProfileRepository _profiles;
+    private readonly ISiteLoginRepository _logins;
     private readonly IUserRepository _users;
     private readonly PermissionResolver _permissions;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public TransferControlCommandHandler(
-        IAthleteSiteRepository sites,
-        IProfileLoginRepository logins,
+        ISiteRepository sites,
+        ISiteLoginRepository logins,
         IUserRepository users,
         PermissionResolver permissions,
         IUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        IAthleteProfileRepository profiles)
     {
         _sites = sites;
         _logins = logins;
@@ -50,6 +51,7 @@ public class TransferControlCommandHandler : IRequestHandler<TransferControlComm
         _permissions = permissions;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _profiles = profiles;
     }
 
     public async Task<Result<Unit>> Handle(TransferControlCommand request, CancellationToken cancellationToken)
@@ -57,15 +59,16 @@ public class TransferControlCommandHandler : IRequestHandler<TransferControlComm
         if (request.TransferTo is not (ToAthlete or ToGuardian))
             return Error.FromCode(ErrorCodes.TransferTargetInvalid);
 
-        var profile = await _sites.GetByIdAsync(request.ProfileId, cancellationToken);
+        var profile = await _profiles.GetByIdAsync(request.ProfileId, cancellationToken);
         if (profile is null)
-            return Error.FromCode(ErrorCodes.SiteNotFound);
+            return Error.FromCode(ErrorCodes.AthleteProfileNotFound);
+
 
         var caller = await _users.GetByAuthProviderIdAsync(request.CallerAuthProviderId, cancellationToken);
         if (caller is null)
             return Error.FromCode(ErrorCodes.NotAuthorized);
 
-        var login = await _logins.GetActiveLoginAsync(caller.Id, request.ProfileId, cancellationToken);
+        var login = await _logins.GetActiveLoginAsync(caller.Id, profile.SiteId, cancellationToken);
         // Only the current controller may initiate a transfer.
         if (login is null || !_permissions.IsController(login, profile))
             return Error.FromCode(ErrorCodes.NotAuthorized);
@@ -80,14 +83,14 @@ public class TransferControlCommandHandler : IRequestHandler<TransferControlComm
             if (!await _logins.HasActiveOwnerLoginAsync(request.ProfileId, cancellationToken))
                 return Error.FromCode(ErrorCodes.NoAthleteLoginExists);
 
-            profile.ControlModeId = ControlMode.AthleteControlled.Id;
+            profile.ControlModeId = ControlModes.AthleteControlled.Id;
         }
         else
         {
             if (!await _logins.HasActiveGuardianLoginAsync(request.ProfileId, cancellationToken))
                 return Error.FromCode(ErrorCodes.NoGuardianLoginExists);
 
-            profile.ControlModeId = ControlMode.GuardianControlled.Id;
+            profile.ControlModeId = ControlModes.GuardianControlled.Id;
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);

@@ -1,5 +1,5 @@
-﻿using FluentAssertions;
-using NextAtlet.Domain.Entities.Athlete;
+using FluentAssertions;
+using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.AthleteProfile;
 
 namespace NextAtlet.Domain.Tests.Entities;
@@ -7,27 +7,27 @@ namespace NextAtlet.Domain.Tests.Entities;
 public class ProfileLoginTests
 {
     [Fact]
-    public void CreateOwner_ProducesActiveAthleteOwnerLogin()
+    public void CreateAthlete_ProducesActiveAthleteOwnerLogin()
     {
-        var login = ProfileLogin.CreateOwner(userId: Guid.NewGuid(), profileId: Guid.NewGuid());
+        var login = SiteLogin.CreateAthlete(userId: Guid.NewGuid(), siteId: Guid.NewGuid());
 
-        login.RoleId.Should().Be(ProfileRole.AthleteOwner.Id);
+        login.SiteRoleId.Should().Be(ProfileRoles.AthleteOwner.Id);
         login.StatusId.Should().Be(ProfileLoginStatus.Active.Id);
     }
 
     [Fact]
     public void CreateGuardian_ProducesActiveGuardianLogin()
     {
-        var login = ProfileLogin.CreateGuardian(userId: Guid.NewGuid(), profileId: Guid.NewGuid());
+        var login = SiteLogin.CreateGuardian(userId: Guid.NewGuid(), siteId: Guid.NewGuid());
 
-        login.RoleId.Should().Be(ProfileRole.Guardian.Id);
+        login.SiteRoleId.Should().Be(ProfileRoles.Guardian.Id);
         login.StatusId.Should().Be(ProfileLoginStatus.Active.Id);
     }
 
     [Fact]
-    public void CreateOwner_DoesNotStorePermissions()
+    public void CreateAthlete_DoesNotStorePermissions()
     {
-        var login = ProfileLogin.CreateOwner(Guid.NewGuid(), Guid.NewGuid());
+        var login = SiteLogin.CreateAthlete(Guid.NewGuid(), Guid.NewGuid());
 
         login.Permissions.Should().BeNull();
     }
@@ -35,21 +35,20 @@ public class ProfileLoginTests
     [Fact]
     public void CreateGuardian_DoesNotStorePermissions()
     {
-        var login = ProfileLogin.CreateGuardian(Guid.NewGuid(), Guid.NewGuid());
+        var login = SiteLogin.CreateGuardian(Guid.NewGuid(), Guid.NewGuid());
 
         login.Permissions.Should().BeNull();
     }
 
     [Fact]
-    public void CreateOwner_LinksTheGivenUserAndProfile()
+    public void CreateAthlete_LinksTheGivenUserAndSite()
     {
         var userId = Guid.NewGuid();
-        var profileId = Guid.NewGuid();
+        var siteId = Guid.NewGuid();
 
-        var login = ProfileLogin.CreateOwner(userId, profileId);
+        var login = SiteLogin.CreateAthlete(userId, siteId);
 
         login.UserId.Should().Be(userId);
-        login.AthleteProfileId.Should().Be(profileId);
+        login.SiteId.Should().Be(siteId);
     }
 }
-    

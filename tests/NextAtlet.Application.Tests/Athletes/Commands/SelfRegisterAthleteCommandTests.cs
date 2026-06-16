@@ -1,10 +1,8 @@
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Features.Athletes.Commands;
 using NextAtlet.Application.Tests.Shared.TestData;
-using NextAtlet.Domain.Entities.Athlete;
-using NextAtlet.Domain.Entities.AthleteProfile;
 using NextAtlet.Domain.Entities.Shared;
-using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.Shared;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
@@ -122,7 +120,7 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
             var dob = fixture.Clock.UtcNow.AddYears(-25);
             var slug = "john-doe";
 
-            fixture.AthleteRepository.SlugExistsAsync(slug).Returns(true);
+            fixture.SiteRepository.SlugExistsAsync(slug).Returns(true);
 
             var command = new SelfRegisterAthleteCommand(
                 AuthProviderId: "auth0|123",
@@ -163,19 +161,16 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
                 guardianEmail
             );
 
-            
+
             var result = await fixture.Handler.Handle(command, CancellationToken.None);
 
             Assert.True(result.IsSuccess);
             var dto = result.Value!;
 
+            // SiteDto carries the site identity; age/control live on AthleteProfile, not this DTO.
             Assert.Equal(slug, dto.Slug);
             Assert.Equal(diplayName, dto.DisplayName);
-            Assert.Equal(DateOnly.FromDateTime(dob), dto.DateOfBirth);
-            Assert.True(dto.IsMinor);
-            Assert.Equal(ControlMode.AthleteControlled, dto.ControlMode);
             Assert.Same(Locale.Da.Id, dto.DefaultLocale.Id);
-
         }
 
         [Fact]
@@ -250,10 +245,10 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
             var guardianEmail = "guardian@guardian.com";
 
             var fakeUser = Users.AnAuthenticatedUser(authProviderId);
-            var fakeProfile = TestAthletes.AnAthlete();
+            var existingSite = new Site { Slug = "existing", DisplayName = "Existing" };
 
             fixture.UserRepository.GetByAuthProviderIdAsync(authProviderId, Arg.Any<CancellationToken>()).Returns(fakeUser);
-            fixture.AthleteRepository.GetOwnedByUserIdAsync(fakeUser.Id, Arg.Any<CancellationToken>()).Returns(fakeProfile);
+            fixture.SiteRepository.GetOwnedByUserIdAsync(fakeUser.Id, Arg.Any<CancellationToken>()).Returns(existingSite);
 
             var command = new SelfRegisterAthleteCommand(
                 authProviderId,
@@ -270,9 +265,9 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
             Assert.False(result.IsSuccess);
             Assert.Equal(ErrorCodes.SiteAlreadyExists, result.Error!.Code);
 
-            fixture.AthleteRepository.Received(0).Add(Arg.Any<AthleteSite>());
-            fixture.SiteSnapshotRepository.Received(0).Add(Arg.Any<AthleteSiteSnapshot>());
-            fixture.ProfileLoginRepository.Received(0).Add(Arg.Any<ProfileLogin>());
+            fixture.AthleteProfileRepository.Received(0).Add(Arg.Any<AthleteProfile>());
+            fixture.SiteSnapshotRepository.Received(0).Add(Arg.Any<SiteSnapshot>());
+            fixture.SiteLoginRepository.Received(0).Add(Arg.Any<SiteLogin>());
         }
 
         [Fact]
@@ -289,10 +284,9 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
             var guardianEmail = "guardian@guardian.com";
 
             var fakeUser = Users.AnAuthenticatedUser(authProviderId);
-            var fakeProfile = TestAthletes.AnAthlete();
 
             fixture.UserRepository.GetByAuthProviderIdAsync(authProviderId, Arg.Any<CancellationToken>()).Returns(fakeUser);
-            fixture.AthleteRepository.GetOwnedByUserIdAsync(fakeUser.Id, Arg.Any<CancellationToken>()).ReturnsNull();
+            fixture.SiteRepository.GetOwnedByUserIdAsync(fakeUser.Id, Arg.Any<CancellationToken>()).ReturnsNull();
 
             var command = new SelfRegisterAthleteCommand(
                 authProviderId,
@@ -306,9 +300,9 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
 
             await fixture.Handler.Handle(command, CancellationToken.None);
 
-            fixture.AthleteRepository.Received(1).Add(Arg.Any<AthleteSite>());
-            fixture.SiteSnapshotRepository.Received(1).Add(Arg.Any<AthleteSiteSnapshot>());
-            fixture.ProfileLoginRepository.Received(1).Add(Arg.Any<ProfileLogin>());
+            fixture.AthleteProfileRepository.Received(1).Add(Arg.Any<AthleteProfile>());
+            fixture.SiteSnapshotRepository.Received(1).Add(Arg.Any<SiteSnapshot>());
+            fixture.SiteLoginRepository.Received(1).Add(Arg.Any<SiteLogin>());
         }
     }
 }

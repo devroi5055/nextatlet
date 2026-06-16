@@ -95,12 +95,13 @@ builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(IAppl
 // Repositories + Unit of Work (EF implementations over the shared scoped DbContext)
 builder.Services.AddScoped<IUnitOfWork, EfUnitOfWork>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IAthleteSiteRepository, AthleteSiteRepository>();
-builder.Services.AddScoped<IProfileLoginRepository, ProfileLoginRepository>();
+builder.Services.AddScoped<ISiteRepository, SiteRepository>();
+builder.Services.AddScoped<IAthleteProfileRepository, AthleteProfileRepository>();
+builder.Services.AddScoped<ISiteLoginRepository, SiteLoginRepository>();
 builder.Services.AddScoped<IInvitationRepository, InvitationRepository>();
 builder.Services.AddScoped<IGuardianConsentRepository, GuardianConsentRepository>();
 builder.Services.AddScoped<IThemeRepository, ThemeRepository>();
-builder.Services.AddScoped<IAthleteSiteSnapshotRepository, AthleteSiteSnapshotRepository>();
+builder.Services.AddScoped<ISiteSnapshotRepository, SiteSnapshotRepository>();
 
 // Domain services (behind Application abstractions)
 builder.Services.AddScoped<ISectionTypeRegistry, SectionTypeRegistry>();
@@ -131,6 +132,8 @@ builder.Services.AddScoped<InvitationIssuer>();
 builder.Services.AddSingleton<PermissionResolver>(); // stateless: ControlMode + role → permissions
 builder.Services.Configure<InvitationOptions>(builder.Configuration.GetSection(InvitationOptions.SectionName));
 builder.Services.Configure<AgeThresholdOptions>(builder.Configuration.GetSection(AgeThresholdOptions.SectionName));
+// Handlers inject AgeThresholdOptions directly (not IOptions<>), so expose the resolved value.
+builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<AgeThresholdOptions>>().Value);
 builder.Services.Configure<TermsOptions>(builder.Configuration.GetSection(TermsOptions.SectionName));
 
 

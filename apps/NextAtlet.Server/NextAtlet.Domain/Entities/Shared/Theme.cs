@@ -1,26 +1,25 @@
 using NextAtlet.Domain.Common;
-using NextAtlet.Domain.Entities.Athlete;
-using NextAtlet.Domain.Enumerations;
 using NextAtlet.Domain.ValueObjects;
 
 namespace NextAtlet.Domain.Entities.Shared;
 
-public class Theme : CreatedOnlyEntity
+public class Theme : CreatedOnlyEntity, IRetirable
 {
-    public required string Name { get; set; }
-
-    /// <summary>
-    /// Bumped when the theme changes. AthleteSiteSnapshot pins ThemeVersion at
-    /// creation time so a theme update never breaks existing published snapshots.
-    /// </summary>
-    public int Version { get; set; } = 1;
+    public required string Name { get; init; }
 
     /// <summary>
     /// Declares supported section types, color/font slots, and constraints.
     /// This is the render contract between backend and frontend.
+    /// Must never be mutated
     /// </summary>
-    public required ThemeManifest Manifest { get; set; }
+    public required ThemeManifest Manifest { get; init; }
 
     public string? PreviewImageUrl { get; set; }
-    public bool IsActive { get; set; } = true;
+
+
+    //RETIRE-ABLE
+
+    public DateTime? RetiredUtc { get; private set; }
+    public bool IsRetired => RetiredUtc != null;
+    public void Retire(DateTime utcNow) => RetiredUtc = utcNow;
 }

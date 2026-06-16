@@ -1,14 +1,13 @@
-using NextAtlet.Domain.Entities.AthleteProfile;
+using NextAtlet.Domain.Entities.Sites;
 
 namespace NextAtlet.Application.Abstractions.Persistence;
 
-public interface IAthleteSiteRepository
+public interface IAthleteProfileRepository
 {
-    Task<bool> SlugExistsAsync(string slug, CancellationToken cancellationToken = default);
-    Task<AthleteSite?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<AthleteProfile?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>The profile this user owns (via an AthleteOwner login), or null. One profile per owner.</summary>
-    Task<AthleteSite?> GetOwnedByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<AthleteProfile?> GetBySiteIdAsync(Guid siteId, CancellationToken cancellationToken = default);
 
-    void Add(AthleteSite site);
+    void Add(AthleteProfile profile);
 }

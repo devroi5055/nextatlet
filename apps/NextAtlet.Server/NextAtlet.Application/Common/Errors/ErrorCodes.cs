@@ -15,6 +15,9 @@ public static class ErrorCodes
     public const string SectionTypeNotSupported = "section.type_not_supported";
     public const string SectionNotPermitted     = "section.not_permitted";
     public const string SectionValidationFailed = "section.validation_failed";
+    public const string AthleteProfileNotFound  = "athlete.profile_not_found";
+    public const string ProfileNotFound         = "profile.not_found";
+    public const string OrganizationProfileNotFound = "organization.profile_not_found";
     public const string ThemeNotFound           = "theme.not_found";
     public const string ThemeNotPermitted       = "theme.not_permitted";
     public const string SiteNotFound         = "site.not_found";

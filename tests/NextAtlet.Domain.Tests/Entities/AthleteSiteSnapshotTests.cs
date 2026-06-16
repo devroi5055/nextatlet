@@ -1,5 +1,5 @@
 using FluentAssertions;
-using NextAtlet.Domain.Entities.Athlete;
+using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.ValueObjects;
 using NextAtlet.Domain.ValueObjects.Sections;
 
@@ -30,23 +30,13 @@ public class AthleteSiteSnapshotTests
         ]
     };
 
-    private static AthleteSiteSnapshot ADraftSnapshot() => new()
+    private static SiteSnapshot ADraftSnapshot() => new()
     {
-        AthleteProfileId = Guid.NewGuid(),
+        SiteId = Guid.NewGuid(),
         ThemeId = Guid.NewGuid(),
-        ThemeVersion = 1,
         Layout = AValidLayout(),
-        GlobalSettings = new GlobalSettings { AccentColor = "#ffd700", FontFamily = "Inter" },
-        Version = 1
+        GlobalSettings = new GlobalSettings { AccentColor = "#ffd700", FontFamily = "Inter" }
     };
-
-    [Fact]
-    public void NewSnapshot_StartsAtVersionOne()
-    {
-        var snapshot = ADraftSnapshot();
-
-        snapshot.Version.Should().Be(1);
-    }
 
     [Fact]
     public void DraftSnapshot_HasNoPublishedTimestamp()

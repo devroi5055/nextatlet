@@ -34,8 +34,8 @@ public class TestDataBuildersTests
     {
         var athlete = TestAthletes.AnAthlete();
 
-        Assert.False(string.IsNullOrWhiteSpace(athlete.Slug));
-        Assert.Equal(ControlMode.AthleteControlled.Id, athlete.ControlModeId);
+        Assert.False(string.IsNullOrWhiteSpace(athlete.SportId));
+        Assert.Equal(ControlModes.AthleteControlled.Id, athlete.ControlModeId);
     }
 
     [Theory]
@@ -82,9 +82,9 @@ public class TestDataBuildersTests
         var owner = ProfileLogins.AnOwnerLogin();
         var guardian = ProfileLogins.AGuardianLogin();
 
-        Assert.Equal(ProfileRole.AthleteOwner.Id, owner.RoleId);
+        Assert.Equal(ProfileRoles.AthleteOwner.Id, owner.SiteRoleId);
         Assert.Equal(ProfileLoginStatus.Active.Id, owner.StatusId);
-        Assert.Equal(ProfileRole.Guardian.Id, guardian.RoleId);
+        Assert.Equal(ProfileRoles.Guardian.Id, guardian.SiteRoleId);
         Assert.Equal(ProfileLoginStatus.Active.Id, guardian.StatusId);
     }
 
@@ -101,7 +101,7 @@ public class TestDataBuildersTests
         var invitation = Invitations.APendingInvitation();
 
         Assert.Equal(InvitationStatus.Pending.Id, invitation.StatusId);
-        Assert.Equal(ProfileRole.Guardian.Id, invitation.RoleId);
+        Assert.Equal(ProfileRoles.Guardian.Id, invitation.RoleId);
         Assert.False(string.IsNullOrWhiteSpace(invitation.Email));
         Assert.False(invitation.IsExpired);
     }

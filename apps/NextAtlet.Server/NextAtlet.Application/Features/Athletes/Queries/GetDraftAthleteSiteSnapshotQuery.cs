@@ -7,19 +7,19 @@ using NextAtlet.Application.Abstractions.Services;
 
 namespace NextAtlet.Application.Features.Athletes.Queries;
 
-public record GetDraftAthleteSiteSnapshotQuery(Guid AthleteProfileId) : IRequest<AthleteSiteSnapshotDto>;
+public record GetDraftAthleteSiteSnapshotQuery(Guid SiteId) : IRequest<SiteSnapshotDto>;
 
-public class GetDraftAthleteSiteSnapshotQueryHandler : IRequestHandler<GetDraftAthleteSiteSnapshotQuery, AthleteSiteSnapshotDto>
+public class GetDraftAthleteSiteSnapshotQueryHandler : IRequestHandler<GetDraftAthleteSiteSnapshotQuery, SiteSnapshotDto>
 {
-    private readonly IAthleteSiteSnapshotRepository _siteSnapshots;
+    private readonly ISiteSnapshotRepository _siteSnapshots;
 
-    public GetDraftAthleteSiteSnapshotQueryHandler(IAthleteSiteSnapshotRepository siteSnapshots) => _siteSnapshots = siteSnapshots;
+    public GetDraftAthleteSiteSnapshotQueryHandler(ISiteSnapshotRepository siteSnapshots) => _siteSnapshots = siteSnapshots;
 
-    public async Task<AthleteSiteSnapshotDto> Handle(GetDraftAthleteSiteSnapshotQuery request, CancellationToken cancellationToken)
+    public async Task<SiteSnapshotDto> Handle(GetDraftAthleteSiteSnapshotQuery request, CancellationToken cancellationToken)
     {
-        var snapshot = await _siteSnapshots.GetDraftByProfileIdAsync(request.AthleteProfileId, cancellationToken)
-            ?? throw new DomainException(ErrorCodes.DraftConfigNotFound, request.AthleteProfileId);
+        var snapshot = await _siteSnapshots.GetCurrentDraftBySiteIdAsync(request.SiteId, cancellationToken)
+            ?? throw new DomainException(ErrorCodes.DraftConfigNotFound, request.SiteId);
 
-        return AthleteSiteSnapshotMapper.ToDto(snapshot);
+        return SiteSnapshotMapper.ToDto(snapshot);
     }
 }

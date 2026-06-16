@@ -1,8 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using NextAtlet.Domain.Entities.AthleteProfile;
-using NextAtlet.Domain.Entities.Organization;
 using NextAtlet.Domain.Entities.Shared;
+using NextAtlet.Domain.Entities.Sites;
 
 namespace NextAtlet.Infrastructure.Data.Configurations;
 
@@ -24,11 +23,11 @@ public class ChangeRequestConfiguration : IEntityTypeConfiguration<ChangeRequest
         entity.Property(e => e.ProposedLayout).HasJsonbConversion().IsRequired();
 
         //RELATIONS N:1
-        entity.HasOne<AthleteSite>()
+        entity.HasOne<AthleteProfile>()
             .WithMany()
             .HasForeignKey(e => e.TargetProfileId)
             .OnDelete(DeleteBehavior.Cascade);
-        entity.HasOne<Organization>()
+        entity.HasOne<OrganizationProfile>()
             .WithMany()
             .HasForeignKey(e => e.ProposingOrganizationId)
             .OnDelete(DeleteBehavior.Cascade);

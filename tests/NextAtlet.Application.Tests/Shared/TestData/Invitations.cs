@@ -1,4 +1,4 @@
-using NextAtlet.Domain.Entities.Athlete;
+using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.AthleteProfile;
 
 namespace NextAtlet.Application.Tests.Shared.TestData;
@@ -20,7 +20,7 @@ public static class Invitations
         => Invitation.Issue(
             targetProfileId ?? Guid.NewGuid(),
             email ?? DefaultEmail,
-            roleId ?? ProfileRole.Guardian.Id,
+            roleId ?? ProfileRoles.Guardian.Id,
             invitedByUserId ?? Guid.NewGuid(),
             expiresUtc: (nowUtc ?? DateTime.UtcNow).AddDays(7));
 
@@ -28,7 +28,7 @@ public static class Invitations
         => Invitation.Issue(
             Guid.NewGuid(),
             email ?? DefaultEmail,
-            roleId ?? ProfileRole.Guardian.Id,
+            roleId ?? ProfileRoles.Guardian.Id,
             Guid.NewGuid(),
             expiresUtc: DateTime.UtcNow.AddDays(-1)); // past, still Pending → IsExpired
 

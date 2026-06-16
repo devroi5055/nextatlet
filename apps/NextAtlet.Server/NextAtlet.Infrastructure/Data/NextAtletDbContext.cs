@@ -1,10 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using NextAtlet.Application.Common.Time;
 using NextAtlet.Domain.Common;
-using NextAtlet.Domain.Entities.Athlete;
-using NextAtlet.Domain.Entities.AthleteProfile;
-using NextAtlet.Domain.Entities.Organization;
 using NextAtlet.Domain.Entities.Shared;
+using NextAtlet.Domain.Entities.Sites;
 
 namespace NextAtlet.Infrastructure.Data;
 
@@ -19,18 +17,17 @@ public class NextAtletDbContext : DbContext
     }
 
     public DbSet<User> Users { get; set; }
-    public DbSet<AthleteSite> AthleteSites { get; set; }
-    public DbSet<ProfileLogin> ProfileLogins { get; set; }
+    public DbSet<AthleteProfile> AthleteProfiles { get; set; }
+    public DbSet<OrganizationProfile> OrganizationProfiles { get; set; }
+    public DbSet<Site> Sites { get; set; }
+    public DbSet<Theme> Themes { get; set; }
+    public DbSet<SiteLogin> SiteLogins { get; set; }
     public DbSet<Invitation> Invitations { get; set; }
     public DbSet<GuardianConsent> GuardianConsents { get; set; }
-    public DbSet<Theme> Themes { get; set; }
-    public DbSet<AthleteSiteSnapshot> AthleteSiteSnapshots { get; set; }
+    public DbSet<SiteSnapshot> SiteSnapshots { get; set; }
     public DbSet<MediaAsset> MediaAssets { get; set; }
-    public DbSet<Organization> Organizations { get; set; }
     public DbSet<ChangeRequest> ChangeRequests { get; set; }
     public DbSet<Membership> Memberships{ get; set; }
-    public DbSet<OrganizationLogin> OrganizationLogins { get; set; }
-    public DbSet<OrganizationSiteSnapshot> OrganizationSiteSnapShopts { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

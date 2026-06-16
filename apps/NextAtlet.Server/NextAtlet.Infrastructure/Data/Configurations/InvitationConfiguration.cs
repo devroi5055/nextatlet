@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using NextAtlet.Domain.Entities.Athlete;
+using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.AthleteProfile;
 
 namespace NextAtlet.Infrastructure.Data.Configurations;
@@ -26,7 +26,7 @@ public class InvitationConfiguration : IEntityTypeConfiguration<Invitation>
         //RELATIONS N:1
         entity.HasOne(e => e.TargetSite)
             .WithMany()
-            .HasForeignKey(e => e.TargetProfileId)
+            .HasForeignKey(e => e.TargetSiteId)
             .OnDelete(DeleteBehavior.Cascade);
         entity.HasOne(e => e.InvitedBy)
             .WithMany()
@@ -35,6 +35,6 @@ public class InvitationConfiguration : IEntityTypeConfiguration<Invitation>
 
         //INDEXES
         entity.HasIndex(e => new { e.Email, e.StatusId });
-        entity.HasIndex(e => e.TargetProfileId);
+        entity.HasIndex(e => e.TargetSiteId);
     }
 }
