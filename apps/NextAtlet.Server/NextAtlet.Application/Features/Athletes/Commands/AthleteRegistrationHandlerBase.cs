@@ -85,6 +85,7 @@ public abstract class AthleteRegistrationHandlerBase
             DisplayName = displayName,
             VisibilityStateId = "public",
             DefaultLocaleId = defaultLocaleId,
+            SiteProfileId = SiteProfiles.Athlete.Id
 
         };
         _sites.Add(site);

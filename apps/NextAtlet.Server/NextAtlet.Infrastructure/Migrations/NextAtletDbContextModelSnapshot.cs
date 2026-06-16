@@ -22,262 +22,6 @@ namespace NextAtlet.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.AthleteSite", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ConsentState")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
-                        .HasDefaultValue("NotRequired");
-
-                    b.Property<string>("ControlMode")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
-                        .HasDefaultValue("AthleteControlled");
-
-                    b.Property<DateTime>("CreatedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CurrentDraftSnapshotId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("CurrentPublishedSnapshotId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateOnly>("DateOfBirth")
-                        .HasColumnType("date");
-
-                    b.Property<string>("DefaultLocaleId")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(2)
-                        .HasColumnType("character varying(2)")
-                        .HasDefaultValue("da");
-
-                    b.Property<string>("DisplayName")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("SelfTierId")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Slug")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("SportId")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasDefaultValue("judo");
-
-                    b.Property<DateTime>("UpdatedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("VisibilityStateId")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasDefaultValue("Public");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedUtc")
-                        .IsDescending();
-
-                    b.HasIndex("Slug")
-                        .IsUnique();
-
-                    b.HasIndex("SportId");
-
-                    b.ToTable("AthleteSites");
-                });
-
-            modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.AthleteSiteSnapshot", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("AthleteProfileId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("GlobalSettings")
-                        .HasColumnType("jsonb");
-
-                    b.Property<string>("Layout")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
-                    b.Property<DateTime?>("PublishedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("ThemeId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("ThemeVersion")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(1);
-
-                    b.Property<int>("Version")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(1);
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AthleteProfileId");
-
-                    b.HasIndex("CreatedUtc")
-                        .IsDescending();
-
-                    b.HasIndex("ThemeId");
-
-                    b.ToTable("AthleteSiteSnapshots");
-                });
-
-            modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.GuardianConsent", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("AthleteProfileId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("GuardianUserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Method")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)");
-
-                    b.Property<string>("TermsVersion")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AthleteProfileId");
-
-                    b.HasIndex("GuardianUserId");
-
-                    b.ToTable("GuardianConsents");
-                });
-
-            modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.Invitation", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("AcceptedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("CreatedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<DateTime>("ExpiresUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("InvitedByUserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("RoleId")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<Guid>("TargetProfileId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("UpdatedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("InvitedByUserId");
-
-                    b.HasIndex("TargetProfileId");
-
-                    b.HasIndex("Email", "Status");
-
-                    b.ToTable("Invitations");
-                });
-
-            modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.ProfileLogin", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("AthleteProfileId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Permissions")
-                        .HasColumnType("jsonb");
-
-                    b.Property<string>("RoleId")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<DateTime>("UpdatedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AthleteProfileId");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("UserId", "AthleteProfileId")
-                        .IsUnique();
-
-                    b.ToTable("ProfileLogins");
-                });
-
             modelBuilder.Entity("NextAtlet.Domain.Entities.Shared.MediaAsset", b =>
                 {
                     b.Property<Guid>("Id")
@@ -317,7 +61,7 @@ namespace NextAtlet.Infrastructure.Migrations
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)");
 
-                    b.Property<string>("Type")
+                    b.Property<string>("TypeId")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
@@ -341,11 +85,6 @@ namespace NextAtlet.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
                     b.Property<string>("Manifest")
                         .IsRequired()
                         .HasColumnType("jsonb");
@@ -356,12 +95,11 @@ namespace NextAtlet.Infrastructure.Migrations
                         .HasColumnType("character varying(256)");
 
                     b.Property<string>("PreviewImageUrl")
-                        .HasColumnType("text");
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
 
-                    b.Property<int>("Version")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(1);
+                    b.Property<DateTime?>("RetiredUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
@@ -372,10 +110,8 @@ namespace NextAtlet.Infrastructure.Migrations
                         {
                             Id = new Guid("11111111-1111-1111-1111-111111111111"),
                             CreatedUtc = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            IsActive = true,
-                            Manifest = "{\"colors\":{\"primary\":\"#BA4336\",\"secondary\":\"#874942\",\"accent\":\"#EC2A15\",\"background\":\"#FAF8F7\",\"surface\":\"#FFFFFF\",\"text\":\"#332E2D\"},\"typography\":{\"headingFont\":\"Sora\",\"bodyFont\":\"Inter\",\"headingWeight\":\"700\",\"bodyWeight\":\"400\"},\"components\":{\"buttons\":{\"overrides\":{\"radius\":\"rounded\"},\"options\":[{\"key\":\"sharp\",\"displayName\":\"Sharp Edges\",\"styles\":{\"radius\":\"none\"}}]},\"cards\":{\"overrides\":{\"radius\":\"medium\"},\"options\":[]}},\"sectionStyles\":{}}",
-                            Name = "Classic",
-                            Version = 1
+                            Manifest = "{\"colors\":{\"primary\":\"#BA4336\",\"secondary\":\"#874942\",\"accent\":\"#EC2A15\",\"background\":\"#FAF8F7\",\"surface\":\"#FFFFFF\",\"text\":\"#332E2D\"},\"typography\":{\"headingFont\":\"Sora\",\"bodyFont\":\"Inter\",\"headingWeight\":\"700\",\"bodyWeight\":\"400\"},\"componentStyles\":{\"buttons\":{\"overrides\":{\"radius\":\"rounded\"},\"options\":[{\"key\":\"sharp\",\"displayName\":\"Sharp Edges\",\"styles\":{\"radius\":\"none\"}}]},\"cards\":{\"overrides\":{\"radius\":\"medium\"},\"options\":[]}},\"sectionStyles\":{}}",
+                            Name = "Classic"
                         });
                 });
 
@@ -411,11 +147,487 @@ namespace NextAtlet.Infrastructure.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.AthleteSiteSnapshot", b =>
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Sites.AthleteProfile", b =>
                 {
-                    b.HasOne("NextAtlet.Domain.Entities.Athlete.AthleteSite", "AthleteSite")
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ConsentStateId")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasDefaultValue("not_required");
+
+                    b.Property<string>("ControlModeId")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasDefaultValue("athlete_controlled");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly>("DateOfBirth")
+                        .HasColumnType("date");
+
+                    b.Property<string>("SelfTierId")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("SiteId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("SportId")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("judo");
+
+                    b.Property<DateTime>("UpdatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedUtc")
+                        .IsDescending();
+
+                    b.HasIndex("SportId");
+
+                    b.ToTable("AthleteProfiles");
+                });
+
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Sites.ChangeRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("PreviewImageUrl")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<Guid>("ProposedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ProposedLayout")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<Guid>("ProposingOrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TargetProfileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ThemeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ThemeVersion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1);
+
+                    b.Property<DateTime>("UpdatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProposedByUserId");
+
+                    b.HasIndex("ProposingOrganizationId");
+
+                    b.HasIndex("TargetProfileId");
+
+                    b.HasIndex("ThemeId");
+
+                    b.ToTable("ChangeRequests");
+                });
+
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Sites.GuardianConsent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AthleteProfileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("GuardianUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("MethodId")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("TermsVersion")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AthleteProfileId");
+
+                    b.HasIndex("GuardianUserId");
+
+                    b.ToTable("GuardianConsents");
+                });
+
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Sites.Invitation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("AcceptedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTime>("ExpiresUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("InvitedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RoleId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("StatusId")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid>("TargetSiteId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InvitedByUserId");
+
+                    b.HasIndex("TargetSiteId");
+
+                    b.HasIndex("Email", "StatusId");
+
+                    b.ToTable("Invitations");
+                });
+
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Sites.Membership", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AthleteProfileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("OccupiesSlot")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RoleId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("UpdatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("statusId")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("active");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AthleteProfileId");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.ToTable("Memberships");
+                });
+
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Sites.OrganizationProfile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("AthleteSlotCount")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<bool>("IsServerManaged")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("OrganizationTierId")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("free");
+
+                    b.Property<string>("OrganizationTypeId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("SiteId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTime>("UpdatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("VerificationStatusId")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("pending");
+
+                    b.Property<string>("VisibilityStateId")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("public");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationTypeId");
+
+                    b.HasIndex("SiteId");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.ToTable("OrganizationProfiles");
+                });
+
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Sites.Site", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CurrentDraftSnapshotId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("CurrentPublishedSnapshotId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DefaultLocaleId")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)")
+                        .HasDefaultValue("en");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("SiteProfileId")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("athlete");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTime>("UpdatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("VerificationStatusId")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("pending");
+
+                    b.Property<string>("VisibilityStateId")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("public");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CurrentDraftSnapshotId");
+
+                    b.HasIndex("CurrentPublishedSnapshotId");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.ToTable("Sites");
+                });
+
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Sites.SiteLogin", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Permissions")
+                        .HasColumnType("jsonb");
+
+                    b.Property<Guid>("SiteId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("SiteRoleId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("StatusId")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime>("UpdatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SiteId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "SiteId")
+                        .IsUnique();
+
+                    b.ToTable("SiteLogins");
+                });
+
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Sites.SiteSnapshot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("GlobalSettings")
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("Layout")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<DateTime?>("PublishedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("SiteId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ThemeId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedUtc")
+                        .IsDescending();
+
+                    b.HasIndex("SiteId");
+
+                    b.HasIndex("ThemeId");
+
+                    b.ToTable("SiteSnapshots");
+                });
+
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Shared.MediaAsset", b =>
+                {
+                    b.HasOne("NextAtlet.Domain.Entities.Sites.Site", null)
+                        .WithMany("MediaAssets")
+                        .HasForeignKey("AthleteSiteId")
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Sites.ChangeRequest", b =>
+                {
+                    b.HasOne("NextAtlet.Domain.Entities.Shared.User", null)
                         .WithMany()
-                        .HasForeignKey("AthleteProfileId")
+                        .HasForeignKey("ProposedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("NextAtlet.Domain.Entities.Sites.OrganizationProfile", null)
+                        .WithMany()
+                        .HasForeignKey("ProposingOrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("NextAtlet.Domain.Entities.Sites.AthleteProfile", null)
+                        .WithMany()
+                        .HasForeignKey("TargetProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -425,14 +637,12 @@ namespace NextAtlet.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("AthleteSite");
-
                     b.Navigation("Theme");
                 });
 
-            modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.GuardianConsent", b =>
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Sites.GuardianConsent", b =>
                 {
-                    b.HasOne("NextAtlet.Domain.Entities.Athlete.AthleteSite", "AthleteSite")
+                    b.HasOne("NextAtlet.Domain.Entities.Sites.AthleteProfile", "AthleteSite")
                         .WithMany()
                         .HasForeignKey("AthleteProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -449,7 +659,7 @@ namespace NextAtlet.Infrastructure.Migrations
                     b.Navigation("Guardian");
                 });
 
-            modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.Invitation", b =>
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Sites.Invitation", b =>
                 {
                     b.HasOne("NextAtlet.Domain.Entities.Shared.User", "InvitedBy")
                         .WithMany()
@@ -457,9 +667,9 @@ namespace NextAtlet.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("NextAtlet.Domain.Entities.Athlete.AthleteSite", "TargetSite")
+                    b.HasOne("NextAtlet.Domain.Entities.Sites.AthleteProfile", "TargetSite")
                         .WithMany()
-                        .HasForeignKey("TargetProfileId")
+                        .HasForeignKey("TargetSiteId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -468,45 +678,118 @@ namespace NextAtlet.Infrastructure.Migrations
                     b.Navigation("TargetSite");
                 });
 
-            modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.ProfileLogin", b =>
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Sites.Membership", b =>
                 {
-                    b.HasOne("NextAtlet.Domain.Entities.Athlete.AthleteSite", "AthleteSite")
-                        .WithMany("ProfileLogins")
+                    b.HasOne("NextAtlet.Domain.Entities.Sites.AthleteProfile", null)
+                        .WithMany()
                         .HasForeignKey("AthleteProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("NextAtlet.Domain.Entities.Sites.OrganizationProfile", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Sites.OrganizationProfile", b =>
+                {
+                    b.HasOne("NextAtlet.Domain.Entities.Sites.Site", "Site")
+                        .WithMany()
+                        .HasForeignKey("SiteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.OwnsOne("NextAtlet.Domain.Common.OrgVerification", "Verification", b1 =>
+                        {
+                            b1.Property<Guid>("OrganizationProfileId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("CVR")
+                                .HasMaxLength(8)
+                                .HasColumnType("character varying(8)");
+
+                            b1.Property<string>("MethodId")
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)");
+
+                            b1.Property<Guid?>("VerifiedByUserId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<DateTime>("VerifiedUtc")
+                                .HasColumnType("timestamp with time zone");
+
+                            b1.HasKey("OrganizationProfileId");
+
+                            b1.ToTable("OrganizationProfiles");
+
+                            b1.WithOwner()
+                                .HasForeignKey("OrganizationProfileId");
+                        });
+
+                    b.Navigation("Site");
+
+                    b.Navigation("Verification");
+                });
+
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Sites.Site", b =>
+                {
+                    b.HasOne("NextAtlet.Domain.Entities.Sites.SiteSnapshot", "CurrentDraftSnapshot")
+                        .WithMany()
+                        .HasForeignKey("CurrentDraftSnapshotId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("NextAtlet.Domain.Entities.Sites.SiteSnapshot", "CurrentPublishedSnapshot")
+                        .WithMany()
+                        .HasForeignKey("CurrentPublishedSnapshotId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CurrentDraftSnapshot");
+
+                    b.Navigation("CurrentPublishedSnapshot");
+                });
+
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Sites.SiteLogin", b =>
+                {
+                    b.HasOne("NextAtlet.Domain.Entities.Sites.Site", "Site")
+                        .WithMany("SiteLogins")
+                        .HasForeignKey("SiteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("NextAtlet.Domain.Entities.Shared.User", "User")
-                        .WithMany("ProfileLogins")
+                        .WithMany("SiteLogins")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("AthleteSite");
+                    b.Navigation("Site");
 
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("NextAtlet.Domain.Entities.Shared.MediaAsset", b =>
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Sites.SiteSnapshot", b =>
                 {
-                    b.HasOne("NextAtlet.Domain.Entities.Athlete.AthleteSite", "AthleteSite")
-                        .WithMany("MediaAssets")
-                        .HasForeignKey("AthleteSiteId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                    b.HasOne("NextAtlet.Domain.Entities.Shared.Theme", "Theme")
+                        .WithMany()
+                        .HasForeignKey("ThemeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
-                    b.Navigation("AthleteSite");
-                });
-
-            modelBuilder.Entity("NextAtlet.Domain.Entities.Athlete.AthleteSite", b =>
-                {
-                    b.Navigation("MediaAssets");
-
-                    b.Navigation("ProfileLogins");
+                    b.Navigation("Theme");
                 });
 
             modelBuilder.Entity("NextAtlet.Domain.Entities.Shared.User", b =>
                 {
-                    b.Navigation("ProfileLogins");
+                    b.Navigation("SiteLogins");
+                });
+
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Sites.Site", b =>
+                {
+                    b.Navigation("MediaAssets");
+
+                    b.Navigation("SiteLogins");
                 });
 #pragma warning restore 612, 618
         }
