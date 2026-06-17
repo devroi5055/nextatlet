@@ -1,6 +1,6 @@
 ﻿using NextAtlet.Domain.Common;
 using NextAtlet.Domain.Entities.Shared;
-using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Domain.Enumerations.Individual;
 using NextAtlet.Domain.Enumerations.Organization;
 using NextAtlet.Domain.ValueObjects;
 
@@ -23,7 +23,7 @@ namespace NextAtlet.Domain.Entities.Sites
         {
             SiteId = siteId,
             UserId = userId,
-            SiteRoleId = ProfileRoles.Guardian.Id,
+            SiteRoleId = IndividualRole.Guardian.Id,
             StatusId = ProfileLoginStatus.Active.Id,
             Permissions = null
         };
@@ -31,7 +31,7 @@ namespace NextAtlet.Domain.Entities.Sites
         {
             SiteId = siteId,
             UserId = userId,
-            SiteRoleId = ProfileRoles.AthleteOwner.Id,
+            SiteRoleId = IndividualRole.Owner.Id,
             StatusId = ProfileLoginStatus.Active.Id,
             Permissions = null
         };

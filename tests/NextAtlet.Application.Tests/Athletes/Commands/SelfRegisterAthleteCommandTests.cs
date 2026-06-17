@@ -12,9 +12,9 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
     public class SelfRegisterAthleteCommandTests
     {
 
-        private static SelfRegisterAthleteCommand CreateCommand(DateTime dob, string? guardianEmail)
+        private static RegisterIndividualSiteSelfCommand CreateCommand(DateTime dob, string? guardianEmail)
         {
-            return new SelfRegisterAthleteCommand(
+            return new RegisterIndividualSiteSelfCommand(
                 "auth0|123",
                 "john@test.com",
                 "john",
@@ -122,7 +122,7 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
 
             fixture.SiteRepository.SlugExistsAsync(slug).Returns(true);
 
-            var command = new SelfRegisterAthleteCommand(
+            var command = new RegisterIndividualSiteSelfCommand(
                 AuthProviderId: "auth0|123",
                 Email: "test@test.com",
                 DisplayName: "Lucas",
@@ -151,7 +151,7 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
             var slug = "lucas";
             var guardianEmail = "guardian@guardian.com";
 
-            var command = new SelfRegisterAthleteCommand(
+            var command = new RegisterIndividualSiteSelfCommand(
                 authProviderId,
                 email,
                 diplayName,
@@ -167,7 +167,7 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
             Assert.True(result.IsSuccess);
             var dto = result.Value!;
 
-            // SiteDto carries the site identity; age/control live on AthleteProfile, not this DTO.
+            // SiteDto carries the site identity; age/control live on IndividualProfile, not this DTO.
             Assert.Equal(slug, dto.Slug);
             Assert.Equal(diplayName, dto.DisplayName);
             Assert.Same(Locale.Da.Id, dto.DefaultLocale.Id);
@@ -186,7 +186,7 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
             var slug = "lucas";
             var guardianEmail = "guardian@guardian.com";
 
-            var command = new SelfRegisterAthleteCommand(
+            var command = new RegisterIndividualSiteSelfCommand(
                 authProviderId,
                 email,
                 diplayName,
@@ -216,7 +216,7 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
 
             fixture.UserRepository.GetByAuthProviderIdAsync(authProviderId, Arg.Any<CancellationToken>()).Returns(Users.AnAuthenticatedUser(authProviderId));
 
-            var command = new SelfRegisterAthleteCommand(
+            var command = new RegisterIndividualSiteSelfCommand(
                 authProviderId,
                 email,
                 diplayName,
@@ -245,12 +245,12 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
             var guardianEmail = "guardian@guardian.com";
 
             var fakeUser = Users.AnAuthenticatedUser(authProviderId);
-            var existingSite = new Site { Slug = "existing", DisplayName = "Existing" };
+            var existingSite = new Site { Slug = "existing", DisplayName = "Existing", SiteTypeId = "individual" };
 
             fixture.UserRepository.GetByAuthProviderIdAsync(authProviderId, Arg.Any<CancellationToken>()).Returns(fakeUser);
             fixture.SiteRepository.GetOwnedByUserIdAsync(fakeUser.Id, Arg.Any<CancellationToken>()).Returns(existingSite);
 
-            var command = new SelfRegisterAthleteCommand(
+            var command = new RegisterIndividualSiteSelfCommand(
                 authProviderId,
                 email,
                 diplayName,
@@ -265,7 +265,7 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
             Assert.False(result.IsSuccess);
             Assert.Equal(ErrorCodes.SiteAlreadyExists, result.Error!.Code);
 
-            fixture.AthleteProfileRepository.Received(0).Add(Arg.Any<AthleteProfile>());
+            fixture.IndividualProfileRepository.Received(0).Add(Arg.Any<IndividualProfile>());
             fixture.SiteSnapshotRepository.Received(0).Add(Arg.Any<SiteSnapshot>());
             fixture.SiteLoginRepository.Received(0).Add(Arg.Any<SiteLogin>());
         }
@@ -288,7 +288,7 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
             fixture.UserRepository.GetByAuthProviderIdAsync(authProviderId, Arg.Any<CancellationToken>()).Returns(fakeUser);
             fixture.SiteRepository.GetOwnedByUserIdAsync(fakeUser.Id, Arg.Any<CancellationToken>()).ReturnsNull();
 
-            var command = new SelfRegisterAthleteCommand(
+            var command = new RegisterIndividualSiteSelfCommand(
                 authProviderId,
                 email,
                 diplayName,
@@ -300,7 +300,7 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
 
             await fixture.Handler.Handle(command, CancellationToken.None);
 
-            fixture.AthleteProfileRepository.Received(1).Add(Arg.Any<AthleteProfile>());
+            fixture.IndividualProfileRepository.Received(1).Add(Arg.Any<IndividualProfile>());
             fixture.SiteSnapshotRepository.Received(1).Add(Arg.Any<SiteSnapshot>());
             fixture.SiteLoginRepository.Received(1).Add(Arg.Any<SiteLogin>());
         }

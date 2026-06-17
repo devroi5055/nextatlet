@@ -1,5 +1,5 @@
-using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.Time;
+using NextAtlet.Application.Interfaces.Repositories;
 using NextAtlet.Domain.Entities.Shared;
 
 namespace NextAtlet.Application.Features.Account;

@@ -1,5 +1,5 @@
 using NextAtlet.Domain.Entities.Sites;
-using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Domain.Enumerations.Individual;
 
 namespace NextAtlet.Application.Tests.Shared.TestData;
 

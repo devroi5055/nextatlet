@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using NextAtlet.Domain.Entities.Sites;
-using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Domain.Enumerations.Individual;
 using NextAtlet.Domain.Enumerations.Organization;
 using NextAtlet.Domain.Enumerations.Shared;
 
@@ -22,7 +22,7 @@ public class SiteConfiguration : IEntityTypeConfiguration<Site>
         entity.Property(e => e.VisibilityStateId).IsRequired().HasMaxLength(50).HasDefaultValue(VisibilityStates.Public.Id);
         entity.Property(e => e.VerificationStatusId).IsRequired().HasMaxLength(50).HasDefaultValue(VerificationStatus.Pending.Id);
         entity.Property(e => e.DefaultLocaleId).IsRequired().HasMaxLength(2).HasDefaultValue(Locale.En.Id);
-        entity.Property(e => e.SiteProfileId).IsRequired().HasMaxLength(50).HasDefaultValue(SiteProfiles.Athlete.Id);
+        entity.Property(e => e.SiteTypeId).IsRequired().HasMaxLength(50).HasDefaultValue(SiteType.Individual.Id);
 
         //RELATIONS N:1 — draft/published pointers (SiteLogins + MediaAssets are configured from their own sides)
         entity.HasOne(e => e.CurrentDraftSnapshot)

@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using NextAtlet.Application.Abstractions.Persistence;
+using NextAtlet.Application.Interfaces.Repositories;
 using NextAtlet.Domain.Entities.Sites;
-using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Domain.Enumerations.Individual;
 using NextAtlet.Infrastructure.Data;
 
 namespace NextAtlet.Infrastructure.Persistence.Repositories;

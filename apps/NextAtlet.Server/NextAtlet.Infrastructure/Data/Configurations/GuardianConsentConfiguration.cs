@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using NextAtlet.Domain.Entities.Sites;
-using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Domain.Enumerations.Individual;
 
 namespace NextAtlet.Infrastructure.Data.Configurations;
 
@@ -22,10 +22,10 @@ public class GuardianConsentConfiguration : IEntityTypeConfiguration<GuardianCon
         entity.Property(e => e.MethodId).IsRequired().HasMaxLength(30);
 
         //RELATIONS N:1
-        entity.HasOne(e => e.AthleteSite).WithMany().HasForeignKey(e => e.AthleteProfileId).OnDelete(DeleteBehavior.Cascade);
+        entity.HasOne(e => e.AthleteSite).WithMany().HasForeignKey(e => e.IndividualProfileId).OnDelete(DeleteBehavior.Cascade);
         entity.HasOne(e => e.Guardian).WithMany().HasForeignKey(e => e.GuardianUserId).OnDelete(DeleteBehavior.Restrict);
 
         //INDEXES
-        entity.HasIndex(e => e.AthleteProfileId);
+        entity.HasIndex(e => e.IndividualProfileId);
     }
 }

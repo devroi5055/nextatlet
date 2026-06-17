@@ -1,7 +1,7 @@
 using NextAtlet.Domain.Common;
 using NextAtlet.Domain.ValueObjects;
 
-namespace NextAtlet.Domain.Enumerations.AthleteProfile;
+namespace NextAtlet.Domain.Enumerations.Individual;
 
 /// <summary>
 /// Lifecycle of an Invitation. Only Pending rows are actionable; the rest are terminal and retained for audit.

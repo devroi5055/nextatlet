@@ -23,9 +23,9 @@ public class MembershipConfiguration : IEntityTypeConfiguration<Membership>
         entity.Property(e => e.statusId).IsRequired().HasMaxLength(20).HasDefaultValue(MembershipStatus.Active.Id);
 
         //RELATIONS N:1
-        entity.HasOne<AthleteProfile>()
+        entity.HasOne<IndividualProfile>()
             .WithMany()
-            .HasForeignKey(e => e.AthleteProfileId)
+            .HasForeignKey(e => e.IndividualProfileId)
             .OnDelete(DeleteBehavior.Cascade);
         entity.HasOne<OrganizationProfile>()
             .WithMany()
@@ -33,7 +33,7 @@ public class MembershipConfiguration : IEntityTypeConfiguration<Membership>
             .OnDelete(DeleteBehavior.Cascade);
 
         //INDEXES
-        entity.HasIndex(e => e.AthleteProfileId);
+        entity.HasIndex(e => e.IndividualProfileId);
         entity.HasIndex(e => e.OrganizationId);
     }
 }

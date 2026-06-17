@@ -17,7 +17,7 @@ public class NextAtletDbContext : DbContext
     }
 
     public DbSet<User> Users { get; set; }
-    public DbSet<AthleteProfile> AthleteProfiles { get; set; }
+    public DbSet<IndividualProfile> IndividualProfiles { get; set; }
     public DbSet<OrganizationProfile> OrganizationProfiles { get; set; }
     public DbSet<Site> Sites { get; set; }
     public DbSet<Theme> Themes { get; set; }

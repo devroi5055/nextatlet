@@ -1,7 +1,7 @@
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Features.Athletes.Commands;
 using NextAtlet.Domain.Entities.Sites;
-using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Domain.Enumerations.Individual;
 using NextAtlet.Domain.Enumerations.Shared;
 using NSubstitute;
 
@@ -14,7 +14,7 @@ namespace NextAtlet.Application.Tests.Athletes.Commands;
 public class SelfRegisterConsentTests
 {
 
-    private static SelfRegisterAthleteCommand Command(DateTime dob, string? guardianEmail)
+    private static RegisterIndividualSiteSelfCommand Command(DateTime dob, string? guardianEmail)
         => new("auth0|123", "athlete@test.com", "Kid", "kid", dob, Locale.Da.Id, guardianEmail);
 
     [Fact]
@@ -26,8 +26,8 @@ public class SelfRegisterConsentTests
         await fixture.Handler.Handle(Command(dob, "guardian@test.com"), CancellationToken.None);
 
         // Profile is publish-gated...
-        fixture.AthleteProfileRepository.Received(1)
-            .Add(Arg.Is<AthleteProfile>(p => p.ConsentStateId == ConsentStates.PendingGuardianConsent.Id));
+        fixture.IndividualProfileRepository.Received(1)
+            .Add(Arg.Is<IndividualProfile>(p => p.ConsentStateId == ConsentStates.PendingGuardianConsent.Id));
         // ...and the guardian gets a consent-request EMAIL (not a profile invitation).
         await fixture.EmailService.Received(1).SendConsentRequestAsync("guardian@test.com", Arg.Any<Guid>(), Arg.Any<CancellationToken>());
         fixture.InvitationRepository.DidNotReceive().Add(Arg.Any<Invitation>());
@@ -52,8 +52,8 @@ public class SelfRegisterConsentTests
 
         await fixture.Handler.Handle(Command(dob, guardianEmail: null), CancellationToken.None);
 
-        fixture.AthleteProfileRepository.Received(1)
-            .Add(Arg.Is<AthleteProfile>(p => p.ConsentStateId == ConsentStates.NotRequired.Id));
+        fixture.IndividualProfileRepository.Received(1)
+            .Add(Arg.Is<IndividualProfile>(p => p.ConsentStateId == ConsentStates.NotRequired.Id));
         fixture.InvitationRepository.DidNotReceive().Add(Arg.Any<Invitation>());
     }
 

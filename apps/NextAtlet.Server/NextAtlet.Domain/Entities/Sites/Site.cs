@@ -1,6 +1,6 @@
 ﻿using NextAtlet.Domain.Common;
 using NextAtlet.Domain.Entities.Shared;
-using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Domain.Enumerations.Individual;
 using NextAtlet.Domain.Enumerations.Organization;
 using NextAtlet.Domain.Enumerations.Shared;
 
@@ -15,7 +15,7 @@ namespace NextAtlet.Domain.Entities.Sites
         public string VisibilityStateId { get; set; } = VisibilityStates.Public.Id;
         public string VerificationStatusId { get; set; } = VerificationStatus.Pending.Id;
         public string DefaultLocaleId { get; set; } = Locale.En.Id;
-        public required string SiteProfileId { get; set; } = SiteProfiles.Athlete.Id;
+        public required string SiteTypeId { get; set; } = SiteType.Individual.Id;
 
         // Navigation
         public SiteSnapshot? CurrentDraftSnapshot { get; set; }

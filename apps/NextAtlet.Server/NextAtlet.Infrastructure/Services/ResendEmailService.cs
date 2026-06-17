@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Abstractions.Persistence;
-using NextAtlet.Application.Abstractions.Services;
+using NextAtlet.Application.Interfaces.Services;
 
 namespace NextAtlet.Infrastructure.Services;
 

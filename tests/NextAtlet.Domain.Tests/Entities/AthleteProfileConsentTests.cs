@@ -1,16 +1,16 @@
 using FluentAssertions;
 using NextAtlet.Domain.Entities.Sites;
-using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Domain.Enumerations.Individual;
 
 namespace NextAtlet.Domain.Tests.Entities;
 
 /// <summary>
 /// The publish gate is computed from the stored <see cref="ConsentStates"/>. The publish path refuses
-/// to make the profile public while <see cref="AthleteProfile.AwaitsGuardianConsent"/> is true.
+/// to make the profile public while <see cref="IndividualProfile.AwaitsGuardianConsent"/> is true.
 /// </summary>
-public class AthleteProfileConsentTests
+public class IndividualProfileConsentTests
 {
-    private static AthleteProfile AProfile(ConsentStates state) => new()
+    private static IndividualProfile AProfile(ConsentStates state) => new()
     {
         SiteId = Guid.NewGuid(),
         DateOfBirth = new DateOnly(2015, 1, 1),

@@ -4,6 +4,7 @@ using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Common.Time;
 using NextAtlet.Application.Features.Account;
 using NextAtlet.Application.Features.Athletes.Commands;
+using NextAtlet.Application.Interfaces.Repositories;
 using NextAtlet.Domain.Entities.Shared;
 using NSubstitute;
 using TestUsers = NextAtlet.Application.Tests.Shared.TestData.Users;
@@ -12,7 +13,7 @@ public class RecordGuardianConsentFixture
 {
     public const string TermsVersion = "2026-01";
 
-    public IAthleteProfileRepository AthleteRepository { get; }
+    public IIndividualProfileRepository AthleteRepository { get; }
     public ISiteRepository SiteRepository { get; }
     public IGuardianConsentRepository GuardianConsentRepository { get; }
     public IUserRepository UserRepository { get; }
@@ -25,7 +26,7 @@ public class RecordGuardianConsentFixture
 
     public RecordGuardianConsentFixture()
     {
-        AthleteRepository = Substitute.For<IAthleteProfileRepository>();
+        AthleteRepository = Substitute.For<IIndividualProfileRepository>();
         SiteRepository = Substitute.For<ISiteRepository>();
         GuardianConsentRepository = Substitute.For<IGuardianConsentRepository>();
         UserRepository = Substitute.For<IUserRepository>();

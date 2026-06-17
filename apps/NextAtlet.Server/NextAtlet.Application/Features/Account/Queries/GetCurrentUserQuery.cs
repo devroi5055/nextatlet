@@ -1,11 +1,9 @@
 using MediatR;
 using NextAtlet.Application.Common.DTOs;
-using NextAtlet.Application.Abstractions.Persistence;
-using NextAtlet.Application.Abstractions.Services;
-using NextAtlet.Domain.Authorization;
-using NextAtlet.Domain.Enumerations.AthleteProfile;
-using NextAtlet.Application.Common.Results;
 using NextAtlet.Application.Common.Errors;
+using NextAtlet.Application.Interfaces.Repositories;
+using NextAtlet.Domain.Authorization;
+using NextAtlet.Domain.Enumerations.Individual;
 
 namespace NextAtlet.Application.Features.Account.Queries;
 
@@ -21,7 +19,7 @@ public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, M
     private static readonly IReadOnlyList<Guid> None = [];
 
     private readonly IUserRepository _users;
-    private readonly IAthleteProfileRepository _profiles;
+    private readonly IIndividualProfileRepository _profiles;
     private readonly ISiteRepository _sites;
     private readonly ISiteLoginRepository _logins;
     private readonly IInvitationRepository _invitations;
@@ -29,7 +27,7 @@ public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, M
 
     public GetCurrentUserQueryHandler(
         IUserRepository users,
-        IAthleteProfileRepository profiles,
+        IIndividualProfileRepository profiles,
         ISiteRepository sites,
         ISiteLoginRepository logins,
         IInvitationRepository invitations,
@@ -55,7 +53,7 @@ public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, M
         if (user is null)
         {
             // No presence yet — but a pending invite still means "you're being invited as a guardian".
-            var role = pendingInvites > 0 ? ProfileRoles.Guardian.Id : null;
+            var role = pendingInvites > 0 ? IndividualRole.Guardian.Id : null;
             return new MeDto(Registered: false, Role: role, ProfileId: null, ControlMode: null,
                 IsInControl: false, CanEdit: false, GuardedProfileIds: None, PendingGuardianInvites: pendingInvites);
         }
@@ -68,7 +66,7 @@ public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, M
         if (site is null)
         {
             if (guardedSiteIds.Count > 0 || pendingInvites > 0)
-                return new MeDto(Registered: false, Role: ProfileRoles.Guardian.Id, ProfileId: null, ControlMode: null,
+                return new MeDto(Registered: false, Role: IndividualRole.Guardian.Id, ProfileId: null, ControlMode: null,
                     IsInControl: false, CanEdit: false, GuardedProfileIds: guardedSiteIds, PendingGuardianInvites: pendingInvites);
 
             return new MeDto(Registered: false, Role: null, ProfileId: null, ControlMode: null,
@@ -83,7 +81,7 @@ public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, M
         var isInControl = siteLogin is not null && _permissions.IsController(siteLogin, profile);
         var canEdit = siteLogin is not null && _permissions.Resolve(siteLogin, profile).CanEditContent;
 
-        return new MeDto(Registered: true, Role: ProfileRoles.AthleteOwner.Id, ProfileId: profile.Id,
+        return new MeDto(Registered: true, Role: IndividualRole.Owner.Id, ProfileId: profile.Id,
             ControlMode: ControlModes.FromId(profile.ControlModeId), IsInControl: isInControl, CanEdit: canEdit,
             GuardedProfileIds: guardedSiteIds, PendingGuardianInvites: pendingInvites);
             

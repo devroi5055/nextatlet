@@ -1,6 +1,6 @@
 using NextAtlet.Domain.Common;
 using NextAtlet.Domain.Entities.Shared;
-using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Domain.Enumerations.Individual;
 
 namespace NextAtlet.Domain.Entities.Sites;
 
@@ -12,8 +12,8 @@ namespace NextAtlet.Domain.Entities.Sites;
 /// </summary>
 public class GuardianConsent : CreatedOnlyEntity
 {
-    /// <summary>FK → the minor's AthleteProfile this consent covers.</summary>
-    public required Guid AthleteProfileId { get; set; }
+    /// <summary>FK → the minor's IndividualProfile this consent covers.</summary>
+    public required Guid IndividualProfileId { get; set; }
 
     /// <summary>WHO — the authenticated guardian's User identity (stronger evidence than a name string).</summary>
     public required Guid GuardianUserId { get; set; }
@@ -25,6 +25,6 @@ public class GuardianConsent : CreatedOnlyEntity
     public required string TermsVersion { get; set; }
 
     // Navigation
-    public AthleteProfile AthleteSite { get; set; } = default!;
+    public IndividualProfile AthleteSite { get; set; } = default!;
     public User Guardian { get; set; } = default!;
 }

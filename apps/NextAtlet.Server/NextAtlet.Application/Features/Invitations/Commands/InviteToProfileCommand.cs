@@ -4,7 +4,8 @@ using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Results;
 using NextAtlet.Application.Common.Time;
-using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Application.Interfaces.Repositories;
+using NextAtlet.Domain.Enumerations.Individual;
 
 namespace NextAtlet.Application.Features.Invitations.Commands;
 
@@ -25,7 +26,7 @@ public class InviteToProfileCommandHandler : IRequestHandler<InviteToProfileComm
     private readonly IUserRepository _users;
     private readonly ISiteRepository _sites;
     private readonly ISiteLoginRepository _logins;
-    private readonly IAthleteProfileRepository _profiles;
+    private readonly IIndividualProfileRepository _profiles;
     private readonly IInvitationRepository _invitations;
     private readonly InvitationIssuer _inviter;
     private readonly IUnitOfWork _unitOfWork;
@@ -35,7 +36,7 @@ public class InviteToProfileCommandHandler : IRequestHandler<InviteToProfileComm
         IUserRepository users,
         ISiteRepository sites,
         ISiteLoginRepository logins,
-        IAthleteProfileRepository profiles,
+        IIndividualProfileRepository profiles,
         IInvitationRepository invitations,
         InvitationIssuer inviter,
         IUnitOfWork unitOfWork,
@@ -54,7 +55,7 @@ public class InviteToProfileCommandHandler : IRequestHandler<InviteToProfileComm
     public async Task<Result<InvitationDto>> Handle(InviteToProfileCommand request, CancellationToken cancellationToken)
     {
         // Role must be a known ProfileRole — reject early rather than create an unusable invitation.
-        if (request.Role != ProfileRoles.AthleteOwner.Id && request.Role != ProfileRoles.Guardian.Id)
+        if (request.Role != IndividualRole.Owner.Id && request.Role != IndividualRole.Guardian.Id)
             return Error.FromCode(ErrorCodes.InvitationRoleInvalid);
 
         // The caller must already be a known user; an unknown subject holds no rights anywhere.
@@ -71,7 +72,7 @@ public class InviteToProfileCommandHandler : IRequestHandler<InviteToProfileComm
             return Error.FromCode(ErrorCodes.NotAuthorized);
 
         // A guardian only makes sense for a minor — refuse to invite one onto an adult site.
-        if (request.Role == ProfileRoles.Guardian.Id && !profile.IsMinor(_clock.UtcNow))
+        if (request.Role == IndividualRole.Guardian.Id && !profile.IsMinor(_clock.UtcNow))
             return Error.FromCode(ErrorCodes.GuardianCannotRegisterAdult);
 
         // Don't double-invite the same email+role on the same site.

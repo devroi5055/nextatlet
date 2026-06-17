@@ -1,27 +1,27 @@
 using NextAtlet.Domain.Common;
 using NextAtlet.Domain.ValueObjects;
 
-namespace NextAtlet.Domain.Enumerations.AthleteProfile;
+namespace NextAtlet.Domain.Enumerations.Individual;
 
-public sealed class SiteProfiles : Enumeration
+public sealed class SiteType : Enumeration
 {
-    public static readonly SiteProfiles Athlete = new()
+    public static readonly SiteType Individual = new()
     {
-        Id = "athlete",
-        Title = new LocalizedText { Da = "Atlet", En = "athlete" },
-        Description = new LocalizedText { Da = "Personlig Atlet Side", En = "Personal Athlete Site" }
+        Id = "individual",
+        Title = new LocalizedText { Da = "Individuel", En = "Individual" },
+        Description = new LocalizedText { Da = "Personlig side for en enkeltperson", En = "Personal site for an individual" }
     };
 
-    public static readonly SiteProfiles Organization = new()
+    public static readonly SiteType Organization = new()
     {
         Id = "organization",
         Title = new LocalizedText { Da = "Organisation", En = "Organization" },
         Description = new LocalizedText { Da = "Organisations Profil", En = "Organization Profile" }
     };
 
-    public static IReadOnlyCollection<SiteProfiles> All => [Athlete, Organization];
+    public static IReadOnlyCollection<SiteType> All => [Individual, Organization];
 
-    public static SiteProfiles FromId(string id) =>
+    public static SiteType FromId(string id) =>
         All.FirstOrDefault(v => v.Id == id)
-        ?? throw new ArgumentException($"Unknown Site Profile: '{id}'");
+        ?? throw new ArgumentException($"Unknown site type: '{id}'");
 }

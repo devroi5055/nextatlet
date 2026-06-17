@@ -1,4 +1,4 @@
-using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Domain.Enumerations.Individual;
 using NextAtlet.Domain.Enumerations.Media;
 using NextAtlet.Domain.Enumerations.Shared;
 using NextAtlet.Domain.Policies;
@@ -82,9 +82,9 @@ public class TestDataBuildersTests
         var owner = ProfileLogins.AnOwnerLogin();
         var guardian = ProfileLogins.AGuardianLogin();
 
-        Assert.Equal(ProfileRoles.AthleteOwner.Id, owner.SiteRoleId);
+        Assert.Equal(IndividualRole.Owner.Id, owner.SiteRoleId);
         Assert.Equal(ProfileLoginStatus.Active.Id, owner.StatusId);
-        Assert.Equal(ProfileRoles.Guardian.Id, guardian.SiteRoleId);
+        Assert.Equal(IndividualRole.Guardian.Id, guardian.SiteRoleId);
         Assert.Equal(ProfileLoginStatus.Active.Id, guardian.StatusId);
     }
 
@@ -101,7 +101,7 @@ public class TestDataBuildersTests
         var invitation = Invitations.APendingInvitation();
 
         Assert.Equal(InvitationStatus.Pending.Id, invitation.StatusId);
-        Assert.Equal(ProfileRoles.Guardian.Id, invitation.RoleId);
+        Assert.Equal(IndividualRole.Guardian.Id, invitation.RoleId);
         Assert.False(string.IsNullOrWhiteSpace(invitation.Email));
         Assert.False(invitation.IsExpired);
     }

@@ -1,11 +1,11 @@
 using NextAtlet.Domain.Common;
 using NextAtlet.Domain.Entities.Shared;
-using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Domain.Enumerations.Individual;
 using NextAtlet.Domain.Enumerations.Shared;
 
 namespace NextAtlet.Domain.Entities.Sites;
 
-public class AthleteProfile : AuditableEntity
+public class IndividualProfile : AuditableEntity
 {
 
 

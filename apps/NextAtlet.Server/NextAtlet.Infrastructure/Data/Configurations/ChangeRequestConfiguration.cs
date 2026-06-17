@@ -23,7 +23,7 @@ public class ChangeRequestConfiguration : IEntityTypeConfiguration<ChangeRequest
         entity.Property(e => e.ProposedLayout).HasJsonbConversion().IsRequired();
 
         //RELATIONS N:1
-        entity.HasOne<AthleteProfile>()
+        entity.HasOne<IndividualProfile>()
             .WithMany()
             .HasForeignKey(e => e.TargetProfileId)
             .OnDelete(DeleteBehavior.Cascade);

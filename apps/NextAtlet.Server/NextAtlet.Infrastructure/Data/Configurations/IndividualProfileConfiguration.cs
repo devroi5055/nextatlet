@@ -1,14 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using NextAtlet.Domain.Entities.Sites;
-using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Domain.Enumerations.Individual;
 using NextAtlet.Domain.Enumerations.Shared;
 
 namespace NextAtlet.Infrastructure.Data.Configurations;
 
-public class AthleteProfileConfiguration : IEntityTypeConfiguration<AthleteProfile>
+public class IndividualProfileConfiguration : IEntityTypeConfiguration<IndividualProfile>
 {
-    public void Configure(EntityTypeBuilder<AthleteProfile> entity)
+    public void Configure(EntityTypeBuilder<IndividualProfile> entity)
     {
         //Keys
         entity.HasKey(e => e.Id);

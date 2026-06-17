@@ -1,6 +1,6 @@
 using NextAtlet.Domain.Common;
 using NextAtlet.Domain.Entities.Shared;
-using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Domain.Enumerations.Individual;
 
 namespace NextAtlet.Domain.Entities.Sites;
 
@@ -37,7 +37,7 @@ public class Invitation : AuditableEntity
     public DateTime? AcceptedUtc { get; set; }
 
     // Navigation
-    public AthleteProfile TargetSite { get; set; } = default!;
+    public IndividualProfile TargetSite { get; set; } = default!;
     public User InvitedBy { get; set; } = default!;
 
     /// <summary>A Pending invitation whose window has elapsed (checked at accept time).</summary>

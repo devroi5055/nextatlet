@@ -1,7 +1,7 @@
 using NextAtlet.Domain.Common;
 using NextAtlet.Domain.ValueObjects;
 
-namespace NextAtlet.Domain.Enumerations.AthleteProfile;
+namespace NextAtlet.Domain.Enumerations.Individual;
 
 /// <summary>
 /// The guardian-consent gate on a profile (GDPR Art. 8). Orthogonal to VisibilityState — only

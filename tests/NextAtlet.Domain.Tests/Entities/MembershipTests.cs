@@ -1,7 +1,7 @@
 ﻿//using FluentAssertions;
 //using NextAtlet.Domain.Entities.Athlete;
 //using NextAtlet.Domain.Enumerations;
-//using NextAtlet.Domain.Enumerations.Enums.AthleteProfile;
+//using NextAtlet.Domain.Enumerations.Enums.IndividualProfile;
 //using System.Globalization;
 //using Xunit;
 
@@ -11,7 +11,7 @@ namespace NextAtlet.Domain.Tests.Entities;
 //{
 //    private static Membership AnActiveMembership() => new()
 //    {
-//        AthleteProfileId = Guid.NewGuid(),
+//        IndividualProfileId = Guid.NewGuid(),
 //        OrganizationId = Guid.NewGuid(),
 //        Role = "competitor",
 //        StartDate = DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(-3)),

@@ -1,9 +1,18 @@
-using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Domain.Enumerations.Individual;
 using NextAtlet.Domain.ValueObjects;
 
 namespace NextAtlet.Application.Common.DTOs;
 
 // Identity (email + IdP subject) comes from the authenticated token, never the body.
+
+
+public class ClubRegisterRequest
+{
+    public required string DisplayName { get; set; }
+    public required string Slug { get; set; }
+    public required string PlanTierId { get; set; }
+    public string DefaultLocaleId { get; set; } = default!;
+}
 
 /// <summary>Self-registration: the caller registers their own athlete profile.</summary>
 public class RegisterOwnAthleteRequest
@@ -32,9 +41,10 @@ public class SiteDto
     public required string Slug { get; set; }
     public required string DisplayName { get; set; }
     public required EnumerationDto DefaultLocale { get; set; } = default!;
+    public required EnumerationDto VisibilityState { get; set; }
 }
 
-public class AthleteProfileDto
+public class IndividualProfileDto
 {
     public Guid Id { get; set; }
     public required string Slug { get; set; }

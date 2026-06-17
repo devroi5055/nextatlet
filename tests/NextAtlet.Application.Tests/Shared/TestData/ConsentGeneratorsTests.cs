@@ -1,4 +1,4 @@
-using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Domain.Enumerations.Individual;
 
 namespace NextAtlet.Application.Tests.Shared.TestData;
 
@@ -23,6 +23,6 @@ public class ConsentGeneratorsTests
         Assert.Equal(ConsentMethods.VerifiedEmail.Id, consent.MethodId);  // how
         Assert.False(string.IsNullOrWhiteSpace(consent.TermsVersion)); // what
         // "when" (CreatedUtc) is stamped by the DbContext at SaveChanges, not at construction.
-        Assert.NotEqual(Guid.Empty, consent.AthleteProfileId);
+        Assert.NotEqual(Guid.Empty, consent.IndividualProfileId);
     }
 }

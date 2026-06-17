@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using NextAtlet.Application.Abstractions.Persistence;
-using NextAtlet.Application.Abstractions.Services;
+using NextAtlet.Application.Interfaces.Repositories;
 using NextAtlet.Domain.Entities.Shared;
 using NextAtlet.Infrastructure.Data;
 

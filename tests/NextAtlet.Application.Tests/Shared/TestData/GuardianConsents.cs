@@ -16,7 +16,7 @@ public static class GuardianConsents
         DateTime? consentedUtc = null)
         => new()
         {
-            AthleteProfileId = athleteProfileId ?? Guid.NewGuid(),
+            IndividualProfileId = athleteProfileId ?? Guid.NewGuid(),
             GuardianUserId = guardianUserId ?? Guid.NewGuid(),
             MethodId = method,
             TermsVersion = termsVersion,

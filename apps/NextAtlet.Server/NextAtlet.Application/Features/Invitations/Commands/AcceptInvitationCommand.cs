@@ -4,8 +4,9 @@ using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Results;
 using NextAtlet.Application.Features.Account;
+using NextAtlet.Application.Interfaces.Repositories;
 using NextAtlet.Domain.Entities.Sites;
-using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Domain.Enumerations.Individual;
 
 namespace NextAtlet.Application.Features.Invitations.Commands;
 
@@ -62,7 +63,7 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
 
         // Materialize the ProfileLogin (Active) with the role the invitation specified. Permissions
         // are derived from the profile's ControlMode at request time — none are stored here.
-        _logins.Add(invite.RoleId == ProfileRoles.Guardian.Id
+        _logins.Add(invite.RoleId == IndividualRole.Guardian.Id
             ? SiteLogin.CreateGuardian(user.Id, invite.TargetSiteId)
             : SiteLogin.CreateAthlete(user.Id, invite.TargetSiteId));
 

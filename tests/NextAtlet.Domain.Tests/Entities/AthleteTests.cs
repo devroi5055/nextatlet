@@ -1,20 +1,20 @@
 using FluentAssertions;
 using NextAtlet.Domain.Entities.Sites;
-using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Domain.Enumerations.Individual;
 using NextAtlet.Domain.Tests.Shared;
 
 namespace NextAtlet.Domain.Tests.Entities;
 
 /// <summary>
-/// Pure domain tests for <see cref="AthleteProfile"/> — no DB, no I/O.
+/// Pure domain tests for <see cref="IndividualProfile"/> — no DB, no I/O.
 /// These cover only behaviour the entity OWNS: computed minor status, age-derived
 /// state, and the stored control fact. Site-level identity (slug, display name,
 /// visibility) now lives on <see cref="Site"/> and is tested there.
 /// </summary>
-public class AthleteProfileTests
+public class IndividualProfileTests
 {
     // Helper: build a valid profile with an overridable date of birth.
-    private static AthleteProfile AProfile(DateOnly? dob = null) => new()
+    private static IndividualProfile AProfile(DateOnly? dob = null) => new()
     {
         SiteId = Guid.NewGuid(),
         SportId = "judo",

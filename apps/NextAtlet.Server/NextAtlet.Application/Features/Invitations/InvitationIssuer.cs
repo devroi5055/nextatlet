@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Options;
 using NextAtlet.Application.Common.Options;
-using NextAtlet.Application.Abstractions.Persistence;
-using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Domain.Entities.Sites;
+using NextAtlet.Application.Interfaces.Services;
+using NextAtlet.Application.Interfaces.Repositories;
 
 namespace NextAtlet.Application.Features.Invitations;
 

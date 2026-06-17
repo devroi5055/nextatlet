@@ -1,5 +1,5 @@
 using NextAtlet.Domain.Entities.Sites;
-using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Domain.Enumerations.Individual;
 
 namespace NextAtlet.Domain.Authorization;
 
@@ -9,10 +9,10 @@ namespace NextAtlet.Domain.Authorization;
 /// </summary>
 public class PermissionResolver
 {
-    public SitePermissions Resolve(SiteLogin login, AthleteProfile profile)
+    public SitePermissions Resolve(SiteLogin login, IndividualProfile profile)
     {
-        var isOwner = login.SiteRoleId == ProfileRoles.AthleteOwner.Id;
-        var isGuardian = login.SiteRoleId == ProfileRoles.Guardian.Id;
+        var isOwner = login.SiteRoleId == IndividualRole.Owner.Id;
+        var isGuardian = login.SiteRoleId == IndividualRole.Guardian.Id;
 
         return profile.ControlModeId switch
         {
@@ -28,10 +28,10 @@ public class PermissionResolver
     /// "Is this login the controlling party?" — used by transfer-control + collaboration and by /me.
     /// The Shared variant of a side still belongs to that side's controller.
     /// </summary>
-    public bool IsController(SiteLogin login, AthleteProfile profile)
+    public bool IsController(SiteLogin login, IndividualProfile profile)
     {
-        var isOwner = login.SiteRoleId == ProfileRoles.AthleteOwner.Id;
-        var isGuardian = login.SiteRoleId == ProfileRoles.Guardian.Id;
+        var isOwner = login.SiteRoleId == IndividualRole.Owner.Id;
+        var isGuardian = login.SiteRoleId == IndividualRole.Guardian.Id;
 
         return profile.ControlModeId switch
         {

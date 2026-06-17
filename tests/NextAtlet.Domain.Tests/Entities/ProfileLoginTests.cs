@@ -1,6 +1,6 @@
 using FluentAssertions;
 using NextAtlet.Domain.Entities.Sites;
-using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Domain.Enumerations.Individual;
 
 namespace NextAtlet.Domain.Tests.Entities;
 
@@ -11,7 +11,7 @@ public class ProfileLoginTests
     {
         var login = SiteLogin.CreateAthlete(userId: Guid.NewGuid(), siteId: Guid.NewGuid());
 
-        login.SiteRoleId.Should().Be(ProfileRoles.AthleteOwner.Id);
+        login.SiteRoleId.Should().Be(IndividualRole.Owner.Id);
         login.StatusId.Should().Be(ProfileLoginStatus.Active.Id);
     }
 
@@ -20,7 +20,7 @@ public class ProfileLoginTests
     {
         var login = SiteLogin.CreateGuardian(userId: Guid.NewGuid(), siteId: Guid.NewGuid());
 
-        login.SiteRoleId.Should().Be(ProfileRoles.Guardian.Id);
+        login.SiteRoleId.Should().Be(IndividualRole.Guardian.Id);
         login.StatusId.Should().Be(ProfileLoginStatus.Active.Id);
     }
 

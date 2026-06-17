@@ -14,7 +14,7 @@
 //    // Application/Services/PerkResolver.cs
 //    public class PerkResolver : IPerkResolver
 //    {
-//        private readonly IAthleteProfileRepository _profiles;
+//        private readonly IIndividualProfileRepository _profiles;
 //        private readonly ISubscriptionRepository _subscriptions;
 //        private readonly IMembershipRepository _memberships;
 

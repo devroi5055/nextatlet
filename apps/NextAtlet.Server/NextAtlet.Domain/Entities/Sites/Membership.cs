@@ -5,7 +5,7 @@ namespace NextAtlet.Domain.Entities.Sites
 {
     public class Membership : AuditableEntity
     {
-        public required Guid AthleteProfileId { get; set; }
+        public required Guid IndividualProfileId { get; set; }
         public required Guid OrganizationId { get; set; }
         public required string RoleId { get; set; }
         public DateTime? EndDate { get; set; }

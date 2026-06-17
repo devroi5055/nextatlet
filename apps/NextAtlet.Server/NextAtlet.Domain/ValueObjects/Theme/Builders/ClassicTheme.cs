@@ -10,7 +10,7 @@ public static class ClassicTheme
     public static ThemeManifest Manifest() => new()
     {
         Colors     = Palette(),
-        Typography = new() { HeadingFont = FontStrings.Sora, BodyFont = FontStrings.Inter },
+        Typography = new() { HeadingFont = Strings.Fonts.Sora, BodyFont = Strings.Fonts.Inter },
         ComponentStyles = Components(),
         // no SectionStyleVariation — Classic uses defaults
     };
@@ -33,21 +33,21 @@ public static class ClassicTheme
 
     private static StyleableElement Button() => new()
     {
-        Overrides = new() { [StyleKeys.Radius] = StyleValues.Rounded },
+        Overrides = new() { [Strings.StyleKeys.Radius] = Strings.StyleValues.Rounded },
         Options =
         [
             new StyleOption
             {
                 Key = "sharp",
                 DisplayName = "Sharp Edges",
-                Styles = new() { [StyleKeys.Radius] = StyleValues.None }
+                Styles = new() { [Strings.StyleKeys.Radius] = Strings.StyleValues.None }
             }
         ]
     };
 
     private static StyleableElement Card() => new()
     {
-        Overrides = new() { [StyleKeys.Radius] = StyleValues.Medium }
+        Overrides = new() { [Strings.StyleKeys.Radius] = Strings.StyleValues.Medium }
     };
 }
 

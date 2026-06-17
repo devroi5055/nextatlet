@@ -1,7 +1,7 @@
 using NextAtlet.Domain.Common;
 using NextAtlet.Domain.ValueObjects;
 
-namespace NextAtlet.Domain.Enumerations.AthleteProfile;
+namespace NextAtlet.Domain.Enumerations.Individual;
 
 /// <summary>
 /// Who controls a profile — a stored, explicit fact, never derived from age and never auto-mutated.

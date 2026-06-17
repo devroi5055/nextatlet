@@ -1,5 +1,5 @@
 using NextAtlet.Application.Abstractions.Persistence;
-using NextAtlet.Application.Abstractions.Services;
+using NextAtlet.Application.Interfaces.Services;
 using NextAtlet.Domain.ValueObjects.Sections;
 
 namespace NextAtlet.Infrastructure.Services.SectionRegistry;

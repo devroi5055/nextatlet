@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 using NextAtlet.Application.Abstractions.Persistence;
-using NextAtlet.Application.Abstractions.Services;
+using NextAtlet.Application.Interfaces.Services;
 using NextAtlet.Domain.ValueObjects;
 using NextAtlet.Domain.ValueObjects.Sections;
 

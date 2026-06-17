@@ -1,11 +1,11 @@
 using NextAtlet.Application.Common.Errors;
-using NextAtlet.Application.Features.Athletes.Commands;
+using NextAtlet.Application.Features.IndividualSites.Commands;
 using NextAtlet.Application.Tests.Shared.TestData;
 using NextAtlet.Domain.Entities.Sites;
-using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Domain.Enumerations.Individual;
 using NSubstitute;
 
-namespace NextAtlet.Application.Tests.Athletes.Commands;
+namespace NextAtlet.Application.Tests.IndividualSites.Commands;
 
 /// <summary>
 /// The consent endpoint records a GuardianConsent (the four GDPR facts) and lifts the publish gate.
@@ -29,7 +29,7 @@ public class RecordGuardianConsentTests
         Assert.NotNull(result.Value);
         // CreatedUtc is stamped during SaveChangesAsync (mocked here), so it isn't asserted at Add time.
         fixture.GuardianConsentRepository.Received(1).Add(Arg.Is<GuardianConsent>(c =>
-            c.AthleteProfileId == profile.Id &&
+            c.IndividualProfileId == profile.Id &&
             c.GuardianUserId == guardian.Id &&
             c.MethodId == ConsentMethods.VerifiedEmail.Id &&
             c.TermsVersion == RecordGuardianConsentFixture.TermsVersion));
@@ -58,12 +58,12 @@ public class RecordGuardianConsentTests
     public async Task UnknownProfile_IsRejected()
     {
         var fixture = new RecordGuardianConsentFixture();
-        fixture.AthleteRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((AthleteProfile?)null);
+        fixture.AthleteRepository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((IndividualProfile?)null);
 
         var result = await fixture.Handler.Handle(
             new RecordGuardianConsentCommand(Guid.NewGuid(), "auth0|x", "g@test.local"), CancellationToken.None);
 
         Assert.False(result.IsSuccess);
-        Assert.Equal(ErrorCodes.AthleteProfileNotFound, result.Error!.Code);
+        Assert.Equal(ErrorCodes.IndividualProfileNotFound, result.Error!.Code);
     }
 }

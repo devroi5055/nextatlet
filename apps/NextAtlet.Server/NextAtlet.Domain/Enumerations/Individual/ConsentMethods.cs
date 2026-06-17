@@ -1,7 +1,7 @@
 using NextAtlet.Domain.Common;
 using NextAtlet.Domain.ValueObjects;
 
-namespace NextAtlet.Domain.Enumerations.AthleteProfile;
+namespace NextAtlet.Domain.Enumerations.Individual;
 
 /// <summary>
 /// HOW guardian consent was verified (a GDPR-required fact). MitID is the natural hard-assurance

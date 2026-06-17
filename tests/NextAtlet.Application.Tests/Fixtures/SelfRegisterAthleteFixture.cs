@@ -6,15 +6,16 @@ using NextAtlet.Application.Features.Account;
 using NextAtlet.Application.Features.Athletes.Commands;
 using NextAtlet.Application.Features.Invitations;
 using NextAtlet.Application.Abstractions.Persistence;
-using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Application.Tests.Shared;
 using NextAtlet.Domain.Entities.Shared;
 using NSubstitute;
+using NextAtlet.Application.Interfaces.Services;
+using NextAtlet.Application.Interfaces.Repositories;
 
 public class SelfRegisterAthleteFixture
 {
     public ISiteRepository SiteRepository { get; }
-    public IAthleteProfileRepository AthleteProfileRepository { get; }
+    public IIndividualProfileRepository IndividualProfileRepository { get; }
     public ISiteLoginRepository SiteLoginRepository { get; }
     public IUserRepository UserRepository { get; }
     public IInvitationRepository InvitationRepository { get; }
@@ -50,7 +51,7 @@ public class SelfRegisterAthleteFixture
         Clock = MockFactory.CreateClock(new DateTime(2018, 1, 1));
 
         SiteRepository = Substitute.For<ISiteRepository>();
-        AthleteProfileRepository = Substitute.For<IAthleteProfileRepository>();
+        IndividualProfileRepository = Substitute.For<IIndividualProfileRepository>();
         SiteLoginRepository = Substitute.For<ISiteLoginRepository>();
         ThemeRepository = Substitute.For<IThemeRepository>();
         SiteSnapshotRepository = Substitute.For<ISiteSnapshotRepository>();
@@ -73,7 +74,7 @@ public class SelfRegisterAthleteFixture
         Handler = new SelfRegisterAthleteCommandHandler(
             SiteRepository,
             SiteLoginRepository,
-            AthleteProfileRepository,
+            IndividualProfileRepository,
             ThemeRepository,
             SiteSnapshotRepository,
             UserProvisioner,
