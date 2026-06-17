@@ -3,6 +3,7 @@ using NextAtlet.Application.Common.Time;
 using NextAtlet.Domain.Common;
 using NextAtlet.Domain.Entities.Shared;
 using NextAtlet.Domain.Entities.Sites;
+using NextAtlet.Domain.Entities.Verification;
 
 namespace NextAtlet.Infrastructure.Data;
 
@@ -28,6 +29,10 @@ public class NextAtletDbContext : DbContext
     public DbSet<MediaAsset> MediaAssets { get; set; }
     public DbSet<ChangeRequest> ChangeRequests { get; set; }
     public DbSet<Membership> Memberships{ get; set; }
+
+    //scraped data
+    public DbSet<Club> Clubs { get; set; }
+    public DbSet<ClubOfficial> ClubOfficials { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
