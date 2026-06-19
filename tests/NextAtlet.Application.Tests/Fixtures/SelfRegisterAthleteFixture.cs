@@ -1,18 +1,18 @@
 using AutoFixture;
 using Microsoft.Extensions.Options;
+using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Common.Time;
 using NextAtlet.Application.Features.Account;
-using NextAtlet.Application.Features.Athletes.Commands;
+using NextAtlet.Application.Features.IndividualSites.Commands;
 using NextAtlet.Application.Features.Invitations;
-using NextAtlet.Application.Abstractions.Persistence;
+using NextAtlet.Application.Interfaces.Repositories;
+using NextAtlet.Application.Interfaces.Services;
 using NextAtlet.Application.Tests.Shared;
 using NextAtlet.Domain.Entities.Shared;
 using NSubstitute;
-using NextAtlet.Application.Interfaces.Services;
-using NextAtlet.Application.Interfaces.Repositories;
 
-public class SelfRegisterAthleteFixture
+public class RegisterIndividualSiteSelfFixture
 {
     public ISiteRepository SiteRepository { get; }
     public IIndividualProfileRepository IndividualProfileRepository { get; }
@@ -29,11 +29,11 @@ public class SelfRegisterAthleteFixture
     public InvitationIssuer InvitationIssuer { get; }
     public AgeThresholdOptions AgeThresholds { get; }
 
-    public SelfRegisterAthleteCommandHandler Handler { get; }
+    public RegisterIndividualSiteSelfCommandHandler Handler { get; }
 
     // Defaults to the DK launch thresholds; pass a custom set (e.g. SelfConsentAge = 16) to exercise
     // the guardian-consent path, which is dormant when SelfConsentAge == AbsoluteMinimumAge.
-    public SelfRegisterAthleteFixture()
+    public RegisterIndividualSiteSelfFixture()
     {
         AgeThresholds = new AgeThresholdOptions();
 
@@ -71,7 +71,7 @@ public class SelfRegisterAthleteFixture
         ThemeRepository.GetActiveByNameAsync("Classic", CancellationToken.None)
             .Returns(fixture.Create<Theme>());
 
-        Handler = new SelfRegisterAthleteCommandHandler(
+        Handler = new RegisterIndividualSiteSelfCommandHandler(
             SiteRepository,
             SiteLoginRepository,
             IndividualProfileRepository,

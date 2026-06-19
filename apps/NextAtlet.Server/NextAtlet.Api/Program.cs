@@ -24,7 +24,9 @@ using System.Security.Claims;
 using NextAtlet.Application.Features.OrganizationSites.Verification.Strategies;
 using NextAtlet.Application.Interfaces.Services;
 using NextAtlet.Application.Interfaces.Repositories;
+using NextAtlet.Application.Interfaces.Strategies;
 using NextAtlet.Infrastructure.ExternalServices.Cvr;
+using NextAtlet.Infrastructure.ExternalServices.Scrape;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -147,6 +149,11 @@ builder.Services.Configure<TermsOptions>(builder.Configuration.GetSection(TermsO
 //strategies
 builder.Services.AddScoped<IVerificationStrategy, CvrVerificationStrategy>();
 
+//club import: scraper strategies + canonicalizer + repository
+builder.Services.AddScoped<IClubSourceStrategy, DjuPortalScraper>();
+builder.Services.AddScoped<IClubCanonicalizer, ClubCanonicalizer>();
+builder.Services.AddScoped<IClubRepository, ClubRepository>();
+
 
 // Add CORS (for development)
 builder.Services.AddCors(options =>
@@ -201,5 +208,4 @@ if (app.Environment.IsDevelopment())
         dbContext.Database.Migrate();
     }
 }
-
 app.Run();

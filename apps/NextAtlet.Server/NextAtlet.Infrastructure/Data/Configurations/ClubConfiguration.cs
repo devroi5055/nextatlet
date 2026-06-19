@@ -14,13 +14,16 @@ public class ClubConfiguration : IEntityTypeConfiguration<Club>
 
         //STRINGS
         entity.Property(e => e.Name).IsRequired().HasMaxLength(256);
-        entity.Property(e => e.Address).IsRequired().HasMaxLength(256);
+        entity.Property(e => e.Address).HasMaxLength(256);
         entity.Property(e => e.Source).IsRequired().HasMaxLength(256);
         entity.Property(e => e.SourceKey).IsRequired().HasMaxLength(256);
 
         //ENUMS
         entity.Property(e => e.CountryId).HasMaxLength(256);
         entity.Property(e => e.SportIds).HasMaxLength(10);
+
+        //SIMPLE SCALARS
+        entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
 
         //RELATIONS
         entity.HasMany(e => e.Officials).WithOne().HasForeignKey(o => o.ClubId);

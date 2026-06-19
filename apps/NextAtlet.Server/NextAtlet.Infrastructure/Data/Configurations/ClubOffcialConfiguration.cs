@@ -22,7 +22,9 @@ public class ClubOfficialConfiguration : IEntityTypeConfiguration<ClubOfficial>
         entity.Property(e => e.RoleId).IsRequired().HasMaxLength(256).HasDefaultValue(ClubOfficialRole.Other.Id);
 
         //INDEXES
-        entity.HasIndex(e => new { e.Source, e.SourceKey }).IsUnique();
+        // TODO: ClubOfficial has no Source / SourceKey properties yet — add them to the entity (e.g.
+        // for scraped-provenance dedup) then restore this unique index.
+        // entity.HasIndex(e => new { e.Source, e.SourceKey }).IsUnique();
 
     }
 }

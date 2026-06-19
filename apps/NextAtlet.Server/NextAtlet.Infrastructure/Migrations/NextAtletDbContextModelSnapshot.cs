@@ -581,6 +581,105 @@ namespace NextAtlet.Infrastructure.Migrations
                     b.ToTable("SiteSnapshots");
                 });
 
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Verification.Club", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("CountryId")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<DateTime>("LastImportedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("SourceKey")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.PrimitiveCollection<string[]>("SportIds")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("text[]");
+
+                    b.Property<DateTime>("UpdatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Source", "SourceKey")
+                        .IsUnique();
+
+                    b.ToTable("Clubs");
+                });
+
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Verification.ClubOfficial", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ClubId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("RoleId")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasDefaultValue("other");
+
+                    b.Property<DateTime>("UpdatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClubId");
+
+                    b.ToTable("ClubOfficials");
+                });
+
             modelBuilder.Entity("NextAtlet.Domain.Entities.Shared.MediaAsset", b =>
                 {
                     b.HasOne("NextAtlet.Domain.Entities.Sites.Site", null)
@@ -750,6 +849,15 @@ namespace NextAtlet.Infrastructure.Migrations
                     b.Navigation("Theme");
                 });
 
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Verification.ClubOfficial", b =>
+                {
+                    b.HasOne("NextAtlet.Domain.Entities.Verification.Club", null)
+                        .WithMany("Officials")
+                        .HasForeignKey("ClubId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("NextAtlet.Domain.Entities.Shared.User", b =>
                 {
                     b.Navigation("SiteLogins");
@@ -760,6 +868,11 @@ namespace NextAtlet.Infrastructure.Migrations
                     b.Navigation("MediaAssets");
 
                     b.Navigation("SiteLogins");
+                });
+
+            modelBuilder.Entity("NextAtlet.Domain.Entities.Verification.Club", b =>
+                {
+                    b.Navigation("Officials");
                 });
 #pragma warning restore 612, 618
         }

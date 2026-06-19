@@ -1,0 +1,40 @@
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using NextAtlet.Application.Features.Clubs.Commands;
+
+namespace NextAtlet.Api.Controllers;
+
+[ApiController]
+[Route("api/clubs")]
+public class ClubsController : ControllerBase
+{
+    private readonly ISender _sender;
+
+    public ClubsController(ISender sender) => _sender = sender;
+
+    /// <summary>
+    /// Dev-only: runs the club-directory scraper(s) for a sport/country and upserts the results.
+    /// Returns a short summary. AllowAnonymous for easy manual testing.
+    /// </summary>
+    [HttpPost("scrape")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Scrape([FromQuery] string sport = "judo", [FromQuery] string country = "denmark")
+        => Ok(await _sender.Send(new ScrapeClubsCommand(sport, country)));
+
+    /// <summary>
+
+    /// </summary>
+    [HttpPut("remove-sports")]
+    [AllowAnonymous]
+    public async Task<IActionResult> RemoveSports(string id, List<string> sportIds)
+        => Ok(await _sender.Send(new RemoveSportsCommand(id, sportIds)));
+
+    /// <summary>
+
+    /// </summary>
+    [HttpPut("add-sports")]
+    [AllowAnonymous]
+    public async Task<IActionResult> AddSports(string id, List<string> sportIds)
+        => Ok(await _sender.Send(new AddSportsCommand(id, sportIds)));
+}

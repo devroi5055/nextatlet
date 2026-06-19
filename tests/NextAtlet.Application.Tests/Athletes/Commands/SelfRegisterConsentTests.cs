@@ -1,5 +1,5 @@
 using NextAtlet.Application.Common.Errors;
-using NextAtlet.Application.Features.Athletes.Commands;
+using NextAtlet.Application.Features.IndividualSites.Commands;
 using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.Individual;
 using NextAtlet.Domain.Enumerations.Shared;
@@ -20,7 +20,7 @@ public class SelfRegisterConsentTests
     [Fact]
     public async Task ConsentBand_CreatesPendingGuardianConsent_AndSendsConsentEmail_NoInvitation()
     {
-        var fixture = new SelfRegisterAthleteFixture();
+        var fixture = new RegisterIndividualSiteSelfFixture();
         var dob = fixture.Clock.UtcNow.AddYears(-14); // below self-consent age 16
 
         await fixture.Handler.Handle(Command(dob, "guardian@test.com"), CancellationToken.None);
@@ -36,7 +36,7 @@ public class SelfRegisterConsentTests
     [Fact]
     public async Task ConsentBand_WithoutGuardianEmail_IsRejected()
     {
-        var fixture = new SelfRegisterAthleteFixture();
+        var fixture = new RegisterIndividualSiteSelfFixture();
         var dob = fixture.Clock.UtcNow.AddYears(-14);
 
         var result = await fixture.Handler.Handle(Command(dob, guardianEmail: null), CancellationToken.None);
@@ -47,7 +47,7 @@ public class SelfRegisterConsentTests
     [Fact]
     public async Task AtSelfConsentAge_CreatesNotRequired_AndNoConsentInvitation()
     {
-        var fixture = new SelfRegisterAthleteFixture();
+        var fixture = new RegisterIndividualSiteSelfFixture();
         var dob = fixture.Clock.UtcNow.AddYears(-16); // exactly self-consent age → no consent needed
 
         await fixture.Handler.Handle(Command(dob, guardianEmail: null), CancellationToken.None);
@@ -60,7 +60,7 @@ public class SelfRegisterConsentTests
     [Fact]
     public async Task BelowAbsoluteMinimum_IsRejected_EvenWhenConsentConfigured()
     {
-        var fixture = new SelfRegisterAthleteFixture();
+        var fixture = new RegisterIndividualSiteSelfFixture();
         var dob = fixture.Clock.UtcNow.AddYears(-10); // below AbsoluteMinimumAge 13 → cannot register
 
         var result = await fixture.Handler.Handle(Command(dob, "guardian@test.com"), CancellationToken.None);

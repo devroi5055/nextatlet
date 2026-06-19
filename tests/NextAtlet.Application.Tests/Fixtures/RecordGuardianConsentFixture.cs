@@ -4,6 +4,7 @@ using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Common.Time;
 using NextAtlet.Application.Features.Account;
 using NextAtlet.Application.Features.Athletes.Commands;
+using NextAtlet.Application.Features.IndividualSites.Commands;
 using NextAtlet.Application.Interfaces.Repositories;
 using NextAtlet.Domain.Entities.Shared;
 using NSubstitute;

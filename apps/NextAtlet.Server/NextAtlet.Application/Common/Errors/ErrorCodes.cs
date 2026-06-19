@@ -23,6 +23,7 @@ public static class ErrorCodes
     public const string SiteNotFound         = "site.not_found";
     public const string SiteAlreadyExists    = "site.already_exists";
     public const string GuardianCannotRegisterAdult = "guardian.cannot_register_adult";
+    public const string ClubNotFound            = "club.not_found";
 
     // Age gating + consent (ControlMode plan).
     public const string BelowMinimumAge         = "registration.below_minimum_age";

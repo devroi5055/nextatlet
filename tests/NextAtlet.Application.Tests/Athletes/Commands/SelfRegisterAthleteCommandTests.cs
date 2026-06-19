@@ -1,5 +1,6 @@
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Features.Athletes.Commands;
+using NextAtlet.Application.Features.IndividualSites.Commands;
 using NextAtlet.Application.Tests.Shared.TestData;
 using NextAtlet.Domain.Entities.Shared;
 using NextAtlet.Domain.Entities.Sites;
@@ -29,7 +30,7 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
         [InlineData(5)]
         public async Task Fails_When_BelowMinimumAge(int age)
         {
-            var fixture = new SelfRegisterAthleteFixture();
+            var fixture = new RegisterIndividualSiteSelfFixture();
 
             var dob = fixture.Clock.UtcNow.AddYears(-age);
 
@@ -47,7 +48,7 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
         [InlineData(15)]
         public async Task RequiresGuardianEmail_ForYoungMinor(int age)
         {
-            var fixture = new SelfRegisterAthleteFixture();
+            var fixture = new RegisterIndividualSiteSelfFixture();
 
             var dob = fixture.Clock.UtcNow.AddYears(-age);
 
@@ -75,7 +76,7 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
         [InlineData(17)]
         public async Task DoesNotRequireGuardianEmail_ForOlderMinor(int age)
         {
-            var fixture = new SelfRegisterAthleteFixture();
+            var fixture = new RegisterIndividualSiteSelfFixture();
 
             var dob = fixture.Clock.UtcNow.AddYears(-age);
 
@@ -96,7 +97,7 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
         [InlineData(40)]
         public async Task DoesNotRequireGuardianEmail_ForAdult(int age)
         {
-            var fixture = new SelfRegisterAthleteFixture();
+            var fixture = new RegisterIndividualSiteSelfFixture();
 
             var dob = fixture.Clock.UtcNow.AddYears(-age);
 
@@ -114,7 +115,7 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
         [Fact]
         public async Task Fails_WhenSlug_ExistsAlready()
         {
-            var fixture = new SelfRegisterAthleteFixture();
+            var fixture = new RegisterIndividualSiteSelfFixture();
 
             // Adult so the consent gate doesn't short-circuit before the slug check.
             var dob = fixture.Clock.UtcNow.AddYears(-25);
@@ -141,7 +142,7 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
         [Fact]
         public async Task ReturnsDTO_When_success()
         {
-            var fixture = new SelfRegisterAthleteFixture();
+            var fixture = new RegisterIndividualSiteSelfFixture();
 
             //13y old
             var dob = new DateTime(2003, 1, 1);
@@ -176,7 +177,7 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
         [Fact]
         public async Task CreatesUser_WhenUser_DoesntExist()
         {
-            var fixture = new SelfRegisterAthleteFixture();
+            var fixture = new RegisterIndividualSiteSelfFixture();
 
             //13y old
             var authProviderId = "auth0|123";
@@ -204,7 +205,7 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
         [Fact]
         public async Task FetchUser_WhenUser_Exist()
         {
-            var fixture = new SelfRegisterAthleteFixture();
+            var fixture = new RegisterIndividualSiteSelfFixture();
 
             //13y old
             var authProviderId = "auth0|123";
@@ -234,7 +235,7 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
         [Fact]
         public async Task Fails_WhenUser_HaveExistingProfile()
         {
-            var fixture = new SelfRegisterAthleteFixture();
+            var fixture = new RegisterIndividualSiteSelfFixture();
 
             //13y old
             var authProviderId = "auth0|123";
@@ -273,7 +274,7 @@ namespace NextAtlet.Application.Tests.Athletes.Commands
         [Fact]
         public async Task CreateProfile_WhenUser_IsValidated()
         {
-            var fixture = new SelfRegisterAthleteFixture();
+            var fixture = new RegisterIndividualSiteSelfFixture();
 
             //13y old
             var authProviderId = "auth0|123";

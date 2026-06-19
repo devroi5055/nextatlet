@@ -27,6 +27,12 @@ namespace NextAtlet.Domain.Enumerations.Verification
             Title = new LocalizedText { Da = "Kasserer", En = "Cashier" },
             Description = new LocalizedText { Da = "Kasserer for klubben", En = "Cashier of the club" }
         };
+        public static readonly ClubOfficialRole Instructor = new()
+        {
+            Id = "instructor",
+            Title = new LocalizedText { Da = "Instruktør", En = "Instructor" },
+            Description = new LocalizedText { Da = "Instruktør for klubben", En = "Instructor of the club" }
+        };
         public static readonly ClubOfficialRole Other = new()
         {
             Id = "other",
@@ -35,7 +41,7 @@ namespace NextAtlet.Domain.Enumerations.Verification
         };
 
 
-        public static IReadOnlyCollection<ClubOfficialRole> All => [Chairman, PostalAddress, Cashier, Other];
+        public static IReadOnlyCollection<ClubOfficialRole> All => [Chairman, PostalAddress, Cashier, Instructor, Other];
 
         public static ClubOfficialRole FromId(string id) =>
             All.FirstOrDefault(b => b.Id == id)
