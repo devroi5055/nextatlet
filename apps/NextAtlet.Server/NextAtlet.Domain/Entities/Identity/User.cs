@@ -1,7 +1,8 @@
 using NextAtlet.Domain.Common;
 using NextAtlet.Domain.Entities.Sites;
+using NextAtlet.Domain.Entities.Identity;
 
-namespace NextAtlet.Domain.Entities.Shared;
+namespace NextAtlet.Domain.Entities.Identity;
 
 
 /// <summary>

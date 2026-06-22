@@ -1,8 +1,9 @@
 ﻿using FluentAssertions;
 using NextAtlet.Domain.Entities.Sites;
+using NextAtlet.Domain.Entities.Identity;
 using NextAtlet.Domain.Enumerations.Individual;
 
-namespace NextAtlet.Domain.Tests.Entities;
+namespace NextAtlet.Domain.Tests.Entities.Identity;
 
 public class InvitationTests
 {

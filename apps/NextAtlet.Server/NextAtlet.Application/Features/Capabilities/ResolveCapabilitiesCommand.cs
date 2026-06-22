@@ -4,7 +4,7 @@
 //using NextAtlet.Domain.Authorization;
 //using NextAtlet.Domain.Enumerations.Enums.IndividualProfile;
 
-//namespace NextAtlet.Application.Features.IndividualSites.Commands;
+//namespace NextAtlet.Application.Features.Capabilities;
 
 ///// <summary>
 ///// Toggles shared editing (collaboration). Does NOT change who controls — only whether the other

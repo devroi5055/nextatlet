@@ -2,11 +2,11 @@ using MediatR;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Results;
-using NextAtlet.Application.Interfaces.Repositories;
+using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Domain.Authorization;
 using NextAtlet.Domain.Enumerations.Individual;
 
-namespace NextAtlet.Application.Features.IndividualSites.Commands;
+namespace NextAtlet.Application.Features.Individuals.Control;
 
 /// <summary>
 /// Toggles shared editing (collaboration). Does NOT change who controls — only whether the other

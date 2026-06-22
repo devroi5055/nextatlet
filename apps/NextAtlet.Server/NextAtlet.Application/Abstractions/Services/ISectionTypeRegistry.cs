@@ -1,6 +1,6 @@
 using NextAtlet.Domain.ValueObjects.Sections;
 
-namespace NextAtlet.Application.Interfaces.Services;
+namespace NextAtlet.Application.Abstractions.Services;
 
 /// <summary>
 /// Result of validating a section's typed payload.

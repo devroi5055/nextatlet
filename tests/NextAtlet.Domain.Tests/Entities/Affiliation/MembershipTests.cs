@@ -5,7 +5,7 @@
 //using System.Globalization;
 //using Xunit;
 
-namespace NextAtlet.Domain.Tests.Entities;
+namespace NextAtlet.Domain.Tests.Entities.Affiliation;
 
 //public class MembershipTests
 //{

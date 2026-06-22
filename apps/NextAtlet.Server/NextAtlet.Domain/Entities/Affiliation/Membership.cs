@@ -1,7 +1,7 @@
 ﻿using NextAtlet.Domain.Common;
 using NextAtlet.Domain.Enumerations.Membership;
 
-namespace NextAtlet.Domain.Entities.Sites
+namespace NextAtlet.Domain.Entities.Affiliation
 {
     public class Membership : AuditableEntity
     {

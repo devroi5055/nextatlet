@@ -1,4 +1,4 @@
-namespace NextAtlet.Application.Interfaces.Services;
+namespace NextAtlet.Application.Abstractions.Services;
 
 /// <summary>
 /// Sends transactional email. Implemented in Infrastructure (a logging no-op for MVP; a real
@@ -18,4 +18,9 @@ public interface IEmailService
     /// Distinct from an invitation — consenting does not join the profile.
     /// </summary>
     Task SendConsentRequestAsync(string email, Guid athleteProfileId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sends a Email verification request to a verified member of a organization
+    /// </summary>
+    Task SendOrgVerificationAsync(string email, Guid siteId, CancellationToken cancellationToken = default);
 }

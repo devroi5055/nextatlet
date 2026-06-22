@@ -1,3 +1,4 @@
+using NextAtlet.Domain.Entities.Consent;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
@@ -5,10 +6,11 @@ using NextAtlet.Application.Common.Extensions;
 using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Common.Results;
 using NextAtlet.Application.Common.Time;
-using NextAtlet.Application.Features.Account;
+using NextAtlet.Application.Features.Identity;
 using NextAtlet.Application.Features.Invitations;
-using NextAtlet.Application.Interfaces.Repositories;
+using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Domain.Entities.Shared;
+using NextAtlet.Domain.Entities.Identity;
 using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.Individual;
 using NextAtlet.Domain.Enumerations.Shared;
@@ -143,13 +145,13 @@ public abstract class IndividualSiteRegistrationHandlerBase
         [
             new SiteSection
             {
-                Id = Guid.NewGuid().ToString(),
+                Id = Guid.NewGuid(),
                 Order = 0,
                 Data = new HeroSectionData { Headline = new LocalizedText(), Subheading = new LocalizedText() }
             },
             new SiteSection
             {
-                Id = Guid.NewGuid().ToString(),
+                Id = Guid.NewGuid(),
                 Order = 1,
                 Data = new BioSectionData { Bio = new LocalizedText() }
             }

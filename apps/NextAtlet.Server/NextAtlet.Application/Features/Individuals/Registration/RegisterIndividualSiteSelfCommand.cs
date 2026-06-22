@@ -1,3 +1,4 @@
+using NextAtlet.Domain.Entities.Consent;
 using MediatR;
 using Microsoft.Extensions.Options;
 using NextAtlet.Application.Abstractions.Persistence;
@@ -6,16 +7,17 @@ using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Common.Results;
 using NextAtlet.Application.Common.Time;
-using NextAtlet.Application.Features.Account;
+using NextAtlet.Application.Features.Identity;
 using NextAtlet.Application.Features.Athletes.Commands;
 using NextAtlet.Application.Features.Invitations;
-using NextAtlet.Application.Interfaces.Repositories;
-using NextAtlet.Application.Interfaces.Services;
+using NextAtlet.Application.Abstractions.Persistence;
+using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Domain.Entities.Sites;
+using NextAtlet.Domain.Entities.Identity;
 using NextAtlet.Domain.Enumerations.Individual;
 using NextAtlet.Domain.Policies;
 
-namespace NextAtlet.Application.Features.IndividualSites.Commands;
+namespace NextAtlet.Application.Features.Individuals.Registration;
 
 /// <summary>
 /// Self-registration: the authenticated caller registers an IndividualProfile for themselves and becomes

@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Options;
 using NextAtlet.Application.Common.DTOs;
-using NextAtlet.Application.Interfaces.Services;
+using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Infrastructure.ExternalServices.Http;
 using System.Net.Http.Json;
 using System.Text.Json;

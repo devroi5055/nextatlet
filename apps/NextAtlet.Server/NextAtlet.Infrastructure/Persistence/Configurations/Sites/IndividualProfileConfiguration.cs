@@ -4,7 +4,7 @@ using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.Individual;
 using NextAtlet.Domain.Enumerations.Shared;
 
-namespace NextAtlet.Infrastructure.Data.Configurations;
+namespace NextAtlet.Infrastructure.Persistence.Configurations;
 
 public class IndividualProfileConfiguration : IEntityTypeConfiguration<IndividualProfile>
 {

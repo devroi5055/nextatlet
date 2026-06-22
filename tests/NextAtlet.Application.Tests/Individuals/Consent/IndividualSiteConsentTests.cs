@@ -1,11 +1,12 @@
 using NextAtlet.Application.Common.Errors;
-using NextAtlet.Application.Features.IndividualSites.Commands;
+using NextAtlet.Application.Features.Individuals.Registration;
 using NextAtlet.Domain.Entities.Sites;
+using NextAtlet.Domain.Entities.Identity;
 using NextAtlet.Domain.Enumerations.Individual;
 using NextAtlet.Domain.Enumerations.Shared;
 using NSubstitute;
 
-namespace NextAtlet.Application.Tests.Athletes.Commands;
+namespace NextAtlet.Application.Tests.Individuals.Consent;
 
 /// <summary>
 /// Guardian-consent behaviour of self-registration. Under Denmark's defaults (self-consent age 13)

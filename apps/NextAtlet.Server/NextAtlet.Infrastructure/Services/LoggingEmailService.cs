@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Logging;
-using NextAtlet.Application.Interfaces.Services;
+using NextAtlet.Application.Abstractions.Services;
 
 namespace NextAtlet.Infrastructure.Services;
 
@@ -25,6 +25,13 @@ public class LoggingEmailService : IEmailService
     {
         _logger.LogInformation(
             "Guardian-consent email to {Email}: confirm at /athletes/{IndividualProfileId}/consent", email, athleteProfileId);
+        return Task.CompletedTask;
+    }
+
+    public Task SendOrgVerificationAsync(string email, Guid siteId, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation(
+            "Guardian-consent email to {Email}: confirm at /athletes/{IndividualProfileId}/consent", email, siteId);
         return Task.CompletedTask;
     }
 }

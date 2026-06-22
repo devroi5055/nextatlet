@@ -1,10 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using NextAtlet.Domain.Entities.Shared;
-using NextAtlet.Domain.Entities.Verification;
+using NextAtlet.Domain.Entities.ClubRegistry;
 using NextAtlet.Domain.Enumerations.Verification;
 
-namespace NextAtlet.Infrastructure.Data.Configurations;
+namespace NextAtlet.Infrastructure.Persistence.Configurations;
 
 public class ClubOfficialConfiguration : IEntityTypeConfiguration<ClubOfficial>
 {

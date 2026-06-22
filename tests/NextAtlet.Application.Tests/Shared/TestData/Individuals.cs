@@ -11,7 +11,7 @@ namespace NextAtlet.Application.Tests.Shared.TestData;
 /// stored control fact (default AthleteControlled). Site-level fields (slug, display name, visibility)
 /// now live on <see cref="Site"/>, not here.
 /// </summary>
-public static class TestAthletes
+public static class TestIndividuals
 {
     public static IndividualProfile AnAthlete(
         DateOnly? dateOfBirth = null,

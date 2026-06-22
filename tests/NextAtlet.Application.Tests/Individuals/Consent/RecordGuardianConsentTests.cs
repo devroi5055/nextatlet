@@ -1,11 +1,13 @@
 using NextAtlet.Application.Common.Errors;
-using NextAtlet.Application.Features.IndividualSites.Commands;
+using NextAtlet.Application.Features.Individuals.Registration;
+using NextAtlet.Application.Features.Individuals.Consent;
 using NextAtlet.Application.Tests.Shared.TestData;
 using NextAtlet.Domain.Entities.Sites;
+using NextAtlet.Domain.Entities.Consent;
 using NextAtlet.Domain.Enumerations.Individual;
 using NSubstitute;
 
-namespace NextAtlet.Application.Tests.IndividualSites.Commands;
+namespace NextAtlet.Application.Tests.Individuals.Consent;
 
 /// <summary>
 /// The consent endpoint records a GuardianConsent (the four GDPR facts) and lifts the publish gate.
@@ -18,7 +20,7 @@ public class RecordGuardianConsentTests
     {
         var fixture = new RecordGuardianConsentFixture();
         var guardian = fixture.GivenAuthenticatedGuardian("guardian@test.local");
-        var profile = TestAthletes.APendingGuardianConsentAthlete();
+        var profile = TestIndividuals.APendingGuardianConsentAthlete();
         fixture.AthleteRepository.GetByIdAsync(profile.Id, Arg.Any<CancellationToken>()).Returns(profile);
 
         var result = await fixture.Handler.Handle(
@@ -41,7 +43,7 @@ public class RecordGuardianConsentTests
     {
         var fixture = new RecordGuardianConsentFixture();
         var guardian = fixture.GivenAuthenticatedGuardian("guardian@test.local");
-        var profile = TestAthletes.AnAthlete(); // ConsentState NotRequired
+        var profile = TestIndividuals.AnAthlete(); // ConsentState NotRequired
         fixture.AthleteRepository.GetByIdAsync(profile.Id, Arg.Any<CancellationToken>()).Returns(profile);
 
         var result = await fixture.Handler.Handle(

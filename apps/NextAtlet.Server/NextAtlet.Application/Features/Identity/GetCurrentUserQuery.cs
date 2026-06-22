@@ -1,11 +1,11 @@
 using MediatR;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
-using NextAtlet.Application.Interfaces.Repositories;
+using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Domain.Authorization;
 using NextAtlet.Domain.Enumerations.Individual;
 
-namespace NextAtlet.Application.Features.Account.Queries;
+namespace NextAtlet.Application.Features.Identity;
 
 /// <summary>
 /// The domain-gate check: tells the frontend which side of registration the authenticated caller is

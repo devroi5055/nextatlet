@@ -1,14 +1,15 @@
 using NextAtlet.Application.Common.Errors;
-using NextAtlet.Application.Features.Athletes.Commands;
-using NextAtlet.Application.Features.IndividualSites.Commands;
+using NextAtlet.Application.Features.Individuals.Registration;
+using NextAtlet.Application.Features.Individuals.Registration;
 using NextAtlet.Application.Tests.Shared.TestData;
 using NextAtlet.Domain.Entities.Shared;
+using NextAtlet.Domain.Entities.Identity;
 using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.Shared;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
 
-namespace NextAtlet.Application.Tests.Athletes.Commands
+namespace NextAtlet.Application.Tests.Individuals.Registration
 {
     public class SelfRegisterAthleteCommandTests
     {

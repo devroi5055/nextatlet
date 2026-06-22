@@ -1,6 +1,7 @@
 using NextAtlet.Domain.Entities.Shared;
+using NextAtlet.Domain.Entities.Sites;
 
-namespace NextAtlet.Application.Interfaces.Repositories;
+namespace NextAtlet.Application.Abstractions.Persistence;
 
 public interface IThemeRepository
 {

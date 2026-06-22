@@ -1,8 +1,10 @@
+using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Common;
 using NextAtlet.Domain.Entities.Shared;
+using NextAtlet.Domain.Entities.Identity;
 using NextAtlet.Domain.Enumerations.Individual;
 
-namespace NextAtlet.Domain.Entities.Sites;
+namespace NextAtlet.Domain.Entities.Identity;
 
 /// <summary>
 /// A pending, audited offer to link a person (by email) to a profile in a given role. The single,

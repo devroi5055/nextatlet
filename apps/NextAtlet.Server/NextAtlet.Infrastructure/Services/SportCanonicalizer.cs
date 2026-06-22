@@ -1,6 +1,6 @@
 using NextAtlet.Application.Common.DTOs;
-using NextAtlet.Application.Interfaces.Services;
-using NextAtlet.Domain.Entities.Verification;
+using NextAtlet.Application.Abstractions.Services;
+using NextAtlet.Domain.Entities.ClubRegistry;
 using NextAtlet.Domain.Enumerations.Shared;
 using NextAtlet.Domain.Enumerations.Verification;
 

@@ -1,5 +1,5 @@
 using NextAtlet.Application.Abstractions.Persistence;
-using NextAtlet.Infrastructure.Data;
+using NextAtlet.Infrastructure.Persistence;
 
 namespace NextAtlet.Infrastructure.Persistence;
 

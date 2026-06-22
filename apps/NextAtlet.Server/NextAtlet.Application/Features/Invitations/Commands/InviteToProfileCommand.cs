@@ -4,7 +4,6 @@ using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Results;
 using NextAtlet.Application.Common.Time;
-using NextAtlet.Application.Interfaces.Repositories;
 using NextAtlet.Domain.Enumerations.Individual;
 
 namespace NextAtlet.Application.Features.Invitations.Commands;
@@ -19,7 +18,7 @@ public record InviteToProfileCommand(
     string CallerAuthProviderId,
     string CallerEmail,
     string Email,
-    string Role) : IRequest<Result<InvitationDto>>;
+    string RoleId) : IRequest<Result<InvitationDto>>;
 
 public class InviteToProfileCommandHandler : IRequestHandler<InviteToProfileCommand, Result<InvitationDto>>
 {
@@ -55,7 +54,7 @@ public class InviteToProfileCommandHandler : IRequestHandler<InviteToProfileComm
     public async Task<Result<InvitationDto>> Handle(InviteToProfileCommand request, CancellationToken cancellationToken)
     {
         // Role must be a known ProfileRole — reject early rather than create an unusable invitation.
-        if (request.Role != IndividualRole.Owner.Id && request.Role != IndividualRole.Guardian.Id)
+        if (request.RoleId != IndividualRole.Owner.Id && request.RoleId != IndividualRole.Guardian.Id)
             return Error.FromCode(ErrorCodes.InvitationRoleInvalid);
 
         // The caller must already be a known user; an unknown subject holds no rights anywhere.
@@ -72,14 +71,14 @@ public class InviteToProfileCommandHandler : IRequestHandler<InviteToProfileComm
             return Error.FromCode(ErrorCodes.NotAuthorized);
 
         // A guardian only makes sense for a minor — refuse to invite one onto an adult site.
-        if (request.Role == IndividualRole.Guardian.Id && !profile.IsMinor(_clock.UtcNow))
+        if (request.RoleId == IndividualRole.Guardian.Id && !profile.IsMinor(_clock.UtcNow))
             return Error.FromCode(ErrorCodes.GuardianCannotRegisterAdult);
 
         // Don't double-invite the same email+role on the same site.
-        if (await _invitations.HasPendingAsync(request.SiteId, request.Email, request.Role, cancellationToken))
+        if (await _invitations.HasPendingAsync(request.SiteId, request.Email, request.RoleId, cancellationToken))
             return Error.FromCode(ErrorCodes.InvitationAlreadyPending);
 
-        var invitation = _inviter.Issue(request.SiteId, request.Email, request.Role, caller.Id);
+        var invitation = _inviter.Issue(request.SiteId, request.Email, request.RoleId, caller.Id);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         await _inviter.NotifyAsync(invitation, cancellationToken);

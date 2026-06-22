@@ -3,9 +3,9 @@ using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.ValueObjects;
 using NextAtlet.Domain.ValueObjects.Sections;
 
-namespace NextAtlet.Domain.Tests.Entities;
+namespace NextAtlet.Domain.Tests.Entities.Sites;
 
-public class AthleteSiteSnapshotTests
+public class SiteSnapshotTests
 {
     private static SiteLayout AValidLayout() => new()
     {
@@ -13,7 +13,7 @@ public class AthleteSiteSnapshotTests
         [
             new SiteSection
             {
-                Id = Guid.NewGuid().ToString(),
+                Id = Guid.NewGuid(),
                 Order = 0,
                 Data = new HeroSectionData
                 {
@@ -23,7 +23,7 @@ public class AthleteSiteSnapshotTests
             },
             new SiteSection
             {
-                Id = Guid.NewGuid().ToString(),
+                Id = Guid.NewGuid(),
                 Order = 1,
                 Data = new BioSectionData { Bio = new LocalizedText() }
             }

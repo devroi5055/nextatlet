@@ -4,7 +4,7 @@ using NextAtlet.Domain.Entities.Shared;
 using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.Media;
 
-namespace NextAtlet.Infrastructure.Data.Configurations;
+namespace NextAtlet.Infrastructure.Persistence.Configurations;
 
 public class MediaAssetConfiguration : IEntityTypeConfiguration<MediaAsset>
 {

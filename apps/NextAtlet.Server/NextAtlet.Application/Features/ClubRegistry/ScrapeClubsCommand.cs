@@ -1,10 +1,8 @@
 using MediatR;
 using NextAtlet.Application.Abstractions.Persistence;
-using NextAtlet.Application.Interfaces.Repositories;
-using NextAtlet.Application.Interfaces.Services;
-using NextAtlet.Application.Interfaces.Strategies;
+using NextAtlet.Application.Abstractions.Services;
 
-namespace NextAtlet.Application.Features.Clubs.Commands;
+namespace NextAtlet.Application.Features.ClubRegistry.Commands;
 
 public record ScrapeClubsCommand(string Sport, string Country) : IRequest<string>;
 
@@ -37,9 +35,9 @@ public class ScrapeClubsCommandHandler : IRequestHandler<ScrapeClubsCommand, str
             var scraped = await strategy.FetchAsync(ct);
 
             foreach (var club in scraped)
-                await _clubs.UpsertAsync(_canonicalizer.Canonicalize(club), ct);
+                await _clubs.UpsertClubAsync(_canonicalizer.Canonicalize(club), ct);
 
-            await _clubs.DeactivateMissingAsync(strategy.Source, scraped.Select(c => c.SourceKey), ct);
+            await _clubs.DeactivateMissingClubAsync(strategy.Source, scraped.Select(c => c.SourceKey), ct);
             total += scraped.Length;
         }
 

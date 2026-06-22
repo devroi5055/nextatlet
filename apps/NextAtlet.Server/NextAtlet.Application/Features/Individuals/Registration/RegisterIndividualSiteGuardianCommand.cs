@@ -5,16 +5,17 @@ using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Common.Results;
 using NextAtlet.Application.Common.Time;
-using NextAtlet.Application.Features.Account;
+using NextAtlet.Application.Features.Identity;
 using NextAtlet.Application.Features.Athletes.Commands;
 using NextAtlet.Application.Features.Invitations;
-using NextAtlet.Application.Interfaces.Repositories;
+using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Domain.Entities.Sites;
+using NextAtlet.Domain.Entities.Identity;
 using NextAtlet.Domain.Enumerations.Individual;
 using NextAtlet.Domain.Enumerations.Shared;
 using NextAtlet.Domain.Policies;
 
-namespace NextAtlet.Application.Features.IndividualSites.Commands;
+namespace NextAtlet.Application.Features.Individuals.Registration;
 
 /// <summary>
 /// Guardian-creates-profile-for-child: the authenticated caller (parent/guardian) registers an

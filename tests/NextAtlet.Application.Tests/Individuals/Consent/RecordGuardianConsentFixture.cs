@@ -1,12 +1,16 @@
+using NextAtlet.Domain.Entities.Consent;
 using Microsoft.Extensions.Options;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Common.Time;
-using NextAtlet.Application.Features.Account;
-using NextAtlet.Application.Features.Athletes.Commands;
-using NextAtlet.Application.Features.IndividualSites.Commands;
-using NextAtlet.Application.Interfaces.Repositories;
+using NextAtlet.Application.Features.Identity;
+using NextAtlet.Application.Features.Individuals.Registration;
+using NextAtlet.Application.Features.Individuals.Consent;
+using NextAtlet.Application.Features.Individuals.Registration;
+using NextAtlet.Application.Features.Individuals.Consent;
+using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Domain.Entities.Shared;
+using NextAtlet.Domain.Entities.Identity;
 using NSubstitute;
 using TestUsers = NextAtlet.Application.Tests.Shared.TestData.Users;
 

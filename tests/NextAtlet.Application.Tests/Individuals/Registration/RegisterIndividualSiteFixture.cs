@@ -3,13 +3,14 @@ using Microsoft.Extensions.Options;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Common.Time;
-using NextAtlet.Application.Features.Account;
-using NextAtlet.Application.Features.IndividualSites.Commands;
+using NextAtlet.Application.Features.Identity;
+using NextAtlet.Application.Features.Individuals.Registration;
 using NextAtlet.Application.Features.Invitations;
-using NextAtlet.Application.Interfaces.Repositories;
-using NextAtlet.Application.Interfaces.Services;
+using NextAtlet.Application.Abstractions.Persistence;
+using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Application.Tests.Shared;
 using NextAtlet.Domain.Entities.Shared;
+using NextAtlet.Domain.Entities.Sites;
 using NSubstitute;
 
 public class RegisterIndividualSiteSelfFixture

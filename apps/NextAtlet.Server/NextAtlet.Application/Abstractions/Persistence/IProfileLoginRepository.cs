@@ -1,6 +1,7 @@
 using NextAtlet.Domain.Entities.Sites;
+using NextAtlet.Domain.Entities.Identity;
 
-namespace NextAtlet.Application.Interfaces.Repositories;
+namespace NextAtlet.Application.Abstractions.Persistence;
 
 public interface ISiteLoginRepository
 {

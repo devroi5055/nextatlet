@@ -1,7 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using NextAtlet.Application.Features.Clubs.Commands;
+using NextAtlet.Application.Features.ClubRegistry.Commands;
 
 namespace NextAtlet.Api.Controllers;
 

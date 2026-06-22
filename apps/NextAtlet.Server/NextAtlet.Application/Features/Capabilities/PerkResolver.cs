@@ -4,7 +4,7 @@
 //using System.Collections.Generic;
 //using System.Text;
 
-//namespace NextAtlet.Application.Services
+//namespace NextAtlet.Application.Features.Capabilities
 //{
 //    public interface IPerkResolver
 //    {

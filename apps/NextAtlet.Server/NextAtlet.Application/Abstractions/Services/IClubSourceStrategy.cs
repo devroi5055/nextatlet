@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace NextAtlet.Application.Interfaces.Strategies
+namespace NextAtlet.Application.Abstractions.Services
 {
     public interface IClubSourceStrategy
     {

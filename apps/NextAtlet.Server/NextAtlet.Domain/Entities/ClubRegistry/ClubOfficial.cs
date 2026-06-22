@@ -1,7 +1,7 @@
 ﻿using NextAtlet.Domain.Common;
 using NextAtlet.Domain.Enumerations.Verification;
 
-namespace NextAtlet.Domain.Entities.Verification
+namespace NextAtlet.Domain.Entities.ClubRegistry
 {
     public class ClubOfficial : AuditableEntity
     {

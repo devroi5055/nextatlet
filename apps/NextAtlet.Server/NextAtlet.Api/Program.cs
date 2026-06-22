@@ -1,5 +1,3 @@
-using MediatR;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -7,26 +5,22 @@ using Microsoft.IdentityModel.Tokens;
 using NextAtlet.Api;
 using NextAtlet.Api.Filters;
 using NextAtlet.Application;
+using NextAtlet.Application.Abstractions.Persistence;
+using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Common.Time;
-using NextAtlet.Application.Features.Account;
+using NextAtlet.Application.Features.Identity;
 using NextAtlet.Application.Features.Invitations;
-using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Domain.Authorization;
 using NextAtlet.Infrastructure.Common.Time;
-using NextAtlet.Infrastructure.Data;
+using NextAtlet.Infrastructure.ExternalServices.Cvr;
+using NextAtlet.Infrastructure.ExternalServices.Scrape;
 using NextAtlet.Infrastructure.Persistence;
 using NextAtlet.Infrastructure.Persistence.Repositories;
 using NextAtlet.Infrastructure.Services;
 using NextAtlet.Infrastructure.Services.SectionRegistry;
 using System.Net.Http.Headers;
 using System.Security.Claims;
-using NextAtlet.Application.Features.OrganizationSites.Verification.Strategies;
-using NextAtlet.Application.Interfaces.Services;
-using NextAtlet.Application.Interfaces.Repositories;
-using NextAtlet.Application.Interfaces.Strategies;
-using NextAtlet.Infrastructure.ExternalServices.Cvr;
-using NextAtlet.Infrastructure.ExternalServices.Scrape;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -147,7 +141,7 @@ builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<AgeThresholdO
 builder.Services.Configure<TermsOptions>(builder.Configuration.GetSection(TermsOptions.SectionName));
 
 //strategies
-builder.Services.AddScoped<IVerificationStrategy, CvrVerificationStrategy>();
+//builder.Services.AddScoped<IVerificationStrategy, CvrVerificationStrategy>();
 
 //club import: scraper strategies + canonicalizer + repository
 builder.Services.AddScoped<IClubSourceStrategy, DjuPortalScraper>();

@@ -1,10 +1,11 @@
 ﻿using NextAtlet.Domain.Common;
 using NextAtlet.Domain.Entities.Shared;
+using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.Individual;
 using NextAtlet.Domain.Enumerations.Organization;
 using NextAtlet.Domain.ValueObjects;
 
-namespace NextAtlet.Domain.Entities.Sites
+namespace NextAtlet.Domain.Entities.Identity
 {
     public class SiteLogin : AuditableEntity
     {

@@ -1,4 +1,5 @@
 ﻿using NextAtlet.Domain.Common;
+using NextAtlet.Domain.Entities.Identity;
 using NextAtlet.Domain.Entities.Shared;
 using NextAtlet.Domain.Enumerations.Individual;
 using NextAtlet.Domain.Enumerations.Organization;

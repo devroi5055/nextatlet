@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using NextAtlet.Application.Interfaces.Repositories;
+using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.Individual;
-using NextAtlet.Infrastructure.Data;
+using NextAtlet.Infrastructure.Persistence;
 
 namespace NextAtlet.Infrastructure.Persistence.Repositories;
 

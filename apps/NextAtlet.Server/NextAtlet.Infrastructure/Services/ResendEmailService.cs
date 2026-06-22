@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Abstractions.Persistence;
-using NextAtlet.Application.Interfaces.Services;
+using NextAtlet.Application.Abstractions.Services;
 
 namespace NextAtlet.Infrastructure.Services;
 
@@ -80,6 +80,11 @@ public class ResendEmailService : IEmailService
             // Best-effort: the originating row is committed and is the source of truth; never fail the request here.
             _logger.LogError(ex, "Resend {Context} to {Email} threw", context, email);
         }
+    }
+
+    public Task SendOrgVerificationAsync(string email, Guid siteId, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
     }
 
     /// <summary>Resend POST /emails payload. Serialized with web defaults → camelCase field names.</summary>

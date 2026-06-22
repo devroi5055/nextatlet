@@ -8,7 +8,7 @@ public class ConsentGeneratorsTests
     [Fact]
     public void APendingGuardianConsentAthlete_AwaitsConsent()
     {
-        var athlete = TestAthletes.APendingGuardianConsentAthlete();
+        var athlete = TestIndividuals.APendingGuardianConsentAthlete();
 
         Assert.Equal(ConsentStates.PendingGuardianConsent.Id, athlete.ConsentStateId);
         Assert.True(athlete.AwaitsGuardianConsent);

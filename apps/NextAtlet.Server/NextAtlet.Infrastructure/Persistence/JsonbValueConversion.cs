@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-namespace NextAtlet.Infrastructure.Data;
+namespace NextAtlet.Infrastructure.Persistence;
 
 /// <summary>
 /// Maps a typed value object to a Postgres <c>jsonb</c> column via System.Text.Json.

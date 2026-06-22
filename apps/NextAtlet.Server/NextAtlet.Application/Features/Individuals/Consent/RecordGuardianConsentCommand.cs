@@ -4,12 +4,13 @@ using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Common.Results;
-using NextAtlet.Application.Features.Account;
-using NextAtlet.Application.Interfaces.Repositories;
+using NextAtlet.Application.Features.Identity;
+using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Domain.Entities.Sites;
+using NextAtlet.Domain.Entities.Consent;
 using NextAtlet.Domain.Enumerations.Individual;
 
-namespace NextAtlet.Application.Features.IndividualSites.Commands;
+namespace NextAtlet.Application.Features.Individuals.Consent;
 
 /// <summary>
 /// A guardian gives consent (GDPR Art. 8) for a minor's profile by following the emailed link and

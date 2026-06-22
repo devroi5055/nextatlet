@@ -1,6 +1,6 @@
 using NextAtlet.Domain.Common;
 
-namespace NextAtlet.Domain.Entities.Verification
+namespace NextAtlet.Domain.Entities.ClubRegistry
 {
     public class Club : AuditableEntity
     {

@@ -1,7 +1,7 @@
 using NextAtlet.Domain.Common;
 using NextAtlet.Domain.ValueObjects;
 
-namespace NextAtlet.Domain.Entities.Shared;
+namespace NextAtlet.Domain.Entities.Sites;
 
 public class Theme : CreatedOnlyEntity, IRetirable
 {

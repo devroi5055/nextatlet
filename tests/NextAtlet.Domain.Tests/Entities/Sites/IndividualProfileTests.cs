@@ -3,7 +3,7 @@ using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.Individual;
 using NextAtlet.Domain.Tests.Shared;
 
-namespace NextAtlet.Domain.Tests.Entities;
+namespace NextAtlet.Domain.Tests.Entities.Sites;
 
 /// <summary>
 /// Pure domain tests for <see cref="IndividualProfile"/> — no DB, no I/O.

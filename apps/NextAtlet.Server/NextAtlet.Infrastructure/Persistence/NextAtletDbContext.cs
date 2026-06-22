@@ -2,10 +2,14 @@ using Microsoft.EntityFrameworkCore;
 using NextAtlet.Application.Common.Time;
 using NextAtlet.Domain.Common;
 using NextAtlet.Domain.Entities.Shared;
+using NextAtlet.Domain.Entities.Identity;
 using NextAtlet.Domain.Entities.Sites;
-using NextAtlet.Domain.Entities.Verification;
+using NextAtlet.Domain.Entities.Affiliation;
+using NextAtlet.Domain.Entities.Approval;
+using NextAtlet.Domain.Entities.Consent;
+using NextAtlet.Domain.Entities.ClubRegistry;
 
-namespace NextAtlet.Infrastructure.Data;
+namespace NextAtlet.Infrastructure.Persistence;
 
 public class NextAtletDbContext : DbContext
 {

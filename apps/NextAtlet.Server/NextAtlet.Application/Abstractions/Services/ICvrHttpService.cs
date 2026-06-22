@@ -1,7 +1,7 @@
 using NextAtlet.Application.Common.DTOs;
 using System.Text.Json;
 
-namespace NextAtlet.Application.Interfaces.Services;
+namespace NextAtlet.Application.Abstractions.Services;
 
 /// <summary>
 /// Looks up a Danish organization by CVR number against the official register.

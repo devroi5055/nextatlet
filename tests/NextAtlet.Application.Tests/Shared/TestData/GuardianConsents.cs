@@ -1,4 +1,5 @@
 using NextAtlet.Domain.Entities.Sites;
+using NextAtlet.Domain.Entities.Consent;
 
 namespace NextAtlet.Application.Tests.Shared.TestData;
 

@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using NextAtlet.Application.Interfaces.Services;
+using NextAtlet.Application.Abstractions.Services;
 
 namespace NextAtlet.Infrastructure.ExternalServices.Cvr;
 

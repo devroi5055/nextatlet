@@ -11,7 +11,7 @@ namespace NextAtlet.Application.Tests.Shared.TestData;
 /// Test instances of <see cref="SiteSnapshot"/> — always a valid default Layout (hero + bio) and
 /// GlobalSettings. Draft vs published identified by PublishedUtc.
 /// </summary>
-public static class AthleteSiteSnapshots
+public static class SiteSnapshots
 {
     public static SiteSnapshot ADraftSiteSnapshot(Action<SiteSnapshot>? customize = null)
         => ASiteSnapshot(publishedUtc: null, customize);
@@ -39,13 +39,13 @@ public static class AthleteSiteSnapshots
         [
             new SiteSection
             {
-                Id = Guid.NewGuid().ToString(),
+                Id = Guid.NewGuid(),
                 Order = 0,
                 Data = new HeroSectionData { Headline = new LocalizedText(), Subheading = new LocalizedText() }
             },
             new SiteSection
             {
-                Id = Guid.NewGuid().ToString(),
+                Id = Guid.NewGuid(),
                 Order = 1,
                 Data = new BioSectionData { Bio = new LocalizedText() }
             }

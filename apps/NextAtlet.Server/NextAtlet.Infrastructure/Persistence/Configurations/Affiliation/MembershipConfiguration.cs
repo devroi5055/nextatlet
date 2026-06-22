@@ -1,9 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using NextAtlet.Domain.Entities.Sites;
+using NextAtlet.Domain.Entities.Affiliation;
 using NextAtlet.Domain.Enumerations.Membership;
 
-namespace NextAtlet.Infrastructure.Data.Configurations;
+namespace NextAtlet.Infrastructure.Persistence.Configurations;
 
 public class MembershipConfiguration : IEntityTypeConfiguration<Membership>
 {

@@ -1,5 +1,6 @@
 using AutoFixture;
 using NextAtlet.Domain.Entities.Shared;
+using NextAtlet.Domain.Entities.Identity;
 
 namespace NextAtlet.Application.Tests.Shared.TestData;
 

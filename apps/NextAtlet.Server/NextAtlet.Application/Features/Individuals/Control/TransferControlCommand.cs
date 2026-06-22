@@ -3,13 +3,13 @@ using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Results;
 using NextAtlet.Application.Common.Time;
-using NextAtlet.Application.Interfaces.Repositories;
+using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Domain.Authorization;
 using NextAtlet.Domain.Enumerations.Individual;
 using NextAtlet.Domain.Enumerations.Shared;
 using NextAtlet.Domain.Policies;
 
-namespace NextAtlet.Application.Features.IndividualSites.Commands;
+namespace NextAtlet.Application.Features.Individuals.Control;
 
 /// <summary>
 /// The only way <c>ControlMode</c> changes after creation. Only the <b>current controller</b> may

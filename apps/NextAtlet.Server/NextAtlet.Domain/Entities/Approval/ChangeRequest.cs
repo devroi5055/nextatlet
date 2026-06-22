@@ -1,8 +1,9 @@
+using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Common;
 using NextAtlet.Domain.Entities.Shared;
 using NextAtlet.Domain.ValueObjects;
 
-namespace NextAtlet.Domain.Entities.Sites;
+namespace NextAtlet.Domain.Entities.Approval;
 
 public class ChangeRequest : AuditableEntity
 {

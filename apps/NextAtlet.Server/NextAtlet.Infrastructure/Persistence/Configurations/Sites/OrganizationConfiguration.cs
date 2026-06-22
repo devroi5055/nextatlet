@@ -5,7 +5,7 @@ using NextAtlet.Domain.Enumerations.Individual;
 using NextAtlet.Domain.Enumerations.Billing;
 using NextAtlet.Domain.Enumerations.Organization;
 
-namespace NextAtlet.Infrastructure.Data.Configurations;
+namespace NextAtlet.Infrastructure.Persistence.Configurations;
 
 public class OrganizationConfiguration : IEntityTypeConfiguration<OrganizationProfile>
 {

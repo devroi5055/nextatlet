@@ -1,9 +1,8 @@
 using MediatR;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.Errors;
-using NextAtlet.Application.Interfaces.Repositories;
 
-namespace NextAtlet.Application.Features.Clubs.Commands;
+namespace NextAtlet.Application.Features.ClubRegistry.Commands;
 
 public record AddSportsCommand(string id, List<string> sportIds) : IRequest<Unit>;
 
@@ -22,7 +21,7 @@ public class AddSportsCommandHandler : IRequestHandler<AddSportsCommand, Unit>
 
     public async Task<Unit> Handle(AddSportsCommand request, CancellationToken ct)
     {
-        var club = await _clubs.GetByIdAsync(request.id, ct);
+        var club = await _clubs.GetClubByIdAsync(request.id, ct);
         if (club == null)
             throw new DomainException(ErrorCodes.ClubNotFound);
 

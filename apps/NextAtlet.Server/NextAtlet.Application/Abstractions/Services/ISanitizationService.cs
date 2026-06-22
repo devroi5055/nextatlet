@@ -1,6 +1,6 @@
 using NextAtlet.Domain.ValueObjects;
 
-namespace NextAtlet.Application.Interfaces.Services;
+namespace NextAtlet.Application.Abstractions.Services;
 
 /// <summary>
 /// Strips XSS-prone content from free text. Implemented in Infrastructure.

@@ -2,7 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NextAtlet.Application.Common.DTOs;
-using NextAtlet.Application.Features.Account.Queries;
+using NextAtlet.Application.Features.Identity;
 
 namespace NextAtlet.Api.Controllers;
 

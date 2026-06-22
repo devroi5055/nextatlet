@@ -1,8 +1,9 @@
 using NextAtlet.Application.Common.Time;
-using NextAtlet.Application.Interfaces.Repositories;
+using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Domain.Entities.Shared;
+using NextAtlet.Domain.Entities.Identity;
 
-namespace NextAtlet.Application.Features.Account;
+namespace NextAtlet.Application.Features.Identity;
 
 /// <summary>
 /// Resolves the authenticated caller's domain <see cref="User"/>, provisioning just-in-time from

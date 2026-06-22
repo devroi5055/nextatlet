@@ -4,8 +4,8 @@ using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Extensions;
 using NextAtlet.Application.Common.Results;
-using NextAtlet.Application.Features.Account;
-using NextAtlet.Application.Interfaces.Repositories;
+using NextAtlet.Application.Features.Identity;
+using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Domain.Entities.Shared;
 using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.Individual;
@@ -17,7 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace NextAtlet.Application.Features.OrganizationSites.Verification.Commands
+namespace NextAtlet.Application.Features.Organizations.Registration
 {
     public record RegisterOrganizationSiteCommand
     (
@@ -115,13 +115,13 @@ namespace NextAtlet.Application.Features.OrganizationSites.Verification.Commands
             [
                 new SiteSection
             {
-                Id = Guid.NewGuid().ToString(),
+                Id = Guid.NewGuid(),
                 Order = 0,
                 Data = new HeroSectionData { Headline = new LocalizedText(), Subheading = new LocalizedText() }
             },
             new SiteSection
             {
-                Id = Guid.NewGuid().ToString(),
+                Id = Guid.NewGuid(),
                 Order = 1,
                 Data = new BioSectionData { Bio = new LocalizedText() }
             }

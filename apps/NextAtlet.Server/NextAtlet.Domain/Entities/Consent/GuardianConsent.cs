@@ -1,8 +1,10 @@
+using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Common;
 using NextAtlet.Domain.Entities.Shared;
+using NextAtlet.Domain.Entities.Identity;
 using NextAtlet.Domain.Enumerations.Individual;
 
-namespace NextAtlet.Domain.Entities.Sites;
+namespace NextAtlet.Domain.Entities.Consent;
 
 /// <summary>
 /// The GDPR Art. 8 audit record — proof a guardian consented to a minor's data processing. Captures

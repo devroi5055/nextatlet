@@ -2,8 +2,10 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NextAtlet.Application.Common.DTOs;
-using NextAtlet.Application.Features.IndividualSites.Commands;
-using NextAtlet.Application.Features.IndividualSites.Queries;
+using NextAtlet.Application.Features.Individuals.Registration;
+using NextAtlet.Application.Features.Individuals.Control;
+using NextAtlet.Application.Features.Individuals.Consent;
+using NextAtlet.Application.Features.Sites;
 using NextAtlet.Application.Features.Invitations.Commands;
 
 // ClaimsPrincipalExtensions (User.GetAuthProviderId()/GetEmail()) live in the NextAtlet.Api namespace.

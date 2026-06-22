@@ -1,7 +1,7 @@
 using HtmlAgilityPack;
 using Microsoft.Playwright;
 using NextAtlet.Application.Common.DTOs;
-using NextAtlet.Application.Interfaces.Strategies;
+using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Domain.Enumerations.Shared;
 
 namespace NextAtlet.Infrastructure.ExternalServices.Scrape;

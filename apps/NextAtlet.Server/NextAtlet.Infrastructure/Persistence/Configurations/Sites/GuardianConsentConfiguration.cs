@@ -1,9 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using NextAtlet.Domain.Entities.Sites;
+using NextAtlet.Domain.Entities.Consent;
 using NextAtlet.Domain.Enumerations.Individual;
 
-namespace NextAtlet.Infrastructure.Data.Configurations;
+namespace NextAtlet.Infrastructure.Persistence.Configurations;
 
 public class GuardianConsentConfiguration : IEntityTypeConfiguration<GuardianConsent>
 {

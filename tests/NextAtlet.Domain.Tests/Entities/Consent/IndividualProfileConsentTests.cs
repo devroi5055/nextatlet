@@ -2,7 +2,7 @@ using FluentAssertions;
 using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.Individual;
 
-namespace NextAtlet.Domain.Tests.Entities;
+namespace NextAtlet.Domain.Tests.Entities.Consent;
 
 /// <summary>
 /// The publish gate is computed from the stored <see cref="ConsentStates"/>. The publish path refuses

@@ -2,9 +2,9 @@ using MediatR;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Mapping;
-using NextAtlet.Application.Interfaces.Repositories;
+using NextAtlet.Application.Abstractions.Persistence;
 
-namespace NextAtlet.Application.Features.IndividualSites.Queries;
+namespace NextAtlet.Application.Features.Sites;
 
 public record GetDraftAthleteSiteSnapshotQuery(Guid SiteId) : IRequest<SiteSnapshotDto>;
 

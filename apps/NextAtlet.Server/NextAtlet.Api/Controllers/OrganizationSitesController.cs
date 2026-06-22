@@ -2,10 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NextAtlet.Application.Common.DTOs;
-using NextAtlet.Application.Features.IndividualSites.Commands;
-using NextAtlet.Application.Features.IndividualSites.Queries;
-using NextAtlet.Application.Features.Invitations.Commands;
-using NextAtlet.Application.Features.OrganizationSites.Verification.Commands;
+using NextAtlet.Application.Features.Organizations.Registration;
 using NextAtlet.Domain.Enumerations.Organization;
 
 // ClaimsPrincipalExtensions (User.GetAuthProviderId()/GetEmail()) live in the NextAtlet.Api namespace.
@@ -36,8 +33,8 @@ public class OrganizationSitesController : ControllerBase
             request.DefaultLocaleId,
             OrganizationType.Club.Id)));
 
-    [HttpPost("request-verification-methods")]
-    public async Task<IActionResult> RequestVerificationMethods([FromBody] RequestVerificationMethodsCommand request)
+    [HttpPost("send-offical-email-verification")]
+    public async Task<IActionResult> SendOfficialEmailVerification([FromBody] SendOfficialEmailVerificationCommand request)
         => Ok(await _sender.Send(request));
 
 
