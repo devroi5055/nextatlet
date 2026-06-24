@@ -6,7 +6,7 @@ using NextAtlet.Domain.Entities.ClubRegistry;
 
 namespace NextAtlet.Application.Features.ClubRegistry.Commands;
 
-public record ListClubOfficialsCommand(string ClubId) : IRequest<Result<List<ClubOfficial>>>;
+public record ListClubOfficialsCommand(Guid ClubId) : IRequest<Result<List<ClubOfficial>>>;
 
 public class ListClubOfficialsCommandHandler : IRequestHandler<ListClubOfficialsCommand, Result<List<ClubOfficial>>>
 {

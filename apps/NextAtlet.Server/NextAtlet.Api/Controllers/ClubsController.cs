@@ -27,7 +27,7 @@ public class ClubsController : ControllerBase
     /// </summary>
     [HttpPut("remove-sports")]
     [AllowAnonymous]
-    public async Task<IActionResult> RemoveSports(string id, List<string> sportIds)
+    public async Task<IActionResult> RemoveSports(Guid id, List<string> sportIds)
         => Ok(await _sender.Send(new RemoveSportsCommand(id, sportIds)));
 
     /// <summary>
@@ -35,6 +35,6 @@ public class ClubsController : ControllerBase
     /// </summary>
     [HttpPut("add-sports")]
     [AllowAnonymous]
-    public async Task<IActionResult> AddSports(string id, List<string> sportIds)
+    public async Task<IActionResult> AddSports(Guid id, List<string> sportIds)
         => Ok(await _sender.Send(new AddSportsCommand(id, sportIds)));
 }

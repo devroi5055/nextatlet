@@ -1,11 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using NextAtlet.Application.Common.DTOs;
-using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Abstractions.Persistence;
+using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Domain.Entities.ClubRegistry;
 using NextAtlet.Domain.Enumerations.Shared;
-using NextAtlet.Domain.Enumerations.Verification;
-using NextAtlet.Infrastructure.Persistence;
 
 namespace NextAtlet.Infrastructure.Persistence.Repositories;
 
@@ -15,11 +12,11 @@ public class ClubRepository : IClubRepository
 
     public ClubRepository(NextAtletDbContext context) => _context = context;
 
-    public async Task<Club?> GetClubByIdAsync(string id, CancellationToken ct)
+    public async Task<Club?> GetClubByIdAsync(Guid id, CancellationToken ct)
     {
         return await _context.Clubs
             .Include(c => c.Officials)
-            .FirstOrDefaultAsync(c => c.Id == Guid.Parse(id), ct);
+            .FirstOrDefaultAsync(c => c.Id == id, ct);
     }
     public async Task<Club> UpsertClubAsync(ScrapedClub club, CancellationToken ct)
     {
@@ -84,9 +81,9 @@ public class ClubRepository : IClubRepository
             });
     }
 
-    public Task<ClubOfficial?> GetOfficialByIdAsync(string id, CancellationToken ct)
+    public Task<ClubOfficial?> GetOfficialByIdAsync(Guid id, CancellationToken ct)
     {
-        return _context.ClubOfficials.FirstOrDefaultAsync(o => o.Id == Guid.Parse(id));
+        return _context.ClubOfficials.FirstOrDefaultAsync(o => o.Id == id);
     }
 
     public Task DeactivateMissingCLubAsync(string source, IEnumerable<string> presentKeys, CancellationToken ct)

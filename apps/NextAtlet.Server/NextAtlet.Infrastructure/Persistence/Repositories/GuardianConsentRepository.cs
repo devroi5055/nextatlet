@@ -14,6 +14,6 @@ public class GuardianConsentRepository : IGuardianConsentRepository
 
     public void Add(GuardianConsent consent) => _context.GuardianConsents.Add(consent);
 
-    public Task<bool> ExistsForProfileAsync(Guid athleteProfileId, CancellationToken cancellationToken = default)
-        => _context.GuardianConsents.AnyAsync(c => c.IndividualProfileId == athleteProfileId, cancellationToken);
+    public Task<bool> ExistsForProfileAsync(Guid siteId, CancellationToken cancellationToken = default)
+        => _context.GuardianConsents.AnyAsync(c => c.SiteId == siteId, cancellationToken);
 }

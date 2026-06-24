@@ -27,7 +27,7 @@ public class NextAtletDbContext : DbContext
     public DbSet<Site> Sites { get; set; }
     public DbSet<Theme> Themes { get; set; }
     public DbSet<SiteLogin> SiteLogins { get; set; }
-    public DbSet<Invitation> Invitations { get; set; }
+    public DbSet<ActionToken> ActionTokens { get; set; }
     public DbSet<GuardianConsent> GuardianConsents { get; set; }
     public DbSet<SiteSnapshot> SiteSnapshots { get; set; }
     public DbSet<MediaAsset> MediaAssets { get; set; }

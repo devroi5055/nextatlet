@@ -7,7 +7,6 @@ using NextAtlet.Application.Common.Results;
 using NextAtlet.Application.Common.Time;
 using NextAtlet.Application.Features.Identity;
 using NextAtlet.Application.Features.Athletes.Commands;
-using NextAtlet.Application.Features.Invitations;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Entities.Identity;
@@ -42,11 +41,10 @@ public class RegisterIndividualSiteGuardianCommandHandler
         IThemeRepository themes,
         ISiteSnapshotRepository siteSnapshots,
         UserProvisioner userProvisioner,
-        InvitationIssuer inviter,
         IClock clock,
         AgeThresholdOptions threshold,
         IUnitOfWork unitOfWork)
-        : base(sites, logins, profiles, themes, siteSnapshots, userProvisioner, inviter, clock, threshold, unitOfWork) {}
+        : base(sites, logins, profiles, themes, siteSnapshots, userProvisioner, clock, threshold, unitOfWork) {}
 
     public async Task<Result<SiteDto>> Handle(RegisterIndividualSiteGuardianCommand request, CancellationToken cancellationToken)
     {

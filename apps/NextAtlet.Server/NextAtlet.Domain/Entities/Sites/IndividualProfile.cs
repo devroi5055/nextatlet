@@ -32,6 +32,7 @@ public class IndividualProfile : AuditableEntity
     /// Guardian-consent gate (GDPR Art. 8). Stored, explicit. A profile may go public only when this
     /// is not <see cref="ConsentStates.PendingGuardianConsent"/>. Orthogonal to VisibilityState.
     /// </summary>
+    /// TODO: might remove and or change to deriving through the GuardianConsent table
     public required string ConsentStateId { get; set; } = ConsentStates.NotRequired.Id;
 
     /// <summary>

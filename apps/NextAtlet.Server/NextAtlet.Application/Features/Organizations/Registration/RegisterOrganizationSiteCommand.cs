@@ -5,17 +5,12 @@ using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Extensions;
 using NextAtlet.Application.Common.Results;
 using NextAtlet.Application.Features.Identity;
-using NextAtlet.Application.Abstractions.Persistence;
-using NextAtlet.Domain.Entities.Shared;
 using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.Individual;
 using NextAtlet.Domain.Enumerations.Shared;
 using NextAtlet.Domain.strings;
 using NextAtlet.Domain.ValueObjects;
 using NextAtlet.Domain.ValueObjects.Sections;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace NextAtlet.Application.Features.Organizations.Registration
 {

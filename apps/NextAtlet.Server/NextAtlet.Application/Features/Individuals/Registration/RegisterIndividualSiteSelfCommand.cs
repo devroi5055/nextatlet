@@ -9,11 +9,10 @@ using NextAtlet.Application.Common.Results;
 using NextAtlet.Application.Common.Time;
 using NextAtlet.Application.Features.Identity;
 using NextAtlet.Application.Features.Athletes.Commands;
-using NextAtlet.Application.Features.Invitations;
-using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Entities.Identity;
+using NextAtlet.Domain.Enumerations.Identity;
 using NextAtlet.Domain.Enumerations.Individual;
 using NextAtlet.Domain.Policies;
 
@@ -42,6 +41,9 @@ public class RegisterIndividualSiteSelfCommandHandler
 {
     private readonly AgeThresholdOptions _thresholds;
     private readonly IEmailService _email;
+    private readonly IActionTokenRepository _tokens;
+    private readonly TermsOptions _terms;
+    private readonly InvitationOptions _invitationOptions;
 
     public RegisterIndividualSiteSelfCommandHandler(
         ISiteRepository sites,
@@ -50,15 +52,20 @@ public class RegisterIndividualSiteSelfCommandHandler
         IThemeRepository themes,
         ISiteSnapshotRepository siteSnapshots,
         UserProvisioner userProvisioner,
-        InvitationIssuer inviter,
         IClock clock,
         IOptions<AgeThresholdOptions> ageThresholds,
         IEmailService email,
+        IActionTokenRepository tokens,
+        IOptions<TermsOptions> terms,
+        IOptions<InvitationOptions> invitationOptions,
         IUnitOfWork unitOfWork)
-        : base(sites, logins, profiles, themes, siteSnapshots, userProvisioner, inviter, clock, ageThresholds.Value, unitOfWork)
+        : base(sites, logins, profiles, themes, siteSnapshots, userProvisioner, clock, ageThresholds.Value, unitOfWork)
     {
         _thresholds = ageThresholds.Value;
         _email = email;
+        _tokens = tokens;
+        _terms = terms.Value;
+        _invitationOptions = invitationOptions.Value;
     }
 
     public async Task<Result<SiteDto>> Handle(RegisterIndividualSiteSelfCommand request, CancellationToken cancellationToken)
@@ -94,13 +101,25 @@ public class RegisterIndividualSiteSelfCommandHandler
 
         _logins.Add(SiteLogin.CreateAthlete(caller.Id, siteDto.Id));
 
+        // Consent request is a tokened link (Consent action token) — NOT a profile invitation
+        // (consent ≠ joining). The token is staged in the same transaction; the link is emailed after
+        // commit so a rolled-back registration never emails. A guardian joins later, if at all, via a
+        // separate owner-initiated invitation.
+        ActionToken? consentToken = null;
+        if (needsConsent)
+        {
+            consentToken = ActionToken.Issue(
+                ActionTokenType.Consent.Id,
+                siteDto.Id,
+                new ConsentPayload { Email = request.GuardianEmail!, TermsVersion = _terms.CurrentVersion },
+                expiresUtc: _clock.UtcNow.AddDays(_invitationOptions.ExpiryDays));
+            _tokens.Add(consentToken);
+        }
+
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // Consent request is an email to a consent endpoint — NOT a profile invitation (consent ≠ joining).
-        // Sent after commit so a rolled-back registration never emails. A guardian joins later, if at all,
-        // via a separate owner-initiated invitation.
-        if (needsConsent)
-            await _email.SendConsentRequestAsync(request.GuardianEmail!, siteDto.Id, cancellationToken);
+        if (consentToken is not null)
+            await _email.SendConsentRequestAsync(request.GuardianEmail!, consentToken.Id, cancellationToken);
 
         return siteDto;
     }

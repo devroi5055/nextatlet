@@ -21,6 +21,7 @@ public sealed record Error(string Code, string Message)
 public interface IResult
 {
     bool IsSuccess { get; }
+    bool IsFailure { get; }
     object? Value { get; }
     Error? Error { get; }
 }
@@ -28,6 +29,7 @@ public interface IResult
 public class Result<T> : IResult
 {
     public bool IsSuccess { get; }
+    public bool IsFailure => Error != null;
     public T? Value { get; }
     public Error? Error { get; }
 
@@ -42,4 +44,31 @@ public class Result<T> : IResult
     public static implicit operator Result<T>(Error e) => new(e);
 
     object? IResult.Value => Value;
+
+    public Result WithoutValue()
+    {
+        if (IsFailure)
+            return Result.Failure(this.Error);
+
+        return Result.Success();
+    }
+}
+
+public sealed class Result : IResult
+{
+    public bool IsSuccess { get; }
+    public bool IsFailure => Error != null;
+    public Error? Error { get; }
+
+    private Result(bool isSuccess, Error? error) { IsSuccess = isSuccess; Error = error; }
+    private Result(Error e) { IsSuccess = false; Error = e; }
+
+
+    public static Result Success() => new(true, null);
+    public static Result Failure(Error error) => new(false, error);
+
+    // ergonomics: lets you `return dto;` or `return new Error(...);`
+    public static implicit operator Result(Error e) => new(e);
+
+    object? IResult.Value => null;
 }

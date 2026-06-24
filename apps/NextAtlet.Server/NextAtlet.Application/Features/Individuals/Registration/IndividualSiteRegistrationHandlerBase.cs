@@ -7,7 +7,6 @@ using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Common.Results;
 using NextAtlet.Application.Common.Time;
 using NextAtlet.Application.Features.Identity;
-using NextAtlet.Application.Features.Invitations;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Domain.Entities.Shared;
 using NextAtlet.Domain.Entities.Identity;
@@ -37,7 +36,6 @@ public abstract class IndividualSiteRegistrationHandlerBase
     protected readonly IThemeRepository _themes;
     protected readonly ISiteSnapshotRepository _siteSnapshots;
     protected readonly UserProvisioner _userProvisioner;
-    protected readonly InvitationIssuer _inviter;
     protected readonly IClock _clock;
     protected readonly AgeThresholdOptions _threshold;
     protected readonly IUnitOfWork _unitOfWork;
@@ -49,7 +47,6 @@ public abstract class IndividualSiteRegistrationHandlerBase
         IThemeRepository themes,
         ISiteSnapshotRepository siteSnapshots,
         UserProvisioner userProvisioner,
-        InvitationIssuer inviter,
         IClock clock,
         AgeThresholdOptions threshold,
         IUnitOfWork unitOfWork)
@@ -60,7 +57,6 @@ public abstract class IndividualSiteRegistrationHandlerBase
         _themes = themes;
         _siteSnapshots = siteSnapshots;
         _userProvisioner = userProvisioner;
-        _inviter = inviter;
         _clock = clock;
         _threshold = threshold;
         _unitOfWork = unitOfWork;

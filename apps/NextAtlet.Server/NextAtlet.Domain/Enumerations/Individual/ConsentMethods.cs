@@ -9,16 +9,16 @@ namespace NextAtlet.Domain.Enumerations.Individual;
 /// </summary>
 public sealed class ConsentMethods : Enumeration
 {
-    public static readonly ConsentMethods VerifiedEmail = new()
+    public static readonly ConsentMethods Email = new()
     {
-        Id = "verified_email",
+        Id = "email",
         Title = new LocalizedText { Da = "Bekræftet email", En = "Verified email" },
         Description = new LocalizedText { Da = "Forælder/Værge godkendt via Auth0 og bekræftet", En = "Guardian authenticated via Auth0 and confirmed" }
     };
 
     // Future: MitId, SmsToken, ...
 
-    public static IReadOnlyCollection<ConsentMethods> All => [VerifiedEmail];
+    public static IReadOnlyCollection<ConsentMethods> All => [Email];
 
     public static ConsentMethods FromId(string id) =>
         All.FirstOrDefault(m => m.Id == id)

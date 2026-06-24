@@ -36,5 +36,13 @@ namespace NextAtlet.Domain.Entities.Identity
             StatusId = ProfileLoginStatus.Active.Id,
             Permissions = null
         };
+        public static SiteLogin CreateActiveSiteLogin(Guid userId, Guid siteId, string roleId) => new()
+        {
+            SiteId = siteId,
+            UserId = userId,
+            SiteRoleId = roleId,
+            StatusId = ProfileLoginStatus.Active.Id,
+            Permissions = null
+        };
     }
 }

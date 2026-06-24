@@ -35,4 +35,15 @@ public static class ClaimsPrincipalExtensions
             ?? user.FindFirst(ClaimTypes.Email)?.Value
             ?? throw new DomainException(ErrorCodes.AuthEmailMissing);
     }
+    public static string? TryGetAuthProviderId(this ClaimsPrincipal user)
+    {
+        try
+        {
+            return GetAuthProviderId(user);
+        }
+        catch
+        {
+            return null;
+        }
+    }
 }

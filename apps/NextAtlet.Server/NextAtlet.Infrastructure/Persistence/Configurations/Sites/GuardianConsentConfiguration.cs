@@ -23,10 +23,10 @@ public class GuardianConsentConfiguration : IEntityTypeConfiguration<GuardianCon
         entity.Property(e => e.MethodId).IsRequired().HasMaxLength(30);
 
         //RELATIONS N:1
-        entity.HasOne(e => e.AthleteSite).WithMany().HasForeignKey(e => e.IndividualProfileId).OnDelete(DeleteBehavior.Cascade);
+        entity.HasOne(e => e.Site).WithMany().OnDelete(DeleteBehavior.Cascade);
         entity.HasOne(e => e.Guardian).WithMany().HasForeignKey(e => e.GuardianUserId).OnDelete(DeleteBehavior.Restrict);
 
         //INDEXES
-        entity.HasIndex(e => e.IndividualProfileId);
+        entity.HasIndex(e => e.SiteId);
     }
 }

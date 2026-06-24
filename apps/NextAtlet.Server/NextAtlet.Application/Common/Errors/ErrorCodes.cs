@@ -20,10 +20,12 @@ public static class ErrorCodes
     public const string OrganizationProfileNotFound = "organization.profile_not_found";
     public const string ThemeNotFound           = "theme.not_found";
     public const string ThemeNotPermitted       = "theme.not_permitted";
-    public const string SiteNotFound         = "site.not_found";
-    public const string SiteAlreadyExists    = "site.already_exists";
+    public const string SiteNotFound            = "site.not_found";
+    public const string SiteAlreadyExists       = "site.already_exists";
     public const string GuardianCannotRegisterAdult = "guardian.cannot_register_adult";
     public const string ClubNotFound            = "club.not_found";
+    public const string UserNotFound            = "User.not_found";
+    public const string InvitationInvalidSiteRole = "Invitation.invalid_site_role";
 
     // Age gating + consent (ControlMode plan).
     public const string BelowMinimumAge         = "registration.below_minimum_age";
@@ -41,12 +43,18 @@ public static class ErrorCodes
     public const string TransferTargetInvalid   = "control.transfer_target_invalid";
 
     // Invitations — the single, auditable home for pending profile invites.
-    public const string InvitationNotFound      = "invitation.not_found";
-    public const string InvitationAlreadyUsed   = "invitation.already_used";
-    public const string InvitationExpired       = "invitation.expired";
     public const string InvitationEmailMismatch = "invitation.email_mismatch";
     public const string InvitationAlreadyPending = "invitation.already_pending";
     public const string InvitationRoleInvalid   = "invitation.role_invalid";
+
+    // Action tokens — the shared validation for every emailed-link accept (invite / consent / org verification).
+    public const string ActionTokenNotFound     = "action_token.not_found";
+    public const string ActionTokenAlreadyUsed  = "action_token.already_used";
+    public const string ActionTokenExpired      = "action_token.expired";
+
+    // Organization email-to-official verification.
+    public const string VerificationOfficialNotFound     = "verification.official_not_found";
+    public const string VerificationOfficialEmailMissing = "verification.official_email_missing";
 
     /// <summary>Caller lacks the rights required for the requested action (e.g. inviting to a profile they don't hold).</summary>
     public const string NotAuthorized           = "not_authorized";

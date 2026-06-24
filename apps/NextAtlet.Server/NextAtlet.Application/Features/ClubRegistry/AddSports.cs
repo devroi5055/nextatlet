@@ -4,7 +4,7 @@ using NextAtlet.Application.Common.Errors;
 
 namespace NextAtlet.Application.Features.ClubRegistry.Commands;
 
-public record AddSportsCommand(string id, List<string> sportIds) : IRequest<Unit>;
+public record AddSportsCommand(Guid id, List<string> sportIds) : IRequest<Unit>;
 
 public class AddSportsCommandHandler : IRequestHandler<AddSportsCommand, Unit>
 {

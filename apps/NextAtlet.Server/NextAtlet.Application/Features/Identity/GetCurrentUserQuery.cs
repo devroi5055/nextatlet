@@ -22,7 +22,7 @@ public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, M
     private readonly IIndividualProfileRepository _profiles;
     private readonly ISiteRepository _sites;
     private readonly ISiteLoginRepository _logins;
-    private readonly IInvitationRepository _invitations;
+    private readonly IActionTokenRepository _tokens;
     private readonly PermissionResolver _permissions;
 
     public GetCurrentUserQueryHandler(
@@ -30,14 +30,14 @@ public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, M
         IIndividualProfileRepository profiles,
         ISiteRepository sites,
         ISiteLoginRepository logins,
-        IInvitationRepository invitations,
+        IActionTokenRepository tokens,
         PermissionResolver permissions)
     {
         _users = users;
         _profiles = profiles;
         _sites = sites;
         _logins = logins;
-        _invitations = invitations;
+        _tokens = tokens;
         _permissions = permissions;
     }
 
@@ -45,7 +45,7 @@ public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, M
     {
         // Pending invites are keyed by email, so they surface even before any User row exists (an
         // invited person who hasn't accepted yet — no User is created until they authenticate + accept).
-        var pendingInvites = await _invitations.CountPendingByEmailAsync(request.Email, cancellationToken);
+        var pendingInvites = await _tokens.CountPendingInvitesByEmailAsync(request.Email, cancellationToken);
 
         // A User always carries its real subject, so match by subject only.
         var user = await _users.GetByAuthProviderIdAsync(request.AuthProviderId, cancellationToken);

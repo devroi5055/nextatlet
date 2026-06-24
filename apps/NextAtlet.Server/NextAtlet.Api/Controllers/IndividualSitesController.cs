@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Features.Individuals.Registration;
 using NextAtlet.Application.Features.Individuals.Control;
-using NextAtlet.Application.Features.Individuals.Consent;
 using NextAtlet.Application.Features.Sites;
 using NextAtlet.Application.Features.Invitations.Commands;
 
@@ -78,13 +77,8 @@ public class IndividualSitesController : ControllerBase
     public async Task<IActionResult> SetCollaboration(Guid id, [FromBody] SetCollaborationRequest request)
         => Ok(await _sender.Send(new SetCollaborationCommand(id, User.GetAuthProviderId(), request.SharedEditing)));
 
-    /// <summary>
-    /// Guardian gives consent (GDPR Art. 8) for a minor's profile by following the emailed link and
-    /// authenticating. Records the consent and lifts the publish gate. Does not join the profile.
-    /// </summary>
-    [HttpPost("{id:guid}/consent")]
-    public async Task<IActionResult> GiveConsent(Guid id)
-        => Ok(await _sender.Send(new RecordGuardianConsentCommand(id, User.GetAuthProviderId(), User.GetEmail())));
+    // Guardian consent is no longer a profileId-keyed endpoint here — it flows through the secure
+    // action-token link: POST /api/action-tokens/{id}/accept (the token's type runs the consent case).
 
     /// <summary>
     /// Gets the draft site snapshot for an athlete profile.

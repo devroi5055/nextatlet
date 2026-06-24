@@ -1,0 +1,193 @@
+%% NextAtlet data model — ER diagram
+%% Reflects the unified Site model + the ActionToken unification (replaces Invitation).
+%% Notes:
+%%  - ActionToken replaces the old Invitation entity and also backs Consent and the
+%%    email-to-official org verification (Type discriminates; Payload is a jsonb polymorphic blob).
+%%  - GuardianConsent stays as the durable consent AUDIT record (outcome), written when a
+%%    Consent-type ActionToken is accepted.
+%%  - SiteLogin.Permissions is marked deprecated (resolved from ControlMode + role at runtime).
+%%  - Membership links two Sites (Individual <-> Organization) via SiteType-discriminated FKs.
+
+erDiagram
+
+    User ||--o{ SiteLogin : "has"
+    User ||--o{ GuardianConsent : "gave (guardian)"
+
+    Site ||--o{ SiteLogin : "accessed via"
+    Site ||--o| IndividualProfile : "extends (SiteType=Individual)"
+    Site ||--o| OrganizationProfile : "extends (SiteType=Organization)"
+    Site ||--o{ SiteSnapshot : "has draft/published"
+    Site ||--o{ ActionToken : "targeted by"
+    Site ||--o{ GuardianConsent : "for"
+    Site ||--o{ ChangeRequest : "target of"
+    Site ||--o{ Subscription : "billed via"
+
+    SiteSnapshot }o--|| Theme : "renders with"
+
+    Site ||--o{ Membership : "individual side"
+    Site ||--o{ Membership : "organization side"
+
+    Plan ||--o{ PlanPrice : "priced by"
+    Plan ||--o{ PlanCapability : "grants"
+    PlanPrice ||--o{ Subscription : "subscribed at"
+
+    Club ||--o{ ClubOfficial : "has officials"
+
+    User {
+        guid Id PK
+        string Email
+        string AuthProviderId "external IdP subject"
+    }
+
+    Site {
+        guid Id PK
+        string Slug UK
+        string DisplayName
+        string VisibilityStateId
+        string DefaultLocaleId
+        string SiteType "Individual | Organization"
+    }
+
+    IndividualProfile {
+        guid Id PK
+        guid SiteId FK
+        date DateOfBirth "source of truth for minor status"
+        string ControlMode
+        string ConsentState
+        string SelfTierId "denormalized, derived"
+    }
+
+    OrganizationProfile {
+        guid Id PK
+        guid SiteId FK
+        string OrgVerification "Pending | Verified | Rejected"
+        string OrgType "Club | NationalTeam | ..."
+    }
+
+    SiteLogin {
+        guid Id PK
+        guid UserId FK
+        guid SiteId FK
+        string RoleId
+        string Status
+        string Permissions "DEPRECATED - resolved at runtime"
+    }
+
+    ActionToken {
+        guid Id PK "the token / link key"
+        string Type "Invite | Consent | OrgEmailVerification"
+        guid TargetSiteId FK
+        datetime ExpiresUtc
+        datetime AcceptedUtc "null = pending"
+        json Payload "polymorphic per Type (jsonb)"
+    }
+
+    GuardianConsent {
+        guid Id PK
+        guid SiteId FK
+        guid GuardianUserId FK
+        string Method
+        string TermsVersion
+        datetime CreatedUtc
+    }
+
+    ChangeRequest {
+        guid Id PK
+        guid RequestingSiteId FK
+        guid RequestingUserId FK
+        guid TargetSiteId FK
+        string VisibilityState
+        string OrgType
+    }
+
+    SiteSnapshot {
+        guid Id PK
+        guid SiteId FK
+        guid ThemeId FK
+        int ThemeVersion
+        json Layout "jsonb"
+        json GlobalSettings "jsonb"
+        int Version
+        datetime PublishedUtc "null = draft"
+    }
+
+    Theme {
+        guid Id PK
+        string Name
+        int Version
+        json Manifest "jsonb"
+        string PreviewImageUrl
+        bool IsActive
+    }
+
+    Membership {
+        guid Id PK
+        guid IndividualSiteId FK
+        guid OrganizationSiteId FK
+        string Role
+        date StartDate
+        date EndDate "null = ongoing"
+        string Status "Active | Inactive"
+        bool OccupiesSlot
+    }
+
+    Plan {
+        guid Id PK
+        string Key UK
+        string Audience "Athlete | Organization"
+        string DisplayName
+        int AthleteSlotCount
+        int Version
+        bool IsActive
+    }
+
+    PlanCapability {
+        guid Id PK
+        string Key
+        string Audience
+        string DisplayName
+        int AthleteSlotCount
+        int Version
+        bool IsActive
+    }
+
+    PlanPrice {
+        guid Id PK
+        guid PlanId FK
+        string BillingInterval
+        decimal Price
+        string Currency
+        bool IsActive
+    }
+
+    Subscription {
+        guid Id PK
+        guid SiteId FK
+        guid PlanPriceId FK
+        int PlanVersion
+        string Status
+        datetime CurrentPeriodStart
+        datetime CurrentPeriodEnd
+        string StripeCustomerId
+        string StripeSubscriptionId
+    }
+
+    Club {
+        guid Id PK
+        string SourceKey "external register id"
+        string Source
+        string Name
+        string CountryId
+        string SportIds
+        string Address
+        datetime LastImportedUtc
+    }
+
+    ClubOfficial {
+        guid Id PK
+        guid ClubId FK
+        string Name
+        string Email
+        string Phone
+        string RoleId
+    }

@@ -15,7 +15,7 @@ namespace NextAtlet.Domain.Entities.Consent;
 public class GuardianConsent : CreatedOnlyEntity
 {
     /// <summary>FK → the minor's IndividualProfile this consent covers.</summary>
-    public required Guid IndividualProfileId { get; set; }
+    public required Guid SiteId { get; set; }
 
     /// <summary>WHO — the authenticated guardian's User identity (stronger evidence than a name string).</summary>
     public required Guid GuardianUserId { get; set; }
@@ -27,6 +27,6 @@ public class GuardianConsent : CreatedOnlyEntity
     public required string TermsVersion { get; set; }
 
     // Navigation
-    public IndividualProfile AthleteSite { get; set; } = default!;
+    public Site Site { get; set; } = default!;
     public User Guardian { get; set; } = default!;
 }

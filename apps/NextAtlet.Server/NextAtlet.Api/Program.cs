@@ -9,8 +9,8 @@ using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Common.Time;
+using NextAtlet.Application.Features.ActionTokens.Strategies;
 using NextAtlet.Application.Features.Identity;
-using NextAtlet.Application.Features.Invitations;
 using NextAtlet.Domain.Authorization;
 using NextAtlet.Infrastructure.Common.Time;
 using NextAtlet.Infrastructure.ExternalServices.Cvr;
@@ -100,7 +100,7 @@ builder.Services.AddScoped<ISiteRepository, SiteRepository>();
 builder.Services.AddScoped<IIndividualProfileRepository, IndividualProfileRepository>();
 builder.Services.AddScoped<IOrganizationProfileRepository, OrganizationProfileRepository>();
 builder.Services.AddScoped<ISiteLoginRepository, SiteLoginRepository>();
-builder.Services.AddScoped<IInvitationRepository, InvitationRepository>();
+builder.Services.AddScoped<IActionTokenRepository, ActionTokenRepository>();
 builder.Services.AddScoped<IGuardianConsentRepository, GuardianConsentRepository>();
 builder.Services.AddScoped<IThemeRepository, ThemeRepository>();
 builder.Services.AddScoped<ISiteSnapshotRepository, SiteSnapshotRepository>();
@@ -109,6 +109,10 @@ builder.Services.AddScoped<ISiteSnapshotRepository, SiteSnapshotRepository>();
 builder.Services.AddScoped<ISectionTypeRegistry, SectionTypeRegistry>();
 builder.Services.AddScoped<ISanitizationService, SanitizationService>();
 builder.Services.AddSingleton<IClock, SystemClock>();
+
+//ActionToken // TODO: might change to singelton
+builder.Services.AddScoped<ActionTokenStrategyRegistry>();
+builder.Services.AddScoped<IActionTokenStrategy, OrgEmailVerificationStrategy>();
 
 builder.Services.AddCvrLookup(builder.Configuration);
 
@@ -130,9 +134,8 @@ else
     builder.Services.AddScoped<IEmailService, LoggingEmailService>();
 }
 
-// Application services shared across handlers (identity provisioning + invitation issuing)
+// Application services shared across handlers (identity provisioning)
 builder.Services.AddScoped<UserProvisioner>();
-builder.Services.AddScoped<InvitationIssuer>();
 builder.Services.AddSingleton<PermissionResolver>(); // stateless: ControlMode + role → permissions
 builder.Services.Configure<InvitationOptions>(builder.Configuration.GetSection(InvitationOptions.SectionName));
 builder.Services.Configure<AgeThresholdOptions>(builder.Configuration.GetSection(AgeThresholdOptions.SectionName));

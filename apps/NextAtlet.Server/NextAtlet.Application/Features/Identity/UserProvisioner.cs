@@ -2,15 +2,16 @@ using NextAtlet.Application.Common.Time;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Domain.Entities.Shared;
 using NextAtlet.Domain.Entities.Identity;
+using NextAtlet.Application.Common.Errors;
 
 namespace NextAtlet.Application.Features.Identity;
 
 /// <summary>
 /// Resolves the authenticated caller's domain <see cref="User"/>, provisioning just-in-time from
-/// verified token claims. Shared by registration and invitation-accept so the rule lives in one place.
+/// verified token claims. Shared by registration and action-token accept so the rule lives in one place.
 ///
 /// We never create a User before the person authenticates — an invite stores only an
-/// <see cref="Domain.Entities.Sites.Invitation"/>, which is the single source of pending
+/// <see cref="Domain.Entities.Identity.ActionToken"/>, which is the single source of pending
 /// state. So a User row always carries a real subject (no null <c>AuthProviderId</c> in the DB, no
 /// backfill, no claim-by-email): match by subject, else create from claims.
 /// </summary>
@@ -25,9 +26,9 @@ public sealed class UserProvisioner
         _clock = clock;
     }
 
-    public async Task<User> GetOrCreateAsync(string email, string authProviderId, CancellationToken cancellationToken)
+    public async Task<User> GetOrCreateAsync(string email, string authProviderId, CancellationToken ct)
     {
-        var existing = await _users.GetByAuthProviderIdAsync(authProviderId, cancellationToken);
+        var existing = await TryGetAsync(authProviderId, ct);
         if (existing is not null)
             return existing;
 
@@ -36,4 +37,12 @@ public sealed class UserProvisioner
         _users.Add(user);
         return user;
     }
+    public async Task<User> GetAsync(string authProviderId, CancellationToken ct)
+    {
+        return await TryGetAsync(authProviderId, ct)
+            ?? throw new InvalidOperationException($"No User for subject '{authProviderId}'.");
+    }
+
+    public Task<User?> TryGetAsync(string authProviderId, CancellationToken ct)
+        => _users.GetByAuthProviderIdAsync(authProviderId, ct);
 }

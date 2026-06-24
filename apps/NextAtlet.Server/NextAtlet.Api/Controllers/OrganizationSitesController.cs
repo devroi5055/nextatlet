@@ -2,7 +2,9 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NextAtlet.Application.Common.DTOs;
+using NextAtlet.Application.Features.Individuals.Registration;
 using NextAtlet.Application.Features.Organizations.Registration;
+using NextAtlet.Application.Features.Organizations.Verification;
 using NextAtlet.Domain.Enumerations.Organization;
 
 // ClaimsPrincipalExtensions (User.GetAuthProviderId()/GetEmail()) live in the NextAtlet.Api namespace.
@@ -34,8 +36,22 @@ public class OrganizationSitesController : ControllerBase
             OrganizationType.Club.Id)));
 
     [HttpPost("send-offical-email-verification")]
-    public async Task<IActionResult> SendOfficialEmailVerification([FromBody] SendOfficialEmailVerificationCommand request)
-        => Ok(await _sender.Send(request));
+    public async Task<IActionResult> SendOfficialEmailVerification([FromBody] SendOfficialEmailVerificationRequest request)
+        => Ok(await _sender.Send(new SendOfficialEmailVerificationCommand(
+            User.GetAuthProviderId(),
+            User.GetEmail(),
+            request.OrgSiteId,
+            request.ClubOfficialId
+            )));
 
+
+    public async Task<IActionResult> GuardianRegister([FromBody] RegisterChildAthleteRequest request)
+    => Ok(await _sender.Send(new RegisterIndividualSiteGuardianCommand(
+        User.GetAuthProviderId(),
+        User.GetEmail(),
+        request.ChildDisplayName,
+        request.Slug,
+        request.ChildDateOfBirth,
+        request.DefaultLocaleId)));
 
 }

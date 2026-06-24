@@ -34,6 +34,13 @@ public class RegisterChildAthleteRequest
     public string DefaultLocaleId { get; set; } = default!;
 }
 
+public class SendOfficialEmailVerificationRequest
+{
+    public required Guid OrgSiteId { get; set; }
+    public required Guid ClubOfficialId { get; set; }
+
+}
+
 
 public class SiteDto
 {
@@ -100,11 +107,14 @@ public class InviteToProfileRequest
     public required string Role { get; set; } // ProfileRole id: "athlete_owner" | "guardian"
 }
 
-/// <summary>An issued invitation. The Id is the token used in the accept URL.</summary>
+/// <summary>An issued invitation. The Id is the action-token used in the accept URL.</summary>
 public record InvitationDto(Guid Id, Guid TargetProfileId, string Email, string Role, DateTime ExpiresUtc);
 
-/// <summary>Result of accepting an invitation: which role on which profile was materialized.</summary>
-public record InvitationAcceptedDto(Guid ProfileId, string Role);
+/// <summary>
+/// Result of accepting an action token. Type echoes which flow ran; TargetSiteId is the site acted on;
+/// Role is the materialized login's role for an Invite, null for consent / org-verification.
+/// </summary>
+public record ActionTokenAcceptedDto(string Type, Guid TargetSiteId, string? Role);
 
 /// <summary>Body for transferring control of a profile to the other party.</summary>
 public class TransferControlRequest

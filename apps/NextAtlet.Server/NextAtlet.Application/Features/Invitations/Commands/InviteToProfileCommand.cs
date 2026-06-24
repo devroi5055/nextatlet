@@ -1,9 +1,14 @@
 using MediatR;
+using Microsoft.Extensions.Options;
 using NextAtlet.Application.Abstractions.Persistence;
+using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
+using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Common.Results;
 using NextAtlet.Application.Common.Time;
+using NextAtlet.Domain.Entities.Identity;
+using NextAtlet.Domain.Enumerations.Identity;
 using NextAtlet.Domain.Enumerations.Individual;
 
 namespace NextAtlet.Application.Features.Invitations.Commands;
@@ -11,7 +16,8 @@ namespace NextAtlet.Application.Features.Invitations.Commands;
 /// <summary>
 /// Invite a person (by email) to an existing site in a given role. Authorization is natural: only
 /// someone holding an Active login on the site may invite to it. The credential is materialized at
-/// accept time, not here. Caller identity comes from the validated token (controller), never the body.
+/// accept time (the shared action-token accept), not here — so a revoked/expired invite never leaves a
+/// dangling login. Caller identity comes from the validated token (controller), never the body.
 /// </summary>
 public record InviteToProfileCommand(
     Guid SiteId,
@@ -23,37 +29,37 @@ public record InviteToProfileCommand(
 public class InviteToProfileCommandHandler : IRequestHandler<InviteToProfileCommand, Result<InvitationDto>>
 {
     private readonly IUserRepository _users;
-    private readonly ISiteRepository _sites;
     private readonly ISiteLoginRepository _logins;
     private readonly IIndividualProfileRepository _profiles;
-    private readonly IInvitationRepository _invitations;
-    private readonly InvitationIssuer _inviter;
+    private readonly IActionTokenRepository _tokens;
+    private readonly IEmailService _email;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly InvitationOptions _options;
 
     public InviteToProfileCommandHandler(
         IUserRepository users,
-        ISiteRepository sites,
         ISiteLoginRepository logins,
         IIndividualProfileRepository profiles,
-        IInvitationRepository invitations,
-        InvitationIssuer inviter,
+        IActionTokenRepository tokens,
+        IEmailService email,
         IUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        IOptions<InvitationOptions> options)
     {
         _users = users;
-        _sites = sites;
         _logins = logins;
         _profiles = profiles;
-        _invitations = invitations;
-        _inviter = inviter;
+        _tokens = tokens;
+        _email = email;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _options = options.Value;
     }
 
     public async Task<Result<InvitationDto>> Handle(InviteToProfileCommand request, CancellationToken cancellationToken)
     {
-        // Role must be a known ProfileRole — reject early rather than create an unusable invitation.
+        // Role must be a known IndividualRole — reject early rather than create an unusable invite.
         if (request.RoleId != IndividualRole.Owner.Id && request.RoleId != IndividualRole.Guardian.Id)
             return Error.FromCode(ErrorCodes.InvitationRoleInvalid);
 
@@ -75,14 +81,21 @@ public class InviteToProfileCommandHandler : IRequestHandler<InviteToProfileComm
             return Error.FromCode(ErrorCodes.GuardianCannotRegisterAdult);
 
         // Don't double-invite the same email+role on the same site.
-        if (await _invitations.HasPendingAsync(request.SiteId, request.Email, request.RoleId, cancellationToken))
+        if (await _tokens.HasPendingInviteAsync(request.SiteId, request.Email, request.RoleId, cancellationToken))
             return Error.FromCode(ErrorCodes.InvitationAlreadyPending);
 
-        var invitation = _inviter.Issue(request.SiteId, request.Email, request.RoleId, caller.Id);
+        var token = ActionToken.Issue(
+            ActionTokenType.Invitation.Id,
+            request.SiteId,
+            new InvitePayload { Email = request.Email, RoleId = request.RoleId },
+            expiresUtc: _clock.UtcNow.AddDays(_options.ExpiryDays));
+        _tokens.Add(token);
+
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        await _inviter.NotifyAsync(invitation, cancellationToken);
+        // Sent after the token is durably committed (the token is the source of truth, send is best-effort).
+        await _email.SendInviteAsync(request.Email, token.Id, cancellationToken);
 
-        return new InvitationDto(invitation.Id, invitation.TargetSiteId, invitation.Email, invitation.RoleId, invitation.ExpiresUtc);
+        return new InvitationDto(token.Id, token.TargetSiteId, request.Email, request.RoleId, token.ExpiresUtc);
     }
 }
