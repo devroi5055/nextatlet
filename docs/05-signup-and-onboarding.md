@@ -12,7 +12,7 @@ Signup is **two gates** (`03`): **Gate 1 — authentication** (Auth0 hosted logi
 
 There are **two registration entry flows** (`03` §1) — the athlete sets up their own profile, or a parent sets one up for their child:
 
-### Self-registration (`POST /api/athletes/register`)
+### Self-registration (`POST /api/individual-sites/self-register`, command: `RegisterIndividualSiteSelfCommand`)
 
 A profile can be created and published (within tier) with **text only**. Required:
 
@@ -22,16 +22,16 @@ A profile can be created and published (within tier) with **text only**. Require
 | Date of birth | yes | determines `IsMinor` → guardian gating (`03`) |
 | Sport | yes (defaults `judo`) | profile context |
 | Preferred locale (da/en) | yes | bilingual default |
-| **If minor:** guardian email | yes | a `Guardian` login is created with the profile; required before publish (`03`) |
+| **If minor (< 16):** guardian email | yes | a `ConsentActionToken` is issued and emailed; required before publish (`03`) |
 
 (Email/login is not a form field — it's the authenticated caller.) That is the whole gate. Everything else — bio, results, photos, themes — is onboarding.
 
-- **Minor:** guardian email is required; the profile + a **pending** `Guardian` login are created together. The guardian accepts the invite, gets publish + approval defaults, and publishes; the young athlete may build/propose but not publish.
+- **Minor (below self-consent age 16):** guardian email is required; the profile and a `ConsentActionToken` are created in the same transaction. The guardian authenticates and accepts at `POST /api/action-tokens/{tokenId}/accept`, which records consent and lifts the publish gate. The young athlete may build/propose but not publish until consent is recorded.
 - **Adult (≥18):** athlete is sole owner/approver; no guardian step.
 
-### Guardian-creates-profile-for-child (`POST /api/athletes/register-child`)
+### Guardian-creates-profile-for-child (`POST /api/individual-sites/guardian-register`, command: `RegisterIndividualSiteGuardianCommand`)
 
-The common youth-judo case: a parent sets up their child's profile. The **caller becomes the `Guardian`** (active by construction); the child has **no login in v1**. Required: child display name, child DOB, locale (slug seeded from the name). Registering an adult this way is rejected — an adult must self-register. One guardian may register multiple children.
+The common youth-judo case: a parent sets up their child's profile. The **caller becomes the `guardian`** (active by construction); the child has **no login in v1**. Required: child display name, child DOB, locale (slug seeded from the name). Registering an adult this way is rejected — an adult must self-register. One guardian may register multiple children.
 
 ---
 
@@ -74,11 +74,14 @@ Upgrade is always possible later without re-signup — a tier change just re-res
 | Locale | yes | bilingual default |
 | Subscription choice | yes (Free default) | sets athlete slots + perk layer (`04`) |
 
+Route: `POST /api/organization-sites/club-register`
+
 Club onboarding:
 1. Create club page (draft) using the club section types.
 2. Invite staff (`ClubAdmin` invites `ClubEditor`s).
-3. Affiliate athletes into slots — each athlete must already have a profile; affiliation creates a `Membership` (`02` §5) and grants the perk layer.
-4. Publish club page (showcases affiliated athletes via published-contract references).
+3. **Optional: verify the club** — `POST /api/organization-sites/send-official-email-verification` triggers the email-to-official flow: issues an `ActionToken(OrgEmailVerification)` and emails the accept link to the registry-sourced official address. Completion via `POST /api/action-tokens/{id}/accept` marks the club Verified. Verification gates **powers** (affiliating athletes) not existence (registering/building/publishing a club page is possible without verification — serves CVR-less clubs).
+4. Affiliate athletes into slots — each athlete must already have a profile; affiliation creates a `Membership` (`02` §5) and grants the perk layer.
+5. Publish club page (showcases affiliated athletes via published-contract references).
 
 ---
 

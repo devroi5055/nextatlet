@@ -14,6 +14,8 @@ namespace NextAtlet.Domain.Entities.Sites
         public required string Slug { get; set; }
         public required string DisplayName { get; set; }
         public string VisibilityStateId { get; set; } = VisibilityStates.Public.Id;
+
+        //TODO: might move as individuals site dont need org verification status
         public string VerificationStatusId { get; set; } = VerificationStatus.Pending.Id;
         public string DefaultLocaleId { get; set; } = Locale.En.Id;
         public required string SiteTypeId { get; set; } = SiteType.Individual.Id;

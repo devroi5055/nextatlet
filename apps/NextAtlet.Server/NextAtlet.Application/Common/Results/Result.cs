@@ -48,7 +48,7 @@ public class Result<T> : IResult
     public Result WithoutValue()
     {
         if (IsFailure)
-            return Result.Failure(this.Error);
+            return Result.Failure(this.Error!);
 
         return Result.Success();
     }

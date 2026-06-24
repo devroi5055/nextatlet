@@ -2,7 +2,6 @@ using MediatR;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Results;
-using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Domain.Authorization;
 using NextAtlet.Domain.Enumerations.Individual;
 

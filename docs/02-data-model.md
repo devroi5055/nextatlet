@@ -12,24 +12,31 @@ Relational core (EF Core over PostgreSQL) with **structured columns for queryabl
 
 ```
 User (login)
-   │  many-to-many via ProfileLogin (role)
+   │  many-to-many via SiteLogin (role)
    ▼
-AthleteProfile ──1:1(draft)+1:1(published)──► SiteConfig ──► Theme
-   │                                              │ Layout (jsonb: sections[])
-   │ many-to-many over time                       │ references MediaAsset by id
-   ▼ via Membership                               ▼
-Organization (OrganizationType)              MediaAsset (blob/CDN ref)
-   │  multi-user via OrganizationLogin (role)
+Site (SiteType: Individual | Organization)
+   ├──1:1──► IndividualProfile   (athlete metadata, DateOfBirth, ConsentState, ControlMode)
+   ├──1:1──► OrganizationProfile (club/org metadata, VerificationStatus, AthleteSlotCount)
+   ├──1:1(draft)──► SiteSnapshot ──► Theme
+   ├──1:1(published)──► SiteSnapshot    │ Layout (jsonb: sections[])
+   │                                    │ references MediaAsset by id
+   │ many-to-many over time             ▼
+   ▼ via Membership               MediaAsset (blob/CDN ref)
+Site (Organization)
+   │  multi-user via SiteLogin (role: ClubAdmin | ClubEditor)
    │  athlete slots (from active subscription)
    ▼
-ClubPageConfig (draft/published) ── featuredAthletes references AthleteProfile (published contract only)
+ClubPageConfig (draft/published) ── featuredAthletes references IndividualProfile (published contract only)
 
-ChangeRequest (club proposal) ── TargetProfileId ──► AthleteProfile
+ChangeRequest (club proposal) ── TargetProfileId ──► IndividualProfile
    (lives outside draft/published; on approval merges into the athlete's DRAFT — §5b, 03 §3b)
 
-Billing (§9) — subscriber is an AthleteProfile OR an Organization:
+ActionToken ── TargetSiteId ──► Site  (invitation | consent | org_email_verification)
+GuardianConsent ── SiteId ──► Site    (GDPR Art. 8 audit record; immutable)
+
+Billing (§9) — subscriber is an IndividualProfile OR an OrganizationProfile:
    Plan ──1:*──► PlanPrice          (interval × currency variants)
-   Plan ──1:*──► PlanCapability     (Level 2 only)
+   Plan ──1:*──► PlanCapability     (Level 2 only; columns: PlanId + FeatureKey + Value)
    Subscription ──► PlanPrice       (recurring; sets denormalized tier fields)
    Purchase                         (one-time: photoshoots, video edits)
 ```
@@ -45,58 +52,104 @@ The login credential. One real person *may* hold one login used across roles, or
 |--------|------|-------|
 | Id | uuid PK | |
 | Email | varchar unique | |
-| AuthProviderId | varchar **null** | external IdP subject (Auth0 `sub`). **Null = unclaimed** — a placeholder created by an invite (e.g. a guardian who hasn't signed up yet); backfilled when they first authenticate. `IsClaimed` (computed: `AuthProviderId` present) tells the two apart. |
+| AuthProviderId | varchar **null** | external IdP subject (Auth0 `sub`). Null is not used in practice — Users are provisioned just-in-time on first authentication (see `UserProvisioner`); a pending invite is an `ActionToken` row, not a ghost user row. `IsClaimed` (computed: `AuthProviderId` present) distinguishes provisioned users from any edge cases. |
 
-### `AthleteProfile`
-One profile = one athlete. The owned, B2C core.
+### `Site`
+The shared identity envelope for both individual and organization pages.
 
 | Column | Type | Notes |
 |--------|------|-------|
 | Id | uuid PK | |
 | Slug | varchar unique | URL identity, e.g. `maria-jensen`; reserved-word checked |
 | DisplayName | varchar | |
+| SiteType | enum | `Individual` / `Organization` |
+| VisibilityState | enum | `Public` / `Private` — gates the public + club-showcase contract |
+| VerificationStatus | enum | `Pending` / `Verified` — used by org sites (email-to-official flow) |
+| DefaultLocale | enum | `da` / `en` (bilingual; see §7) |
+| CurrentDraftSnapshotId | uuid FK null | → `SiteSnapshot` (the live draft) |
+| CurrentPublishedSnapshotId | uuid FK null | → `SiteSnapshot` (the published version) |
+
+> A `Site` holds NO collection or navigation to its `ActionToken`s — the token owns the lifecycle link, not the site (FK with ON DELETE CASCADE).
+
+### `IndividualProfile`
+Per-athlete metadata. One `IndividualProfile` per `Site` of type `Individual`.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| Id | uuid PK | |
+| SiteId | uuid FK | → `Site` (one-to-one) |
 | Sport | varchar | `judo` at launch |
 | DateOfBirth | date | **source of truth** for minor/adult status |
-| SelfTier | enum | **denormalized**, derived from the active `Subscription` (§9); not authoritative. The athlete's own tier — never overwritten by club perks. |
-| DefaultLocale | enum | `da` / `en` (bilingual; see §7) |
-| VisibilityState | enum | `Public` / `Private` — gates the public + club-showcase contract |
+| ControlMode | enum | `AthleteControlled` / `GuardianControlled` / `AthleteControlledShared` / `GuardianControlledShared` — explicit, stored; never auto-mutated from age |
+| ConsentState | enum | `NotRequired` / `PendingGuardianConsent` / `Consented` — GDPR gate; blocks publish while `PendingGuardianConsent` |
+| SelfTier | enum **null** | **denormalized**, derived from the active `Subscription` (§9); null until billing is wired. Not authoritative — never overwritten by club perks. |
 
 > **Minor status is computed, never stored.** `IsMinor` = `DateOfBirth` vs. current date, evaluated at request time. A stored boolean would go stale the day the athlete turns 18; the guardian-gating logic (`03`) must always recompute from `DateOfBirth`.
 
-### `ProfileLogin` (join: User ↔ AthleteProfile, with role)
-Implements **one profile + multiple linked roles** (`03`).
+### `SiteLogin` (join: User ↔ Site, with role)
+Implements **one site + multiple linked roles** (`03`). Unified for both individual and organization sites.
 
 | Column | Type | Notes |
 |--------|------|-------|
 | Id | uuid PK | |
 | UserId | uuid FK | |
-| AthleteProfileId | uuid FK | |
-| Role | enum | `AthleteOwner`, `Guardian` |
-| Permissions | jsonb | guardian edit/publish/approval config (`03`); null for `AthleteOwner` |
-| Status | enum | `Pending` (invited, not yet accepted) / `Active` / `Revoked` |
+| SiteId | uuid FK | |
+| SiteRoleId | varchar | role within the site; meaning splits by `SiteType` — see note below |
+| Permissions | jsonb | permission config (`03`); null for Owner / ClubAdmin |
+| Status | enum | `Active` / `Revoked` |
 
-> Unique constraint on (`UserId`, `AthleteProfileId`). Because `ProfileLogin` is decoupled from `AthleteProfile`, a profile can carry **{AthleteOwner + Guardian}**, **{AthleteOwner only}** (adult self-registered), or **{Guardian only}** (a guardian created the profile for a child — no child login in v1; see `03` §1, `05`).
+> **Role vocabulary splits by site type.** For `Individual` sites: `IndividualRole` (`owner`, `guardian`). For `Organization` sites: `OrganizationRole` (`club_admin`, `club_editor`).
 >
-> **A minor profile must always have ≥1 `Guardian` login, created in the same transaction as the profile — never after.** In the self-minor flow the guardian is `Pending` (invited); in the guardian-creates-child flow the caller *is* the (active) guardian. Going **public** additionally requires an *active* guardian (`03`).
+> **Users are never pre-created for pending invitations.** A pending invitation is an `ActionToken`; the `User` is provisioned just-in-time when the invitee authenticates. There is no `Pending` status on `SiteLogin` — logins are only inserted on acceptance.
+>
+> **A minor profile must always have ≥1 `guardian` login, created in the same transaction as the profile — never after.** In the self-minor flow the consent request is a `ConsentActionToken` (not a login); in the guardian-creates-child flow the caller is attached as an Active guardian by construction. Going **public** additionally requires an *active* guardian (`03`).
+
+### `ActionToken`
+A single-use, expiring token that authorizes completing one action via an emailed link. Unifies invitation, guardian-consent, and org-email-verification into one table. The row `Id` (v4 GUID, 122 bits of randomness) IS the link key — cryptographically sufficient, no separate secret needed. Named `ActionToken` (not `AccessToken`) to avoid colliding with OAuth/JWT terminology.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| Id | uuid PK | also the secure link key used in the emailed URL |
+| TypeId | varchar | `invitation` \| `consent` \| `org_email_verification` — selects the accept-time behavior |
+| TargetSiteId | uuid FK | → `Site` (ON DELETE CASCADE — deleting a site removes its tokens) |
+| ExpiresUtc | timestamp | |
+| AcceptedUtc | timestamp **null** | null = pending; non-null = used (single-use gate) |
+| Payload | jsonb | typed per type (`InvitePayload`, `ConsentPayload`, `OrgEmailVerificationPayload`); never a loose dictionary |
+
+> Accepted-then-expired needs no special handling: once `AcceptedUtc` is set the durable outcome is permanent; `ExpiresUtc` only gates acceptance ("too late to accept") and marks cleanup eligibility. Tokens where `AcceptedUtc IS NOT NULL` OR `ExpiresUtc IS PAST` are eligible for purge (optional grace period for audit).
+
+### `GuardianConsent`
+The GDPR Art. 8 audit record. Immutable (`CreatedOnly` — only inserted, never updated).
+
+| Column | Type | Notes |
+|--------|------|-------|
+| Id | uuid PK | |
+| SiteId | uuid FK | → the minor's `Site` |
+| GuardianUserId | uuid FK | WHO: the authenticated guardian's `User` identity (stronger evidence than a typed name) |
+| MethodId | varchar | HOW: verification method (`email`; future: `mitid`) |
+| TermsVersion | varchar | WHAT: privacy-notice version consented to |
+| CreatedUtc | timestamp | WHEN |
+
+> Captures exactly the four GDPR-required facts: WHO, HOW, WHAT, WHEN. Created only on consent-token acceptance; never mutated.
 
 ---
 
 ## 3. Site configuration (the auto-generation engine)
 
-### `SiteConfig`
-Two rows per athlete recommended: one `Draft`, one `Published`. (For rollback/history on higher tiers, add `SiteConfigHistory` — see open questions in `07`.)
+### `SiteSnapshot`
+Two snapshot rows per site: one referenced by `Site.CurrentDraftSnapshotId`, one by `Site.CurrentPublishedSnapshotId`. (For rollback/history on higher tiers, add a `SiteSnapshotHistory` table — see open questions in `07`.)
 
 | Column | Type | Notes |
 |--------|------|-------|
 | Id | uuid PK | |
-| AthleteProfileId | uuid FK | |
-| State | enum | `Draft` / `Published` |
+| SiteId | uuid FK | |
 | ThemeId | uuid FK | |
 | ThemeVersion | int | pin to a theme version for render stability |
 | Layout | jsonb | ordered sections + per-section data (§4) |
 | GlobalSettings | jsonb | colors/fonts/accents — only slots the effective capability allows |
-| Version | int | optimistic concurrency + cache key |
 | PublishedUtc | timestamp null | |
+
+> Draft vs. Published state is implicit: which FK on `Site` points at this snapshot determines its role. There is no `State` column on `SiteSnapshot` itself.
 
 ### `Theme`
 
@@ -130,48 +183,40 @@ Bytes live in blob/CDN; the DB holds the reference. **Owned by the athlete** eve
 
 ## 4. Organizations (B2B)
 
-### `Organization`
+### `OrganizationProfile`
+Per-organization metadata. One `OrganizationProfile` per `Site` of type `Organization`. (Mirrors `IndividualProfile` — each carries its own `SiteId FK` → `Site`.)
 
 | Column | Type | Notes |
 |--------|------|-------|
 | Id | uuid PK | |
-| Type | enum | `Club`, `NationalTeam`, `Academy`, `TrainingCenter`, `SchoolTeam` |
-| Slug | varchar unique | |
-| DisplayName | varchar | |
+| SiteId | uuid FK | → `Site` (one-to-one) |
+| OrganizationType | enum | `Club`, `NationalTeam`, `Academy`, `TrainingCenter`, `SchoolTeam` |
 | IsServerManaged | bool | `true` for `NationalTeam` at launch (internal-admin only) |
 | SubscriptionTier | enum | **denormalized**, derived from the active `Subscription` (§9); not authoritative. Null for server-managed. |
 | AthleteSlotCount | int | **denormalized** from the active subscription's `Plan.AthleteSlotCount` (§9.1); not authoritative. The slot-limit check (§8) reads this cached value. |
-| VisibilityState | enum | `Public` / `Private` |
+| VerificationStatus | enum | `Pending` / `Verified` — gated by the email-to-official flow |
 
-### `OrganizationLogin` (join: User ↔ Organization, with role)
-Multi-user access for clubs.
+> `Slug`, `DisplayName`, `VisibilityState`, `DefaultLocale` live on the shared `Site` row, not on `OrganizationProfile`.
 
-| Column | Type | Notes |
-|--------|------|-------|
-| Id | uuid PK | |
-| UserId | uuid FK | |
-| OrganizationId | uuid FK | |
-| Role | enum | `ClubAdmin`, `ClubEditor` (reserved later: `ClubViewer`, `Coach`, `Photographer`) |
-| Status | enum | `Active` / `Revoked` |
+### Organization logins
+Multi-user access for clubs uses the same `SiteLogin` table as individual sites, with `OrganizationRole` values (`club_admin`, `club_editor`) in `SiteRoleId`. See §2 `SiteLogin`.
 
 Role capabilities are defined in `03`.
 
 ### `ClubPageConfig`
-Mirrors the `SiteConfig` draft/published engine exactly (same columns), with org-specific section types (`clubHero`, `featuredAthletes`, `clubResults`, …).
+Mirrors the `SiteSnapshot` draft/published engine exactly (same columns), with org-specific section types (`clubHero`, `featuredAthletes`, `clubResults`, …).
 
 | Column | Type | Notes |
 |--------|------|-------|
 | Id | uuid PK | |
-| OrganizationId | uuid FK | |
-| State | enum | `Draft` / `Published` |
+| SiteId | uuid FK | → `Site` (Organization) |
 | ThemeId | uuid FK | |
-| ThemeVersion | int | pin to a theme version for render stability (as `SiteConfig`) |
+| ThemeVersion | int | pin to a theme version for render stability (as `SiteSnapshot`) |
 | Layout | jsonb | sections; `featuredAthletes` holds athlete **references**, not copies |
 | GlobalSettings | jsonb | colors/fonts/accents |
-| Version | int | optimistic concurrency + cache key |
 | PublishedUtc | timestamp null | |
 
-> The `featuredAthletes` section stores `AthleteProfile` ids only. Rendering resolves each against that athlete's **published public data contract** (`01` §4, `03`). No duplication; an athlete editing their profile updates everywhere it is shown.
+> The `featuredAthletes` section stores `Site` ids (individual sites) only. Rendering resolves each against that athlete's **published public data contract** (`01` §4, `03`). No duplication; an athlete editing their profile updates everywhere it is shown.
 
 ---
 
@@ -184,13 +229,15 @@ Generic, time-bounded, many-to-many over time. Replaces any club-specific link t
 | Column | Type | Notes |
 |--------|------|-------|
 | Id | uuid PK | |
-| AthleteProfileId | uuid FK | |
-| OrganizationId | uuid FK | |
+| IndividualSiteId | uuid FK → Site | the athlete's `Site` |
+| OrganizationSiteId | uuid FK → Site | the org's `Site` |
 | Role | varchar | athlete's role within the org (e.g. `competitor`, `member`) |
 | StartDate | date | |
 | EndDate | date null | null = ongoing |
 | Status | enum | `Active` / `Inactive` |
 | OccupiesSlot | bool | true when consuming one of the org's athlete slots (`04`) |
+
+> FK names are role-based (`IndividualSite` / `OrganizationSite`), not parent/child — there is no false ownership hierarchy; an athlete is not "owned" by a club. An application-layer guard in `AffiliateAthleteCommand` enforces that each FK targets the correct `SiteType`; the schema does not enforce this as a CHECK constraint.
 
 **Derived "primary" contexts** (computed, not stored unless you cache them):
 
@@ -206,14 +253,14 @@ Generic, time-bounded, many-to-many over time. Replaces any club-specific link t
 
 ## 5b. Change requests (club → athlete proposals)
 
-A club may **propose** edits to an affiliated athlete's profile but can never write to it directly. Each proposal is a `ChangeRequest` that lives **outside** both the athlete's draft and published `SiteConfig` until the profile side (guardian for a minor, athlete for an adult) resolves it. The full workflow and the two-gate model (approve → draft, then a separate publish) are in `03` §3b.
+A club may **propose** edits to an affiliated athlete's profile but can never write to it directly. Each proposal is a `ChangeRequest` that lives **outside** both the athlete's draft and published `SiteSnapshot` until the profile side (guardian for a minor, athlete for an adult) resolves it. The full workflow and the two-gate model (approve → draft, then a separate publish) are in `03` §3b.
 
 ### `ChangeRequest`
 
 | Column | Type | Notes |
 |--------|------|-------|
 | Id | uuid PK | |
-| TargetProfileId | uuid FK | the `AthleteProfile` the change is proposed for |
+| TargetProfileId | uuid FK | the `IndividualProfile` the change is proposed for |
 | ProposingOrganizationId | uuid FK | the org that proposed it |
 | ProposedByUserId | uuid FK | the specific club user — audit trail |
 | ProposedSections | jsonb | **snapshot** of the affected section(s) in proposed form (not a field-level patch) |
@@ -329,19 +376,21 @@ Add only when you want non-devs to change what a tier unlocks. Feature keys are 
 | FeatureKey | varchar | e.g. `themes.max`, `sections.video`, `analytics.level`, `video.embed`, `video.hosted`  |
 | Value | varchar/jsonb | e.g. `8`, `true`, `full` |
 
+> Note: do not confuse this with `Plan` columns — `PlanCapability` rows are `PlanId + FeatureKey + Value` only. The ERD previously showed a copy-paste of `Plan` columns here; the correct shape is the three columns above.
+
 > The **same `FeatureKey` vocabulary** powers the club perk layer (`04` §4) and theme gating (`Theme.MinimumCapability`, §3), so `PerkResolver` can compute `max(selfPlanCapabilities, activeClubPerkCapabilities)` per key uniformly.
 
 ### 9.4 `Subscription` — recurring billing entity (authoritative)
 
-Subscriber is **either** an athlete **or** an organization: two nullable FKs + a check constraint (exactly one set). Cleaner than a polymorphic `SubscriberType` + `SubscriberId` because it keeps real foreign keys.
+Subscriber is **either** an individual profile **or** an organization profile: two nullable FKs + a check constraint (exactly one set). Cleaner than a polymorphic `SubscriberType` + `SubscriberId` because it keeps real foreign keys.
 
 A subscription points at a specific `PlanPrice` (the exact variant purchased — e.g. `athlete_plus` / yearly / DKK), not just a `Plan`. The plan is reached via `PlanPrice` → `Plan`; `PlanVersion` is stored explicitly to freeze the plan version at subscribe time.
 
 | Column | Type | Notes |
 |--------|------|-------|
 | Id | uuid PK | |
-| AthleteProfileId | uuid FK null | exactly one of these two non-null (CHECK) |
-| OrganizationId | uuid FK null | |
+| IndividualProfileId | uuid FK null | exactly one of these two non-null (CHECK) |
+| OrganizationProfileId | uuid FK null | |
 | PlanPriceId | uuid FK | the exact variant subscribed to → `PlanPrice` |
 | PlanVersion | int | **pin** the plan version at subscribe time → grandfathering |
 | Status | enum | `Trialing` / `Active` / `PastDue` / `Canceled` / `Expired` |

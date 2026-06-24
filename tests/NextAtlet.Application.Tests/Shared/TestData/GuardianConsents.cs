@@ -1,5 +1,5 @@
-using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Entities.Consent;
+using NextAtlet.Domain.Enumerations.Individual;
 
 namespace NextAtlet.Application.Tests.Shared.TestData;
 
@@ -10,16 +10,15 @@ namespace NextAtlet.Application.Tests.Shared.TestData;
 public static class GuardianConsents
 {
     public static GuardianConsent AGuardianConsent(
-        Guid? athleteProfileId = null,
+        Guid? siteId = null,
         Guid? guardianUserId = null,
-        string method = "verified_email",
-        string termsVersion = "2026-01",
-        DateTime? consentedUtc = null)
+        string? method = null,
+        string termsVersion = "2026-01")
         => new()
         {
-            IndividualProfileId = athleteProfileId ?? Guid.NewGuid(),
+            SiteId = siteId ?? Guid.NewGuid(),
             GuardianUserId = guardianUserId ?? Guid.NewGuid(),
-            MethodId = method,
+            MethodId = method ?? ConsentMethods.Email.Id,
             TermsVersion = termsVersion,
         };
 }

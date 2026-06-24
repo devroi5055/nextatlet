@@ -2,6 +2,7 @@ using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Features.Individuals.Registration;
 using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Entities.Identity;
+using NextAtlet.Domain.Enumerations.Identity;
 using NextAtlet.Domain.Enumerations.Individual;
 using NextAtlet.Domain.Enumerations.Shared;
 using NSubstitute;
@@ -9,17 +10,17 @@ using NSubstitute;
 namespace NextAtlet.Application.Tests.Individuals.Consent;
 
 /// <summary>
-/// Guardian-consent behaviour of self-registration. Under Denmark's defaults (self-consent age 13)
-/// the consent path is dormant; these raise SelfConsentAge to 16 so the 13–15 band requires consent.
+/// Guardian-consent behaviour of self-registration. Under the DK launch defaults (self-consent age 16)
+/// the 13–15 band requires consent: the profile is publish-gated and a Consent <see cref="ActionToken"/>
+/// is staged + emailed to the guardian (consent is its own link-bearing flow, not a profile-join invite).
 /// </summary>
 public class SelfRegisterConsentTests
 {
-
     private static RegisterIndividualSiteSelfCommand Command(DateTime dob, string? guardianEmail)
         => new("auth0|123", "athlete@test.com", "Kid", "kid", dob, Locale.Da.Id, guardianEmail);
 
     [Fact]
-    public async Task ConsentBand_CreatesPendingGuardianConsent_AndSendsConsentEmail_NoInvitation()
+    public async Task ConsentBand_CreatesPendingGuardianConsent_AndSendsConsentEmail_ViaConsentToken()
     {
         var fixture = new RegisterIndividualSiteSelfFixture();
         var dob = fixture.Clock.UtcNow.AddYears(-14); // below self-consent age 16
@@ -29,9 +30,11 @@ public class SelfRegisterConsentTests
         // Profile is publish-gated...
         fixture.IndividualProfileRepository.Received(1)
             .Add(Arg.Is<IndividualProfile>(p => p.ConsentStateId == ConsentStates.PendingGuardianConsent.Id));
-        // ...and the guardian gets a consent-request EMAIL (not a profile invitation).
-        await fixture.EmailService.Received(1).SendConsentRequestAsync("guardian@test.com", Arg.Any<Guid>(), Arg.Any<CancellationToken>());
-        fixture.InvitationRepository.DidNotReceive().Add(Arg.Any<Invitation>());
+        // ...the guardian gets a consent-request EMAIL, staged as a Consent action token (not a join invite).
+        fixture.ActionTokenRepository.Received(1)
+            .Add(Arg.Is<ActionToken>(t => t.TypeId == ActionTokenType.Consent.Id));
+        await fixture.EmailService.Received(1)
+            .SendConsentRequestAsync("guardian@test.com", Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -46,7 +49,7 @@ public class SelfRegisterConsentTests
     }
 
     [Fact]
-    public async Task AtSelfConsentAge_CreatesNotRequired_AndNoConsentInvitation()
+    public async Task AtSelfConsentAge_CreatesNotRequired_AndNoConsentToken()
     {
         var fixture = new RegisterIndividualSiteSelfFixture();
         var dob = fixture.Clock.UtcNow.AddYears(-16); // exactly self-consent age → no consent needed
@@ -55,7 +58,7 @@ public class SelfRegisterConsentTests
 
         fixture.IndividualProfileRepository.Received(1)
             .Add(Arg.Is<IndividualProfile>(p => p.ConsentStateId == ConsentStates.NotRequired.Id));
-        fixture.InvitationRepository.DidNotReceive().Add(Arg.Any<Invitation>());
+        fixture.ActionTokenRepository.DidNotReceive().Add(Arg.Any<ActionToken>());
     }
 
     [Fact]

@@ -37,7 +37,8 @@ public class SendOfficialEmailVerificationCommandHandler : IRequestHandler<SendO
         IEmailService email,
         IUnitOfWork unitOfWork,
         IClock clock,
-        IOptions<InvitationOptions> options)
+        IOptions<InvitationOptions> options,
+        UserProvisioner userProvisioner)
     {
         _clubs = clubs;
         _tokens = tokens;
@@ -45,6 +46,7 @@ public class SendOfficialEmailVerificationCommandHandler : IRequestHandler<SendO
         _unitOfWork = unitOfWork;
         _clock = clock;
         _options = options.Value;
+        _userProvisioner = userProvisioner;
     }
 
     public async Task<Result<Guid>> Handle(SendOfficialEmailVerificationCommand request, CancellationToken cancellationToken)
@@ -56,7 +58,8 @@ public class SendOfficialEmailVerificationCommandHandler : IRequestHandler<SendO
         if (string.IsNullOrWhiteSpace(official.Email))
             return Error.FromCode(ErrorCodes.VerificationOfficialEmailMissing);
 
-        var user = await _userProvisioner.GetAsync(request.AuthProviderId, cancellationToken);
+        // User may not have a row yet (invited but not yet registered); store what we have.
+        var user = await _userProvisioner.TryGetAsync(request.AuthProviderId, cancellationToken);
         var payload = new OrgEmailVerificationPayload
         {
             ClubOfficialId = official.Id,

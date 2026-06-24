@@ -24,7 +24,7 @@ public class HeroSectionValidator : ISectionValidator
         }
 
         // Headline is required and must carry at least one locale.
-        if (!hero.Headline.HasAnyValue)
+        if (hero.Headline is null || !hero.Headline.HasAnyValue)
         {
             result.IsValid = false;
             result.Errors.Add("Hero headline must have at least one of 'da' or 'en'");

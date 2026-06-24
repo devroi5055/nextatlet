@@ -27,17 +27,20 @@ public class AcceptActionTokenCommandHandler : IRequestHandler<AcceptActionToken
     private readonly ActionTokenStrategyRegistry _actionTokenStrategyRegistry;
     private readonly UserProvisioner _userProvisioner;
     private readonly IClock _clock;
+    private readonly IUnitOfWork _unitOfWork;
 
     public AcceptActionTokenCommandHandler(
         IActionTokenRepository tokens,
         ActionTokenStrategyRegistry actionTokenStrategyRegistry,
         UserProvisioner userProvisioner,
-        IClock clock)
+        IClock clock,
+        IUnitOfWork unitOfWork)
     {
         _tokens = tokens;
         _actionTokenStrategyRegistry = actionTokenStrategyRegistry;
         _userProvisioner = userProvisioner;
         _clock = clock;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<Result> Handle(AcceptActionTokenCommand request, CancellationToken ct)
@@ -63,6 +66,9 @@ public class AcceptActionTokenCommandHandler : IRequestHandler<AcceptActionToken
         if (strategyResult.IsFailure) return strategyResult;
 
         token.Accept(_clock.UtcNow);
+
+        await _unitOfWork.SaveChangesAsync(ct);
+
         return Result.Success();
     }
 

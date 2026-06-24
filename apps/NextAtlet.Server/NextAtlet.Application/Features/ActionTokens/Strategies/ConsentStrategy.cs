@@ -18,17 +18,16 @@ public class ConsentStrategy : IActionTokenStrategy
     public bool authRequired => true;
 
     private readonly IGuardianConsentRepository _guardianConsentRepository;
-    private readonly UserProvisioner _userProvisioner;
-    private readonly IClock _clock;
+    private readonly IIndividualProfileRepository _individualProfileRepository;
 
     public ConsentStrategy(
+
         UserProvisioner userProvisioner,
-        IClock clock,
-        IGuardianConsentRepository guardianConsentRepository)
+        IGuardianConsentRepository guardianConsentRepository,
+        IIndividualProfileRepository individualProfileRepository)
     {
-        _userProvisioner = userProvisioner;
-        _clock = clock;
         _guardianConsentRepository = guardianConsentRepository;
+        _individualProfileRepository = individualProfileRepository;
     }
 
     public async Task<Result> ExecuteAsync(ActionToken token, User? actorUser, CancellationToken ct)
@@ -51,6 +50,12 @@ public class ConsentStrategy : IActionTokenStrategy
         };
 
         _guardianConsentRepository.Add(consent);
+
+        var profile = await _individualProfileRepository.GetBySiteIdAsync(token.TargetSiteId);
+        if (profile is null)
+            throw new InvalidOperationException("Site must have a profile");
+
+        profile.ConsentStateId = ConsentStates.Consented.Id;
 
         return Result.Success();
     }

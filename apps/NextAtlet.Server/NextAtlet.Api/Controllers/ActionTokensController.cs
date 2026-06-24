@@ -1,8 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using NextAtlet.Application.Common.DTOs;
-using NextAtlet.Application.Common.Results;
+using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Features.ActionTokens.Commands;
 
 // ClaimsPrincipalExtensions (User.GetAuthProviderId()/GetEmail()) live in the NextAtlet.Api namespace.
@@ -23,6 +22,8 @@ public class ActionTokensController : ControllerBase
     /// the token's type. Identity comes from the validated token, never the body.
     /// </summary>
     [HttpPost("{id:guid}/accept")]
-    public async Task<ActionResult<Result>> Accept(Guid id)
-        => Ok(await _sender.Send(new AcceptActionTokenCommand(id, User.TryGetAuthProviderId())));
+    [ProducesResponseType(StatusCodes.Status204NoContent)]                     // success: empty (the action's outcome is recorded server-side)
+    [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]  // failure: stable errorCode the frontend maps to a message
+    public async Task<IActionResult> Accept(Guid id)
+    => Ok(await _sender.Send(new AcceptActionTokenCommand(id, User.TryGetAuthProviderId())));
 }

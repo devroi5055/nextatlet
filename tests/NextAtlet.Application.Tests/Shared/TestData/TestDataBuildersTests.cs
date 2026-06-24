@@ -1,3 +1,5 @@
+using NextAtlet.Domain.Entities.Identity;
+using NextAtlet.Domain.Enumerations.Identity;
 using NextAtlet.Domain.Enumerations.Individual;
 using NextAtlet.Domain.Enumerations.Media;
 using NextAtlet.Domain.Enumerations.Shared;
@@ -96,32 +98,39 @@ public class TestDataBuildersTests
     }
 
     [Fact]
-    public void APendingInvitation_IsPendingGuardianInvite()
+    public void APendingInviteToken_IsPendingGuardianInvite()
     {
-        var invitation = Invitations.APendingInvitation();
+        var token = ActionTokens.APendingInviteToken();
+        var payload = Assert.IsType<InvitePayload>(token.Payload);
 
-        Assert.Equal(InvitationStatus.Pending.Id, invitation.StatusId);
-        Assert.Equal(IndividualRole.Guardian.Id, invitation.RoleId);
-        Assert.False(string.IsNullOrWhiteSpace(invitation.Email));
-        Assert.False(invitation.IsExpired);
+        Assert.Equal(ActionTokenType.Invitation.Id, token.TypeId);
+        Assert.Equal(IndividualRole.Guardian.Id, payload.RoleId);
+        Assert.False(string.IsNullOrWhiteSpace(payload.Email));
+        Assert.True(token.IsPending);
+        Assert.False(token.IsExpired);
     }
 
     [Fact]
-    public void AnExpiredInvitation_IsExpired()
-        => Assert.True(Invitations.AnExpiredInvitation().IsExpired);
+    public void AnExpiredInviteToken_IsExpired()
+        => Assert.True(ActionTokens.AnExpiredInviteToken().IsExpired);
 
     [Fact]
-    public void AnAcceptedInvitation_IsAcceptedWithTimestamp()
+    public void AnAcceptedInviteToken_IsAcceptedWithTimestamp()
     {
-        var invitation = Invitations.AnAcceptedInvitation();
+        var token = ActionTokens.AnAcceptedInviteToken();
 
-        Assert.Equal(InvitationStatus.Accepted.Id, invitation.StatusId);
-        Assert.NotNull(invitation.AcceptedUtc);
+        Assert.False(token.IsPending);
+        Assert.NotNull(token.AcceptedUtc);
     }
 
     [Fact]
-    public void ARevokedInvitation_IsRevoked()
-        => Assert.Equal(InvitationStatus.Revoked.Id, Invitations.ARevokedInvitation().StatusId);
+    public void AConsentToken_CarriesConsentPayload()
+    {
+        var token = ActionTokens.AConsentToken();
+
+        Assert.Equal(ActionTokenType.Consent.Id, token.TypeId);
+        Assert.IsType<ConsentPayload>(token.Payload);
+    }
 
     [Fact]
     public void AClubFundedAsset_StaysWithTheAthlete()

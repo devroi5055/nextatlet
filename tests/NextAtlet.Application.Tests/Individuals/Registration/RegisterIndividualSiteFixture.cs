@@ -1,39 +1,37 @@
 using AutoFixture;
 using Microsoft.Extensions.Options;
 using NextAtlet.Application.Abstractions.Persistence;
+using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Common.Time;
 using NextAtlet.Application.Features.Identity;
 using NextAtlet.Application.Features.Individuals.Registration;
-using NextAtlet.Application.Features.Invitations;
-using NextAtlet.Application.Abstractions.Persistence;
-using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Application.Tests.Shared;
-using NextAtlet.Domain.Entities.Shared;
 using NextAtlet.Domain.Entities.Sites;
 using NSubstitute;
 
 public class RegisterIndividualSiteSelfFixture
 {
+    public const string TermsVersion = "2026-01";
+
     public ISiteRepository SiteRepository { get; }
     public IIndividualProfileRepository IndividualProfileRepository { get; }
     public ISiteLoginRepository SiteLoginRepository { get; }
     public IUserRepository UserRepository { get; }
-    public IInvitationRepository InvitationRepository { get; }
+    public IActionTokenRepository ActionTokenRepository { get; }
     public IThemeRepository ThemeRepository { get; }
-    public ISiteSnapshotRepository SiteSnapshotRepository { get;  }
+    public ISiteSnapshotRepository SiteSnapshotRepository { get; }
     public IEmailService EmailService { get; }
     public IUnitOfWork UnitOfWork { get; }
     public IClock Clock { get; }
 
     public UserProvisioner UserProvisioner { get; }
-    public InvitationIssuer InvitationIssuer { get; }
     public AgeThresholdOptions AgeThresholds { get; }
 
     public RegisterIndividualSiteSelfCommandHandler Handler { get; }
 
-    // Defaults to the DK launch thresholds; pass a custom set (e.g. SelfConsentAge = 16) to exercise
-    // the guardian-consent path, which is dormant when SelfConsentAge == AbsoluteMinimumAge.
+    // Defaults to the DK launch thresholds (self-consent age 16), so the 13–15 band requires guardian
+    // consent and a Consent action token is staged + emailed.
     public RegisterIndividualSiteSelfFixture()
     {
         AgeThresholds = new AgeThresholdOptions();
@@ -57,17 +55,11 @@ public class RegisterIndividualSiteSelfFixture
         ThemeRepository = Substitute.For<IThemeRepository>();
         SiteSnapshotRepository = Substitute.For<ISiteSnapshotRepository>();
         UserRepository = Substitute.For<IUserRepository>();
-        InvitationRepository = Substitute.For<IInvitationRepository>();
+        ActionTokenRepository = Substitute.For<IActionTokenRepository>();
         EmailService = Substitute.For<IEmailService>();
         UnitOfWork = Substitute.For<IUnitOfWork>();
 
         UserProvisioner = new UserProvisioner(UserRepository, Clock);
-
-        InvitationIssuer = new InvitationIssuer(
-            InvitationRepository,
-            EmailService,
-            Options.Create(new InvitationOptions { ExpiryDays = 7 })
-        );
 
         ThemeRepository.GetActiveByNameAsync("Classic", CancellationToken.None)
             .Returns(fixture.Create<Theme>());
@@ -79,10 +71,12 @@ public class RegisterIndividualSiteSelfFixture
             ThemeRepository,
             SiteSnapshotRepository,
             UserProvisioner,
-            InvitationIssuer,
             Clock,
             Options.Create(AgeThresholds),
             EmailService,
+            ActionTokenRepository,
+            Options.Create(new TermsOptions { CurrentVersion = TermsVersion }),
+            Options.Create(new InvitationOptions { ExpiryDays = 7 }),
             UnitOfWork
         );
     }

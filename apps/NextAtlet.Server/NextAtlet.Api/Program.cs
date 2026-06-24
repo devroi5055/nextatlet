@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using NextAtlet.Api;
 using NextAtlet.Api.Filters;
 using NextAtlet.Application;
@@ -26,9 +27,47 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers(options => options.Filters.Add<ResultFilter>());
-builder.Services.AddOpenApi(options => options.AddDocumentTransformer<OAuthSecuritySchemeTransformer>());
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<ResultFilter>();
+    options.Conventions.Add(new ApiErrorResponseConvention()); // every endpoint documents the ApiError 400 contract
+});
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    var authority = builder.Configuration["Authentication:Authority"];
 
+    // Only add the security scheme if Authority is configured — guards against
+    // new Uri(null...) throwing during spec generation.
+    if (!string.IsNullOrWhiteSpace(authority))
+    {
+        var baseUri = authority.EndsWith("/") ? authority : authority + "/";   // ensure trailing slash
+
+        options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.OAuth2,
+            Flows = new OpenApiOAuthFlows
+            {
+                AuthorizationCode = new OpenApiOAuthFlow
+                {
+                    AuthorizationUrl = new Uri($"{baseUri}authorize"),
+                    TokenUrl = new Uri($"{baseUri}oauth/token"),
+                    Scopes = new Dictionary<string, string>
+                    {
+                        ["openid"] = "OpenID",
+                        ["profile"] = "Profile",
+                        ["email"] = "Email"
+                    }
+                }
+            }
+        });
+
+        options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+        {
+            [new OpenApiSecuritySchemeReference("oauth2", document)] = []
+        });
+    }
+});
 // Dual-scheme auth: cookie (production / Next.js session) + JWT bearer (Swagger, service clients).
 // A "smart" policy scheme routes each request to the right handler so [Authorize] endpoints serve
 // both transparently. Claim extraction (ClaimsPrincipalExtensions) is scheme-agnostic.
@@ -43,6 +82,20 @@ builder.Services.AddAuthentication(options =>
     options.Cookie.HttpOnly = true;
     options.Cookie.SameSite = SameSiteMode.Strict;
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+
+    // This is an API, not an MVC app — there's no login page to redirect to.
+    // Return 401/403 instead of redirecting, so unauthenticated requests don't
+    // loop endlessly to a nonexistent /Account/Login.
+    options.Events.OnRedirectToLogin = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return Task.CompletedTask;
+    };
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        return Task.CompletedTask;
+    };
 })
 .AddJwtBearer("bearer", options =>
 {
@@ -64,8 +117,6 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-
-
 // Auth0 access tokens omit email by default — point this at the namespaced claim an Action adds.
 ClaimsPrincipalExtensions.ConfiguredEmailClaimType = builder.Configuration["Authentication:EmailClaimType"];
 
@@ -76,7 +127,7 @@ builder.Services.AddAuthorizationBuilder()
 
 // ProblemDetails + global exception handling (replaces per-action try/catch)
 builder.Services.AddProblemDetails();
-builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+//builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 // Configure PostgreSQL DbContext
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -113,6 +164,8 @@ builder.Services.AddSingleton<IClock, SystemClock>();
 //ActionToken // TODO: might change to singelton
 builder.Services.AddScoped<ActionTokenStrategyRegistry>();
 builder.Services.AddScoped<IActionTokenStrategy, OrgEmailVerificationStrategy>();
+builder.Services.AddScoped<IActionTokenStrategy, ConsentStrategy>();
+builder.Services.AddScoped<IActionTokenStrategy, InvitationStrategy>();
 
 builder.Services.AddCvrLookup(builder.Configuration);
 
@@ -151,7 +204,6 @@ builder.Services.AddScoped<IClubSourceStrategy, DjuPortalScraper>();
 builder.Services.AddScoped<IClubCanonicalizer, ClubCanonicalizer>();
 builder.Services.AddScoped<IClubRepository, ClubRepository>();
 
-
 // Add CORS (for development)
 builder.Services.AddCors(options =>
 {
@@ -165,26 +217,29 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-app.UseExceptionHandler();
+//app.UseExceptionHandler();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi().AllowAnonymous(); // serves the OpenAPI document at /openapi/v1.json (Swagger must read it unauthenticated)
+    app.UseSwagger();
     app.UseSwaggerUI(options =>
     {
-        // Swagger UI (at /swagger) reads the document produced by AddOpenApi() — for manual testing.
-        options.SwaggerEndpoint("/openapi/v1.json", "NextAtlet API v1");
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "NextAtlet API v1");
 
-        // OAuth2 login from Swagger ("Authorize" button).
         options.OAuthClientId(builder.Configuration["Authentication:Swagger:ClientId"]);
         options.OAuthUsePkce();
         options.OAuthScopeSeparator(" ");
-        // Auth0 only issues a JWT access token for the API when the 'audience' param is present.
+
         var audience = builder.Configuration["Authentication:Audience"];
         if (!string.IsNullOrWhiteSpace(audience))
-            options.OAuthAdditionalQueryStringParams(new Dictionary<string, string> { ["audience"] = audience });
+        {
+            options.OAuthAdditionalQueryStringParams(
+                new Dictionary<string, string> { ["audience"] = audience }
+            );
+        }
     });
+
     app.UseCors("Development");
 }
 

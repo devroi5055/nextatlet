@@ -9,7 +9,8 @@
 | Pattern | Where | Why |
 |---------|-------|-----|
 | **Strategy** | section validation & rendering contract | one strategy per section type; add a type → add a strategy, no `switch` sprawl |
-| **Factory / Registry** | `SectionTypeRegistry` | maps `"hero"` → schema + validator + (frontend) component contract; same idea for club section types |
+| **Factory / Registry** | `SectionTypeRegistry`, `ActionTokenStrategyRegistry` | maps `"hero"` → schema + validator + (frontend) component contract; same idea for club section types. `ActionTokenStrategyRegistry` maps `ActionTokenType` → `IActionTokenStrategy` — same dict-keyed pattern; strategies are Scoped (touch repos/UoW). |
+| **`IActionTokenStrategy`** | ActionToken accept dispatch | Interface: `ActionTokenType` (which kind this handles), `authRequired: bool` (enforced by the handler before dispatch), `ExecuteAsync(token, actor, ct): Task<Result>` (type-specific side effect). Implementations: `ConsentStrategy` (authRequired = true, records `GuardianConsent`), `InvitationStrategy` (authRequired = true, creates Active `SiteLogin`), `OrgEmailVerificationStrategy` (authRequired = false, marks org Verified). |
 | **Specification** | tier/perk gating, ownership, role checks | composable, declarative rules (`CanEditField`, `CanUseTheme`, `CanManageBilling`, `CanProposeToAthlete`) instead of scattered `if`s |
 | **CQRS via MediatR** | application commands/queries | `IRequest`/`IRequestHandler` dispatched via `ISender`; handlers orchestrate repositories + services; thin controllers; pipeline behaviors for cross-cutting concerns |
 | **Repository + Unit of Work** | all DB access | handlers depend on repository interfaces (in Application); EF implementations + `EfUnitOfWork` in Infrastructure; one `SaveChangesAsync` per request, commit timing owned by the handler |
@@ -33,14 +34,23 @@ Api ──► Application ◄── Infrastructure
 
 Clean Architecture: abstractions (MediatR handlers, repository interfaces, `IUnitOfWork`, service interfaces) live in **Application**; EF Core implementations (`NextAtletDbContext`, repositories, `EfUnitOfWork`) live in **Infrastructure**, which references Application. Handlers never see `DbContext`. This inverts the original `Application → Infrastructure` reference (see `docs/08` ADR). MediatR is v13 Community; the choice is reversible (MediatR 12 MIT, `martinothamar/Mediator`, or a hand-rolled `ISender`) since every feature is just an `IRequestHandler`.
 
-### Error handling — Model A (error codes + global handler)
+### Error handling — three mechanisms, strict lanes
 
-**Chosen: Model A.** The backend emits stable **error codes + parameters**, never localized strings; the frontend resolves codes → `da`/`en` text (locale lives where the user is — see `02 §7`). Two categories, never conflated:
+**Chosen: Model A (error codes + global handler)** with three distinct mechanisms, each with a strict lane. The backend emits stable **error codes**, never localized strings; the frontend resolves codes → `da`/`en` text.
 
-- **Domain / user-facing** (slug taken, guardian required, not-found, version conflict, invalid section) → `DomainException(code, params)` → **400** + `ApiError`.
-- **System / infrastructure** (missing seed theme, DB down) → plain exception → logged → generic **500**, no detail leaked.
+**Three mechanisms, strict lanes:**
 
-One `DomainException`, one `ErrorCodes` source of truth, one global handler, one `ApiError` response shape (`01`). A build-time test asserts every code has both `da` and `en` translations (no raw key ever reaches a user). **Deferred upgrades (do not build now):** `Result<T>` (Model B) for validation-heavy flows, and RFC 9457 Problem Details (Model C) if/when the API gets external consumers. Full plan: `error-handling-implementation-plan.md`.
+1. **`InvalidOperationException` / `InvariantViolationException`** — impossible state, broken invariant → **500**, logged, no user message. For conditions that should never happen given correct application logic: an authenticated user with no DB row, a token type with no registered strategy, a token targeting a missing site (impossible with ON DELETE CASCADE). Not `ArgumentNullException` (that is bad-null-input, not a failed lookup).
+
+2. **`DomainException(errorCode)`** → **4xx**, user-facing, halts to the API boundary. The workhorse for expected business-rule rejections: underage, not authorized, expired token, club not verified. Errors bubble naturally to the global handler; callers rarely need to branch on them.
+
+3. **`Result<T>` / `Result`** → caller acts on the outcome locally (branches, falls back, combines). Narrow use: validation collecting multiple errors, a few branchable queries. Can fail-fast; `IsFailure` is the branch point.
+
+**Repository contract:** repositories return `T?` (null = not found), not `Result`. The handler interprets null — throw `DomainException` if the entity must exist; branch if absent is valid.
+
+**Frontend coherence:** both `DomainException` and `Result.Failure` produce the same `ApiError` JSON at the boundary (via `ResultFilter` and `GlobalExceptionHandler`), so there is no frontend-coherence argument for preferring one over the other for single-rejection flows. Prefer `DomainException` for business rejections that propagate — no threading needed.
+
+One `ErrorCodes` source of truth; one `ApiError` response shape (`01`). A build-time test asserts every code has both `da` and `en` translations (no raw key ever reaches a user). Full plan: `error-handling-implementation-plan.md`.
 
 ### Authentication — dual-scheme (cookie + bearer)
 
@@ -54,7 +64,7 @@ Authentication and domain registration are **two gates**: Gate 1 = Auth0 credent
 
 ### Naming: commands by intent (registration split)
 
-Commands are named for the **use-case**, not CRUD. Athlete creation is two intent-named commands sharing a private core (`AthleteRegistrationHandlerBase.CreateAthleteProfileCoreAsync`): `RegisterOwnAthleteCommand` (caller → AthleteOwner) and `RegisterChildAthleteCommand` (caller → Guardian, child login deferred). The shared base owns slug validation + profile + default draft `SiteConfig` + user get-or-create; each handler owns only its login-attachment + rules. New athlete-onboarding variants extend the base, not copy it. Full plan: `REFACTOR_ATHLETE_REGISTRATION.md`.
+Commands are named for the **use-case**, not CRUD. Athlete creation is two intent-named commands sharing a private core (`IndividualSiteRegistrationHandlerBase.CreateIndividualProfileCoreAsync`): `RegisterIndividualSiteSelfCommand` (caller → `IndividualRole.Owner`) and `RegisterIndividualSiteGuardianCommand` (caller → `IndividualRole.Guardian`, child login deferred). The shared base owns slug validation + `IndividualProfile` + default draft `SiteSnapshot` + user get-or-create; each handler owns only its login-attachment + rules. New athlete-onboarding variants extend the base, not copy it. Full plan: `REFACTOR_ATHLETE_REGISTRATION.md`.
 
 ---
 
@@ -98,15 +108,19 @@ Each step is shippable and additive — later steps don't rewrite earlier ones.
 
 | # | Question | Blocks step | Leaning |
 |---|----------|-------------|---------|
-| 1 | One-row-per-state vs `SiteConfigHistory` table for rollback? | 3 / 14 | history table if rollback matters to higher tiers |
+| 1 | One-row-per-state vs `SiteSnapshotHistory` table for rollback? | 3 / 14 | history table if rollback matters to higher tiers |
 | 2 | Final tier prices & exact slot/session counts? | 6 / 10 | placeholders in `04` until business decides |
 | 3 | Club downgrade below current roster — block, or mark overflow inactive? | 10 | block downgrade until under limit (simpler, fairer) |
 | 4 | Self-serve vs admin-created for Academy / TrainingCenter / SchoolTeam? | 8 | admin-created first; revisit per type |
-| 5 | Bilingual: per-field locale maps vs section variants? | 4 | per-field maps for short text (`02` §7) |
+| 5 | Bilingual: per-field locale maps vs section variants? Level 1 (code) vs Level 2 (`PlanCapability` rows) for feature gating? Note: `PlanCapability` ERD previously showed wrong columns (copy-paste of Plan); correct shape is `PlanId + FeatureKey + Value`. | 4 / 6 | per-field maps; Level 1 now, Level 2 only if non-dev editing needed |
 | 6 | How "custom" can Pro custom sections get before a dev is needed? | 5 / 6 | hard boundary; **no** free-form HTML (XSS/quality) |
 | 7 | Second-guardian / delegate flows beyond the single guardian default? | 1 | model supports it; build when needed |
 | 8 | Data ownership/retention if an athlete deletes their profile while club-affiliated? | 8 / 11 | athlete owns; club showcase degrades to placeholder; ToS question |
 | 9 | Photoshoot scheduling/logistics system (photographer calendars, locations)? | 13 | out of MVP core; revisit |
+| 10 | `ConsentState` stored vs. derived? | 1 | lean derived from `GuardianConsent`-existence + age band — removes the stored field and sync burden |
+| 11 | `ConsentNotNeeded`: `Result`/idempotent-success vs `DomainException`? | 1 | current code returns an `Error`; decide if re-consent on an already-consented profile should be a silent success or a rejection |
+| 12 | Token cleanup job: what is the retention policy? | post-MVP | purge where `AcceptedUtc IS NOT NULL` OR `ExpiresUtc IS PAST`, with optional grace period for audit |
+| 13 | MitID Erhverv as a future org verification method? | 8 | payload `MethodId` already accommodates it; no code needed until the method is concrete |
 
 ---
 

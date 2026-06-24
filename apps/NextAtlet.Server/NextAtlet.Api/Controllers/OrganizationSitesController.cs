@@ -43,15 +43,4 @@ public class OrganizationSitesController : ControllerBase
             request.OrgSiteId,
             request.ClubOfficialId
             )));
-
-
-    public async Task<IActionResult> GuardianRegister([FromBody] RegisterChildAthleteRequest request)
-    => Ok(await _sender.Send(new RegisterIndividualSiteGuardianCommand(
-        User.GetAuthProviderId(),
-        User.GetEmail(),
-        request.ChildDisplayName,
-        request.Slug,
-        request.ChildDateOfBirth,
-        request.DefaultLocaleId)));
-
 }
