@@ -21,6 +21,12 @@ const buttonVariants = cva(
           'bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80',
         ghost: 'hover:bg-accent hover:text-accent-foreground',
         link: 'text-primary underline-offset-4 hover:underline',
+        // Nordic Gold brand variants (dark marketing surfaces). Add new brand styles here so call
+        // sites stay declarative — open for extension without touching the markup that uses them.
+        brand: 'bg-brand-gold text-brand-ink shadow hover:bg-brand-gold-soft',
+        brandOutline:
+          'border border-brand-line bg-transparent text-brand-cream hover:bg-brand-surface',
+        brandGhost: 'text-brand-cream hover:bg-brand-surface hover:text-brand-cream',
       },
       size: {
         default: 'h-9 px-4 py-2',

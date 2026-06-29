@@ -1,5 +1,25 @@
 @import "tailwindcss";
 
+/*
+ * Brand design tokens (NextAtlet marketing surface).
+ * Exposed through Tailwind v4 `@theme` so every token becomes a utility
+ * (e.g. `bg-brand-ink`, `text-brand-gold`, `border-brand-line`). Add a new
+ * brand colour here once and it is available everywhere — no config edits.
+ */
+@theme {
+  --color-brand-ink: #14100b;
+  --color-brand-ink-soft: #1b150e;
+  --color-brand-surface: #241c13;
+  --color-brand-line: #3a2e1f;
+  --color-brand-gold: #c9a24b;
+  --color-brand-gold-soft: #e0bd72;
+  --color-brand-cream: #f4eee3;
+  --color-brand-muted: #a89a83;
+
+  --font-display:
+    "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

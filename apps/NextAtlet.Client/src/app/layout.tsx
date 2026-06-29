@@ -11,8 +11,9 @@ import { AppProvider } from '@/app/provider';
 import '@/styles/globals.css';
 
 export const metadata = {
-  title: 'Bulletproof React',
-  description: 'Showcasing Best Practices For Building React Applications',
+  title: 'NextAtlet — Din profil. Din karriere.',
+  description:
+    'NextAtlet hjælper unge judoudøvere med at bygge en stærk digital identitet — automatisk genererede hjemmesider, professionelle fotos og et mentornetværk, der åbner døre til sponsorater.',
 };
 
 const RootLayout = async ({ children }: { children: ReactNode }) => {
@@ -23,7 +24,7 @@ const RootLayout = async ({ children }: { children: ReactNode }) => {
   const dehydratedState = dehydrate(queryClient);
 
   return (
-    <html lang="en">
+    <html lang="da">
       <body>
         <AppProvider>
           <HydrationBoundary state={dehydratedState}>

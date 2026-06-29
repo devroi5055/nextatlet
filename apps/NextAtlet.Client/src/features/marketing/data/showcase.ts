@@ -1,0 +1,29 @@
+import { type AthleteShowcase, type Testimonial } from '../types';
+
+/** Sample athlete profile rendered in the hero and how-it-works cards. */
+export const featuredAthlete: AthleteShowcase = {
+  name: 'Marcus Andersen',
+  club: 'Ballerup Judoklub',
+  weightClass: '−60 kg',
+  ageClass: 'U18',
+  slug: 'marcus-andersen',
+  stats: [
+    { value: '8×', label: 'Guld' },
+    { value: '14', label: 'Stævner' },
+    { value: '3', label: 'Sølv' },
+  ],
+  tags: ['Søger sponsor', 'Kamp', 'Coaching', 'Udstyr'],
+  notification: {
+    title: 'Ny sponsorforespørgsel',
+    brand: 'SportGear Danmark',
+    time: 'i dag',
+  },
+};
+
+/** Pull-quote shown between the pricing and final call-to-action. */
+export const testimonial: Testimonial = {
+  quote:
+    'Sponsorer leder ikke efter den bedste atlet. De leder efter den mest synlige atlet.',
+  emphasis: 'mest synlige atlet',
+  author: 'Thomas Bech, tidligere landsholdsjudoka & mentor hos NextAtlet',
+};

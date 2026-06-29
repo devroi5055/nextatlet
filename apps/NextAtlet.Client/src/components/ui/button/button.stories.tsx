@@ -15,3 +15,11 @@ export const Default: Story = {
     variant: 'default',
   },
 };
+
+export const Brand: Story = {
+  args: {
+    children: 'Opret din profil',
+    variant: 'brand',
+    size: 'lg',
+  },
+};

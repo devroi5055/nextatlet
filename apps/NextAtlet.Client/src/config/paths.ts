@@ -6,7 +6,7 @@ export const paths = {
   auth: {
     register: {
       getHref: (redirectTo?: string | null | undefined) =>
-        `/auth/register${redirectTo ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ''}`,
+        `/auth/login?screen_hint=signup${redirectTo ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ''}`,
     },
     login: {
       getHref: (redirectTo?: string | null | undefined) =>
