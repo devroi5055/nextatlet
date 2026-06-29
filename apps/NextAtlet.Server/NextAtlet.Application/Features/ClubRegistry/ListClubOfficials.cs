@@ -21,7 +21,7 @@ public class ListClubOfficialsCommandHandler : IRequestHandler<ListClubOfficials
     {
         var club = await _clubs.GetClubByIdAsync(request.ClubId, ct);
         if (club == null)
-            throw new DomainException(ErrorCodes.ClubNotFound);
+            return Error.FromCode(ErrorCodes.ClubNotFound);
 
         return Result<List<ClubOfficial>>.Success(club.Officials.ToList());
     }

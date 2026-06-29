@@ -118,7 +118,7 @@ public class GetCurrentUserQueryHandlerTests
     // ── User exists with owned site ───────────────────────────────────────────
 
     [Fact]
-    public async Task Handle_UserWithOwnedSiteButMissingProfile_ThrowsDomainException()
+    public async Task Handle_UserWithOwnedSiteButMissingProfile_ThrowsInvalidOperation()
     {
         var user = TestHelpers.AdultUser();
         var site = TestHelpers.IndividualSite();
@@ -133,7 +133,7 @@ public class GetCurrentUserQueryHandlerTests
         _profiles.GetBySiteIdAsync(site.Id, Arg.Any<CancellationToken>())
                  .Returns((IndividualProfile?)null);
 
-        await Assert.ThrowsAsync<DomainException>(() =>
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
             BuildHandler().Handle(Query(user.AuthProviderId!), CancellationToken.None));
     }
 

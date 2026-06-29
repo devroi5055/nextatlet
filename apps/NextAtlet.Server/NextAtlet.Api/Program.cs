@@ -1,13 +1,16 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using NextAtlet.Api;
 using NextAtlet.Api.Filters;
+using NextAtlet.Api.Seeding;
 using NextAtlet.Application;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Abstractions.Services;
+using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Common.Time;
 using NextAtlet.Application.Features.ActionTokens.Strategies;
@@ -26,15 +29,13 @@ using System.Security.Claims;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
-builder.Services.AddControllers(options =>
-{
-    options.Filters.Add<ResultFilter>();
-    options.Conventions.Add(new ApiErrorResponseConvention()); // every endpoint documents the ApiError 400 contract
-});
+// Controllers + their cross-cutting filters (ResultFilter, default error responses) are registered
+// together further down under "Http code filters".
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
+    options.OperationFilter<DefaultApiErrorResponseFilter>();
+
     var authority = builder.Configuration["Authentication:Authority"];
 
     // Only add the security scheme if Authority is configured — guards against
@@ -117,6 +118,11 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<ResultFilter>();
+});
+
 // Auth0 access tokens omit email by default — point this at the namespaced claim an Action adds.
 ClaimsPrincipalExtensions.ConfiguredEmailClaimType = builder.Configuration["Authentication:EmailClaimType"];
 
@@ -127,7 +133,7 @@ builder.Services.AddAuthorizationBuilder()
 
 // ProblemDetails + global exception handling (replaces per-action try/catch)
 builder.Services.AddProblemDetails();
-//builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 // Configure PostgreSQL DbContext
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -217,7 +223,7 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-//app.UseExceptionHandler();
+app.UseExceptionHandler();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -250,7 +256,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Apply EF Core migrations on startup (development only)
+// Apply EF Core migrations on startup (development only), then seed a small sample dataset.
 if (app.Environment.IsDevelopment())
 {
     using (var scope = app.Services.CreateScope())
@@ -259,5 +265,7 @@ if (app.Environment.IsDevelopment())
         dbContext.Database.EnsureDeleted();
         dbContext.Database.Migrate();
     }
+
+    await DevelopmentDataSeeder.SeedAsync(app.Services);
 }
 app.Run();

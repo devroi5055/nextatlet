@@ -1,6 +1,8 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
+using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Features.ClubRegistry.Commands;
 
 namespace NextAtlet.Api.Controllers;
@@ -19,6 +21,7 @@ public class ClubsController : ControllerBase
     /// </summary>
     [HttpPost("scrape")]
     [AllowAnonymous]
+    [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
     public async Task<IActionResult> Scrape([FromQuery] string sport = "judo", [FromQuery] string country = "denmark")
         => Ok(await _sender.Send(new ScrapeClubsCommand(sport, country)));
 
@@ -27,6 +30,7 @@ public class ClubsController : ControllerBase
     /// </summary>
     [HttpPut("remove-sports")]
     [AllowAnonymous]
+    [ProducesResponseType(typeof(IEnumerable<string>), StatusCodes.Status200OK)]
     public async Task<IActionResult> RemoveSports(Guid id, List<string> sportIds)
         => Ok(await _sender.Send(new RemoveSportsCommand(id, sportIds)));
 
@@ -35,6 +39,7 @@ public class ClubsController : ControllerBase
     /// </summary>
     [HttpPut("add-sports")]
     [AllowAnonymous]
+    [ProducesResponseType(typeof(IEnumerable<string>), StatusCodes.Status200OK)]
     public async Task<IActionResult> AddSports(Guid id, List<string> sportIds)
         => Ok(await _sender.Send(new AddSportsCommand(id, sportIds)));
 }

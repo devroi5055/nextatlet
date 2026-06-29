@@ -1,7 +1,11 @@
+using Humanizer;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NextAtlet.Application.Common.DTOs;
+using NextAtlet.Application.Common.Errors;
+using NextAtlet.Application.Contracts.Organizations.Request;
+using NextAtlet.Application.Contracts.Sites.Response;
 using NextAtlet.Application.Features.Individuals.Registration;
 using NextAtlet.Application.Features.Organizations.Registration;
 using NextAtlet.Application.Features.Organizations.Verification;
@@ -25,6 +29,7 @@ public class OrganizationSitesController : ControllerBase
     /// a guardian is invited if the caller is a minor).
     /// </summary>
     [HttpPost("club-register")]
+    [ProducesResponseType(typeof(SiteResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> ClubRegister([FromBody] ClubRegisterRequest request)
         => Ok(await _sender.Send(new RegisterOrganizationSiteCommand(
             User.GetAuthProviderId(),
@@ -36,6 +41,7 @@ public class OrganizationSitesController : ControllerBase
             OrganizationType.Club.Id)));
 
     [HttpPost("send-offical-email-verification")]
+    [ProducesResponseType(typeof(Guid), StatusCodes.Status200OK)]
     public async Task<IActionResult> SendOfficialEmailVerification([FromBody] SendOfficialEmailVerificationRequest request)
         => Ok(await _sender.Send(new SendOfficialEmailVerificationCommand(
             User.GetAuthProviderId(),

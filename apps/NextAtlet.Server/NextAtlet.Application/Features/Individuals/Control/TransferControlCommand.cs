@@ -4,6 +4,7 @@ using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Results;
 using NextAtlet.Application.Common.Time;
 using NextAtlet.Domain.Authorization;
+using NextAtlet.Domain.Entities.Identity;
 using NextAtlet.Domain.Enumerations.Individual;
 using NextAtlet.Domain.Enumerations.Shared;
 using NextAtlet.Domain.Policies;
@@ -21,9 +22,9 @@ namespace NextAtlet.Application.Features.Individuals.Control;
 public record TransferControlCommand(
     Guid ProfileId,
     string CallerAuthProviderId,
-    string TransferTo) : IRequest<Result<Unit>>; // "athlete" | "guardian"
+    string TransferTo) : IRequest<Result>; // "athlete" | "guardian"
 
-public class TransferControlCommandHandler : IRequestHandler<TransferControlCommand, Result<Unit>>
+public class TransferControlCommandHandler : IRequestHandler<TransferControlCommand, Result>
 {
     public const string ToAthlete = "athlete";
     public const string ToGuardian = "guardian";
@@ -54,7 +55,7 @@ public class TransferControlCommandHandler : IRequestHandler<TransferControlComm
         _profiles = profiles;
     }
 
-    public async Task<Result<Unit>> Handle(TransferControlCommand request, CancellationToken cancellationToken)
+    public async Task<Result> Handle(TransferControlCommand request, CancellationToken cancellationToken)
     {
         if (request.TransferTo is not (ToAthlete or ToGuardian))
             return Error.FromCode(ErrorCodes.TransferTargetInvalid);
@@ -63,10 +64,9 @@ public class TransferControlCommandHandler : IRequestHandler<TransferControlComm
         if (profile is null)
             return Error.FromCode(ErrorCodes.IndividualProfileNotFound);
 
-
         var caller = await _users.GetByAuthProviderIdAsync(request.CallerAuthProviderId, cancellationToken);
         if (caller is null)
-            return Error.FromCode(ErrorCodes.NotAuthorized);
+            throw new InvalidOperationException("Authenticated user needs DB row");
 
         var login = await _logins.GetActiveLoginAsync(caller.Id, profile.SiteId, cancellationToken);
         // Only the current controller may initiate a transfer.
@@ -94,6 +94,6 @@ public class TransferControlCommandHandler : IRequestHandler<TransferControlComm
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return Unit.Value;
+        return Result.Success();
     }
 }

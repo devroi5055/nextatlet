@@ -76,7 +76,7 @@ public class TransferControlHandlerTests
     }
 
     [Fact]
-    public async Task Handle_CallerNotFound_ReturnsNotAuthorizedError()
+    public async Task Handle_CallerNotFound_ThrowsInvalidOperation()
     {
         var siteId    = Guid.NewGuid();
         var profileId = Guid.NewGuid();
@@ -87,12 +87,10 @@ public class TransferControlHandlerTests
               .Returns((User?)null);
 
         var handler = BuildHandler();
-        var result  = await handler.Handle(
+        // An authenticated caller with no User row violates an invariant → throws (not a NotAuthorized result).
+        await Assert.ThrowsAsync<InvalidOperationException>(() => handler.Handle(
             new TransferControlCommand(profileId, "auth0|ghost", TransferControlCommandHandler.ToAthlete),
-            CancellationToken.None);
-
-        Assert.True(result.IsFailure);
-        Assert.Equal(ErrorCodes.NotAuthorized, result.Error!.Code);
+            CancellationToken.None));
     }
 
     [Fact]

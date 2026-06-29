@@ -32,7 +32,7 @@ public class SetCollaborationHandlerTests
     // ── Not found / auth ──────────────────────────────────────────────────────
 
     [Fact]
-    public async Task Handle_ProfileNotFound_ReturnsProfileNotFoundError()
+    public async Task Handle_SiteNotFound_ReturnsSiteNotFoundError()
     {
         _profiles.GetBySiteIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
                  .Returns((IndividualProfile?)null);
@@ -42,11 +42,11 @@ public class SetCollaborationHandlerTests
             CancellationToken.None);
 
         Assert.True(result.IsFailure);
-        Assert.Equal(ErrorCodes.IndividualProfileNotFound, result.Error!.Code);
+        Assert.Equal(ErrorCodes.SiteNotFound, result.Error!.Code);
     }
 
     [Fact]
-    public async Task Handle_CallerNotFound_ReturnsNotAuthorizedError()
+    public async Task Handle_CallerNotFound_ThrowsInvalidOperation()
     {
         var siteId = Guid.NewGuid();
         _profiles.GetBySiteIdAsync(siteId, Arg.Any<CancellationToken>())
@@ -54,12 +54,10 @@ public class SetCollaborationHandlerTests
         _users.GetByAuthProviderIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
               .Returns((User?)null);
 
-        var result = await BuildHandler().Handle(
+        // An authenticated caller with no User row violates an invariant → throws (not a NotAuthorized result).
+        await Assert.ThrowsAsync<InvalidOperationException>(() => BuildHandler().Handle(
             new SetCollaborationCommand(siteId, "auth0|ghost", true),
-            CancellationToken.None);
-
-        Assert.True(result.IsFailure);
-        Assert.Equal(ErrorCodes.NotAuthorized, result.Error!.Code);
+            CancellationToken.None));
     }
 
     [Fact]

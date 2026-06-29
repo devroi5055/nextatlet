@@ -17,13 +17,14 @@ namespace NextAtlet.Application.Tests.ActionTokens.Strategies;
 public class ConsentStrategyTests
 {
     private readonly IGuardianConsentRepository _consents = Substitute.For<IGuardianConsentRepository>();
+    private readonly IIndividualProfileRepository _profiles = Substitute.For<IIndividualProfileRepository>();
     private readonly IUserRepository _users = Substitute.For<IUserRepository>();
     private readonly IClock _clock = Substitute.For<IClock>();
 
     private ConsentStrategy BuildStrategy()
     {
         _clock.UtcNow.Returns(new DateTime(2025, 6, 15, 12, 0, 0, DateTimeKind.Utc));
-        return new ConsentStrategy(new UserProvisioner(_users, _clock), _clock, _consents);
+        return new ConsentStrategy(new UserProvisioner(_users, _clock), _consents, _profiles);
     }
 
     private static ActionToken ConsentToken(Guid siteId, string termsVersion = "2026-01") =>
@@ -70,6 +71,9 @@ public class ConsentStrategyTests
         var guardian = Users.AnAuthenticatedUser();
         var strategy = BuildStrategy();
         _consents.ExistsForProfileAsync(siteId, Arg.Any<CancellationToken>()).Returns(false);
+        // The strategy lifts the publish gate on the profile after recording consent.
+        _profiles.GetBySiteIdAsync(siteId, Arg.Any<CancellationToken>())
+                 .Returns(TestIndividuals.APendingGuardianConsentAthlete());
 
         var result = await strategy.ExecuteAsync(
             ConsentToken(siteId, "2026-01"), guardian, CancellationToken.None);

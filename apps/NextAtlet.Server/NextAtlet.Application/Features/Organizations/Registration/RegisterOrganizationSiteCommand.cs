@@ -3,6 +3,7 @@ using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Extensions;
+using NextAtlet.Application.Contracts.Sites.Response;
 using NextAtlet.Application.Common.Results;
 using NextAtlet.Application.Features.Identity;
 using NextAtlet.Domain.Entities.Sites;
@@ -23,9 +24,9 @@ namespace NextAtlet.Application.Features.Organizations.Registration
         string PlanTierId,
         string DefaultLocaleId,
         string OrganizationTypeId
-    ) : IRequest<Result<SiteDto>>;
+    ) : IRequest<Result<SiteResponse>>;
 
-    public class RegisterOrganizationSiteCommandHandler : IRequestHandler<RegisterOrganizationSiteCommand, Result<SiteDto>>
+    public class RegisterOrganizationSiteCommandHandler : IRequestHandler<RegisterOrganizationSiteCommand, Result<SiteResponse>>
     {
         private readonly ISiteRepository _siteRepository;
         private readonly IOrganizationProfileRepository _profiles;
@@ -44,7 +45,7 @@ namespace NextAtlet.Application.Features.Organizations.Registration
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<Result<SiteDto>> Handle(RegisterOrganizationSiteCommand request, CancellationToken cancellationToken)
+        public async Task<Result<SiteResponse>> Handle(RegisterOrganizationSiteCommand request, CancellationToken cancellationToken)
         {
             var user = await _userProvisioner.GetOrCreateAsync(request.Email, request.AuthProviderId, cancellationToken);
             var slugExists = await _siteRepository.SlugExistsAsync(request.Slug, cancellationToken);
@@ -79,7 +80,7 @@ namespace NextAtlet.Application.Features.Organizations.Registration
             return MapToDto(site);
         }
 
-        protected SiteDto MapToDto(Site site) => new()
+        protected SiteResponse MapToDto(Site site) => new()
         {
             Id = site.Id,
             Slug = site.Slug,

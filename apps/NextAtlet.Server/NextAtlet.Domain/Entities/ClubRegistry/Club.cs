@@ -26,10 +26,20 @@ namespace NextAtlet.Domain.Entities.ClubRegistry
         //navigation
         public IReadOnlyCollection<ClubOfficial> Officials { get; init; } = default!;
 
-        public void AddSports(List<string> sports)
-            => SportIds = SportIds.Union(sports).ToList();
+        public IEnumerable<string> AddSports(List<string> sports)
+        {
+            var toBeAdded = sports.Except(SportIds).ToList();
+            SportIds = SportIds.Union(toBeAdded).ToList();
 
-        public void RemoveSports(List<string> sports)
-            => SportIds = SportIds.Except(sports).ToList();
+            return toBeAdded;
+        }
+
+        public IEnumerable<string> RemoveSports(List<string> sports)
+        {
+            var toBeRemoved = SportIds.Intersect(sports).ToList();
+            SportIds = SportIds.Except(toBeRemoved).ToList();
+
+            return toBeRemoved;
+        }
     }
 }

@@ -52,17 +52,17 @@ public class ClubRegistryHandlerTests
     // ─────────────────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task AddSports_ClubNotFound_ThrowsDomainException()
+    public async Task AddSports_ClubNotFound_ReturnsClubNotFoundError()
     {
         _clubs.GetClubByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
               .Returns((Club?)null);
 
         var handler = new AddSportsCommandHandler(_clubs, _uow);
 
-        var ex = await Assert.ThrowsAsync<DomainException>(() =>
-            handler.Handle(new AddSportsCommand(Guid.NewGuid(), ["judo"]), CancellationToken.None));
+        var result = await handler.Handle(new AddSportsCommand(Guid.NewGuid(), ["judo"]), CancellationToken.None);
 
-        Assert.Equal(ErrorCodes.ClubNotFound, ex.ErrorCode);
+        Assert.True(result.IsFailure);
+        Assert.Equal(ErrorCodes.ClubNotFound, result.Error!.Code);
     }
 
     [Fact]
@@ -84,17 +84,17 @@ public class ClubRegistryHandlerTests
     // ─────────────────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task RemoveSports_ClubNotFound_ThrowsDomainException()
+    public async Task RemoveSports_ClubNotFound_ReturnsClubNotFoundError()
     {
         _clubs.GetClubByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
               .Returns((Club?)null);
 
         var handler = new RemoveSportsCommandHandler(_clubs, _uow);
 
-        var ex = await Assert.ThrowsAsync<DomainException>(() =>
-            handler.Handle(new RemoveSportsCommand(Guid.NewGuid(), ["judo"]), CancellationToken.None));
+        var result = await handler.Handle(new RemoveSportsCommand(Guid.NewGuid(), ["judo"]), CancellationToken.None);
 
-        Assert.Equal(ErrorCodes.ClubNotFound, ex.ErrorCode);
+        Assert.True(result.IsFailure);
+        Assert.Equal(ErrorCodes.ClubNotFound, result.Error!.Code);
     }
 
     [Fact]
@@ -116,17 +116,17 @@ public class ClubRegistryHandlerTests
     // ─────────────────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task ListOfficials_ClubNotFound_ThrowsDomainException()
+    public async Task ListOfficials_ClubNotFound_ReturnsClubNotFoundError()
     {
         _clubs.GetClubByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
               .Returns((Club?)null);
 
         var handler = new ListClubOfficialsCommandHandler(_clubs);
 
-        var ex = await Assert.ThrowsAsync<DomainException>(() =>
-            handler.Handle(new ListClubOfficialsCommand(Guid.NewGuid()), CancellationToken.None));
+        var result = await handler.Handle(new ListClubOfficialsCommand(Guid.NewGuid()), CancellationToken.None);
 
-        Assert.Equal(ErrorCodes.ClubNotFound, ex.ErrorCode);
+        Assert.True(result.IsFailure);
+        Assert.Equal(ErrorCodes.ClubNotFound, result.Error!.Code);
     }
 
     [Fact]

@@ -19,13 +19,14 @@ public class AcceptActionTokenHandlerTests
     private readonly IActionTokenRepository _tokens = Substitute.For<IActionTokenRepository>();
     private readonly IUserRepository        _users  = Substitute.For<IUserRepository>();
     private readonly IClock                 _clock  = Substitute.For<IClock>();
+    private readonly IUnitOfWork            _uow    = Substitute.For<IUnitOfWork>();
 
     private AcceptActionTokenCommandHandler BuildHandler(params IActionTokenStrategy[] strategies)
     {
         _clock.UtcNow.Returns(TestHelpers.UtcNow);
         var provisioner = new UserProvisioner(_users, _clock);
         var registry    = new ActionTokenStrategyRegistry(strategies);
-        return new AcceptActionTokenCommandHandler(_tokens, registry, provisioner, _clock);
+        return new AcceptActionTokenCommandHandler(_tokens, registry, provisioner, _clock, _uow);
     }
 
     private IActionTokenStrategy StubStrategy(

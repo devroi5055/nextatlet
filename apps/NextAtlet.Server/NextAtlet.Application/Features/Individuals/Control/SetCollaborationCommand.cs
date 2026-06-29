@@ -15,9 +15,9 @@ namespace NextAtlet.Application.Features.Individuals.Control;
 public record SetCollaborationCommand(
     Guid SiteId,
     string CallerAuthProviderId,
-    bool SharedEditing) : IRequest<Result<Unit>>;
+    bool SharedEditing) : IRequest<Result>;
 
-public class SetCollaborationCommandHandler : IRequestHandler<SetCollaborationCommand, Result<Unit>>
+public class SetCollaborationCommandHandler : IRequestHandler<SetCollaborationCommand, Result>
 {
     private readonly ISiteRepository _sites;
     private readonly ISiteLoginRepository _logins;
@@ -42,31 +42,31 @@ public class SetCollaborationCommandHandler : IRequestHandler<SetCollaborationCo
         _profiles = profiles;
     }
 
-    public async Task<Result<Unit>> Handle(SetCollaborationCommand request, CancellationToken cancellationToken)
+    public async Task<Result> Handle(SetCollaborationCommand request, CancellationToken cancellationToken)
     {
-        var profile = await _profiles.GetBySiteIdAsync(request.SiteId, cancellationToken);
-        if (profile == null) 
-            return Error.FromCode(ErrorCodes.IndividualProfileNotFound);
+        var site = await _profiles.GetBySiteIdAsync(request.SiteId, cancellationToken);
+        if (site == null) 
+            return Error.FromCode(ErrorCodes.SiteNotFound);
 
         var caller = await _users.GetByAuthProviderIdAsync(request.CallerAuthProviderId, cancellationToken);
         if (caller is null)
-            return Error.FromCode(ErrorCodes.NotAuthorized);
+            throw new InvalidOperationException("Authenticated user has no DB row");
 
         var login = await _logins.GetActiveLoginAsync(caller.Id, request.SiteId, cancellationToken);
-        if (login is null || !_permissions.IsController(login, profile))
+        if (login is null || !_permissions.IsController(login, site))
             return Error.FromCode(ErrorCodes.NotAuthorized);
 
         // Flip only the shared flag of the currently-controlling side; already-in-state is a no-op.
-        profile.ControlModeId = (profile.ControlModeId, request.SharedEditing) switch
+        site.ControlModeId = (site.ControlModeId, request.SharedEditing) switch
         {
             (var id, true) when id == ControlModes.AthleteControlled.Id => ControlModes.AthleteControlledShared.Id,
             (var id, false) when id == ControlModes.AthleteControlledShared.Id => ControlModes.AthleteControlled.Id,
             (var id, true) when id == ControlModes.GuardianControlled.Id => ControlModes.GuardianControlledShared.Id,
             (var id, false) when id == ControlModes.GuardianControlledShared.Id => ControlModes.GuardianControlled.Id,
-            _ => profile.ControlModeId
+            _ => site.ControlModeId
         };
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return Unit.Value;
+        return Result.Success();
     }
 }

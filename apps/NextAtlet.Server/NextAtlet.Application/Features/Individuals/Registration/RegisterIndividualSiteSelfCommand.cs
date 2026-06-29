@@ -5,6 +5,7 @@ using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Options;
+using NextAtlet.Application.Contracts.Sites.Response;
 using NextAtlet.Application.Common.Results;
 using NextAtlet.Application.Common.Time;
 using NextAtlet.Application.Features.Identity;
@@ -34,10 +35,10 @@ public record RegisterIndividualSiteSelfCommand(
     string Slug,
     DateTime DateOfBirth,
     string DefaultLocaleId,
-    string? GuardianEmail) : IRequest<Result<SiteDto>>;
+    string? GuardianEmail) : IRequest<Result<SiteResponse>>;
 
 public class RegisterIndividualSiteSelfCommandHandler
-    : IndividualSiteRegistrationHandlerBase, IRequestHandler<RegisterIndividualSiteSelfCommand, Result<SiteDto>>
+    : IndividualSiteRegistrationHandlerBase, IRequestHandler<RegisterIndividualSiteSelfCommand, Result<SiteResponse>>
 {
     private readonly AgeThresholdOptions _thresholds;
     private readonly IEmailService _email;
@@ -68,7 +69,7 @@ public class RegisterIndividualSiteSelfCommandHandler
         _invitationOptions = invitationOptions.Value;
     }
 
-    public async Task<Result<SiteDto>> Handle(RegisterIndividualSiteSelfCommand request, CancellationToken cancellationToken)
+    public async Task<Result<SiteResponse>> Handle(RegisterIndividualSiteSelfCommand request, CancellationToken cancellationToken)
     {
         // Age gates only — never a permission input. Below the absolute floor → cannot register at all.
         var today = DateOnly.FromDateTime(_clock.UtcNow);

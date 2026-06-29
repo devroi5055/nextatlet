@@ -1,12 +1,13 @@
 using MediatR;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.Errors;
+using NextAtlet.Application.Common.Results;
 
 namespace NextAtlet.Application.Features.ClubRegistry.Commands;
 
-public record AddSportsCommand(Guid id, List<string> sportIds) : IRequest<Unit>;
+public record AddSportsCommand(Guid id, List<string> sportIds) : IRequest<Result<IEnumerable<string>>>;
 
-public class AddSportsCommandHandler : IRequestHandler<AddSportsCommand, Unit>
+public class AddSportsCommandHandler : IRequestHandler<AddSportsCommand, Result<IEnumerable<string>>>
 {
     private readonly IClubRepository _clubs;
     private readonly IUnitOfWork _unitOfWork;
@@ -19,16 +20,16 @@ public class AddSportsCommandHandler : IRequestHandler<AddSportsCommand, Unit>
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<Unit> Handle(AddSportsCommand request, CancellationToken ct)
+    public async Task<Result<IEnumerable<string>>> Handle(AddSportsCommand request, CancellationToken ct)
     {
         var club = await _clubs.GetClubByIdAsync(request.id, ct);
         if (club == null)
-            throw new DomainException(ErrorCodes.ClubNotFound);
+            return Error.FromCode(ErrorCodes.ClubNotFound);
 
-        club.AddSports(request.sportIds);
+        var added = club.AddSports(request.sportIds);
 
         await _unitOfWork.SaveChangesAsync(ct);
 
-        return Unit.Value;
+        return Result<IEnumerable<string>>.Success(added);
     }
 }

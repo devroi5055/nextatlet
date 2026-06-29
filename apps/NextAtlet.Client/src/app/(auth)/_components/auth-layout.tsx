@@ -5,14 +5,14 @@ import { ReactNode, useEffect } from 'react';
 
 import { Link } from '@/components/ui/link';
 import { paths } from '@/config/paths';
-import { useUser } from '@/lib/auth';
+// import { useUser } from '@/lib/auth';
 
 type LayoutProps = {
   children: ReactNode;
 };
 
 export const AuthLayout = ({ children }: LayoutProps) => {
-  const user = useUser();
+  // const user = useUser();
   const router = useRouter();
   const pathname = usePathname();
   const isLoginPage = pathname === paths.auth.login.getHref();
@@ -23,13 +23,13 @@ export const AuthLayout = ({ children }: LayoutProps) => {
   const searchParams = useSearchParams();
   const redirectTo = searchParams?.get('redirectTo');
 
-  useEffect(() => {
-    if (user.data) {
-      router.replace(
-        `${redirectTo ? `${decodeURIComponent(redirectTo)}` : paths.app.dashboard.getHref()}`,
-      );
-    }
-  }, [user.data, router, redirectTo]);
+  // useEffect(() => {
+  //   if (user.data) {
+  //     router.replace(
+  //       `${redirectTo ? `${decodeURIComponent(redirectTo)}` : paths.app.dashboard.getHref()}`,
+  //     );
+  //   }
+  // }, [user.data, router, redirectTo]);
 
   return (
     <div className="flex min-h-screen flex-col justify-center bg-gray-50 py-12 sm:px-6 lg:px-8">

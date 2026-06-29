@@ -1,7 +1,7 @@
 using MediatR;
 using NextAtlet.Application.Common.DTOs;
-using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Abstractions.Persistence;
+using NextAtlet.Application.Contracts.Identity.Response;
 using NextAtlet.Domain.Authorization;
 using NextAtlet.Domain.Enumerations.Individual;
 
@@ -12,9 +12,9 @@ namespace NextAtlet.Application.Features.Identity;
 /// on (owned profile, guarded profiles, pending invites), so it can route to the registration form,
 /// the dashboard, or an "accept invitation" prompt. Identity comes from the validated token, never the body.
 /// </summary>
-public record GetCurrentUserQuery(string AuthProviderId, string Email) : IRequest<MeDto>;
+public record GetCurrentUserQuery(string AuthProviderId, string Email) : IRequest<MeResponse>;
 
-public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, MeDto>
+public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, MeResponse>
 {
     private static readonly IReadOnlyList<Guid> None = [];
 
@@ -41,7 +41,7 @@ public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, M
         _permissions = permissions;
     }
 
-    public async Task<MeDto> Handle(GetCurrentUserQuery request, CancellationToken cancellationToken)
+    public async Task<MeResponse> Handle(GetCurrentUserQuery request, CancellationToken cancellationToken)
     {
         // Pending invites are keyed by email, so they surface even before any User row exists (an
         // invited person who hasn't accepted yet — no User is created until they authenticate + accept).
@@ -54,8 +54,8 @@ public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, M
         {
             // No presence yet — but a pending invite still means "you're being invited as a guardian".
             var role = pendingInvites > 0 ? IndividualRole.Guardian.Id : null;
-            return new MeDto(Registered: false, Role: role, ProfileId: null, ControlMode: null,
-                IsInControl: false, CanEdit: false, GuardedProfileIds: None, PendingGuardianInvites: pendingInvites);
+            return new MeResponse { Registered = false, Role = role, ProfileId = null, ControlMode = null,
+                IsInControl = false, CanEdit = false, GuardedProfileIds = None, PendingGuardianInvites = pendingInvites };
         }
 
         var guardedSiteIds = await _logins.GetActiveGuardianSiteIdsByUserIdAsync(user.Id, cancellationToken);
@@ -66,24 +66,25 @@ public class GetCurrentUserQueryHandler : IRequestHandler<GetCurrentUserQuery, M
         if (site is null)
         {
             if (guardedSiteIds.Count > 0 || pendingInvites > 0)
-                return new MeDto(Registered: false, Role: IndividualRole.Guardian.Id, ProfileId: null, ControlMode: null,
-                    IsInControl: false, CanEdit: false, GuardedProfileIds: guardedSiteIds, PendingGuardianInvites: pendingInvites);
+                return new MeResponse { Registered = false, Role = IndividualRole.Guardian.Id, ProfileId = null, ControlMode = null,
+                    IsInControl = false, CanEdit = false, GuardedProfileIds = guardedSiteIds, PendingGuardianInvites = pendingInvites };
 
-            return new MeDto(Registered: false, Role: null, ProfileId: null, ControlMode: null,
-                IsInControl: false, CanEdit: false, GuardedProfileIds: None, PendingGuardianInvites: pendingInvites);
+            return new MeResponse { Registered = false, Role = null, ProfileId = null, ControlMode = null,
+                IsInControl = false, CanEdit = false, GuardedProfileIds = None, PendingGuardianInvites = pendingInvites };
         }
 
         var profile = await _profiles.GetBySiteIdAsync(site.Id, cancellationToken);
         if (profile is null)
-            throw new DomainException(ErrorCodes.ProfileNotFound);
+            // Invariant: an owned Site must always have its IndividualProfile. Not user-recoverable → 500.
+            throw new InvalidOperationException($"Owned site {site.Id} has no IndividualProfile - data invariant violated.");
             
         var siteLogin = await _logins.GetActiveLoginAsync(user.Id, site.Id, cancellationToken);
         var isInControl = siteLogin is not null && _permissions.IsController(siteLogin, profile);
         var canEdit = siteLogin is not null && _permissions.Resolve(siteLogin, profile).CanEditContent;
 
-        return new MeDto(Registered: true, Role: IndividualRole.Owner.Id, ProfileId: profile.Id,
-            ControlMode: ControlModes.FromId(profile.ControlModeId), IsInControl: isInControl, CanEdit: canEdit,
-            GuardedProfileIds: guardedSiteIds, PendingGuardianInvites: pendingInvites);
+        return new MeResponse { Registered = true, Role = IndividualRole.Owner.Id, ProfileId = profile.Id,
+            ControlMode = ControlModes.FromId(profile.ControlModeId), IsInControl = isInControl, CanEdit = canEdit,
+            GuardedProfileIds = guardedSiteIds, PendingGuardianInvites = pendingInvites };
             
     }
 }

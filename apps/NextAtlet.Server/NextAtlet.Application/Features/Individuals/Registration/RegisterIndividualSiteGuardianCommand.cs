@@ -3,6 +3,7 @@ using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Options;
+using NextAtlet.Application.Contracts.Sites.Response;
 using NextAtlet.Application.Common.Results;
 using NextAtlet.Application.Common.Time;
 using NextAtlet.Application.Features.Identity;
@@ -28,10 +29,10 @@ public record RegisterIndividualSiteGuardianCommand(
     string ChildDisplayName,
     string Slug,
     DateTime ChildDateOfBirth,
-    string DefaultLocaleId) : IRequest<Result<SiteDto>>;
+    string DefaultLocaleId) : IRequest<Result<SiteResponse>>;
 
 public class RegisterIndividualSiteGuardianCommandHandler
-    : IndividualSiteRegistrationHandlerBase, IRequestHandler<RegisterIndividualSiteGuardianCommand, Result<SiteDto>>
+    : IndividualSiteRegistrationHandlerBase, IRequestHandler<RegisterIndividualSiteGuardianCommand, Result<SiteResponse>>
 {
     public RegisterIndividualSiteGuardianCommandHandler(
         ISiteRepository sites,
@@ -45,7 +46,7 @@ public class RegisterIndividualSiteGuardianCommandHandler
         IUnitOfWork unitOfWork)
         : base(sites, logins, profiles, themes, siteSnapshots, userProvisioner, clock, threshold, unitOfWork) {}
 
-    public async Task<Result<SiteDto>> Handle(RegisterIndividualSiteGuardianCommand request, CancellationToken cancellationToken)
+    public async Task<Result<SiteResponse>> Handle(RegisterIndividualSiteGuardianCommand request, CancellationToken cancellationToken)
     {
         // v1: this flow is for minors. An adult must self-register. Under-13 IS allowed here — that is
         // the intended path for very young children (the age floor only applies to self-register).

@@ -69,16 +69,15 @@ public class InviteToProfileHandlerTests
     // ── Caller authorization ──────────────────────────────────────────────
 
     [Fact]
-    public async Task Handle_CallerNotKnown_ReturnsNotAuthorizedError()
+    public async Task Handle_CallerNotKnown_ThrowsInvalidOperation()
     {
         _users.GetByAuthProviderIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
               .Returns((User?)null);
 
         var handler = BuildHandler();
-        var result  = await handler.Handle(Command(IndividualRole.Guardian.Id), CancellationToken.None);
-
-        Assert.True(result.IsFailure);
-        Assert.Equal(ErrorCodes.NotAuthorized, result.Error!.Code);
+        // An authenticated caller with no User row violates an invariant → throws (not a NotAuthorized result).
+        await Assert.ThrowsAsync<InvalidOperationException>(() => handler.Handle(
+            Command(IndividualRole.Guardian.Id), CancellationToken.None));
     }
 
     [Fact]

@@ -4,9 +4,10 @@ using NextAtlet.Application.Common.Errors;
 namespace NextAtlet.Api;
 
 /// <summary>
-/// The single place that turns exceptions into responses (Model A — see docs/01, docs/07).
-/// User-facing <see cref="DomainException"/> → 400 + its error code; everything else is logged
-/// and returned as a generic 500 that leaks no internal detail.
+/// The single place that turns unhandled exceptions into responses (Model A — see docs/01, docs/07).
+/// User-facing failures travel as <c>Result</c> errors (unwrapped to a 400 + error code by
+/// <see cref="Filters.ResultFilter"/>), so anything that surfaces here is an unexpected/system failure:
+/// it's logged and returned as a generic 500 that leaks no internal detail.
 /// </summary>
 public class GlobalExceptionHandler : IExceptionHandler
 {
@@ -16,23 +17,10 @@ public class GlobalExceptionHandler : IExceptionHandler
 
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
-        ApiError body;
+        _logger.LogError(exception, "Unhandled exception");
+        httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
 
-        switch (exception)
-        {
-            case DomainException domain:
-                httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
-                body = new ApiError(domain.ErrorCode, domain.Parameters);
-                break;
-
-            default:
-                _logger.LogError(exception, "Unhandled exception");
-                httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                body = new ApiError(ErrorCodes.Internal, []);
-                break;
-        }
-
-        await httpContext.Response.WriteAsJsonAsync(body, cancellationToken);
+        await httpContext.Response.WriteAsJsonAsync(new ApiError(ErrorCodes.Internal, []), cancellationToken);
         return true;
     }
 }

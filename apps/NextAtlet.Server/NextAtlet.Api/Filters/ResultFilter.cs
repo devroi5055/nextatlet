@@ -12,11 +12,10 @@ namespace NextAtlet.Api.Filters;
 /// nothing to return (empty success); failure → an <see cref="ApiError"/> body with a 400. Controllers just
 /// <c>return Ok(result)</c>; clients never see the wrapper.
 ///
-/// The failure body is the <b>same</b> <see cref="ApiError"/> contract the
-/// <see cref="GlobalExceptionHandler"/> emits for <c>DomainException</c> — a stable, frontend-mappable
-/// <c>errorCode</c> (not the internal dev-facing <c>Error.Message</c>). Both failure paths therefore look
-/// identical on the wire, so the frontend resolves the code to a localized message the same way regardless
-/// of whether the failure travelled as a Result or an exception.
+/// The failure body is the <see cref="ApiError"/> contract — a stable, frontend-mappable <c>errorCode</c>
+/// (not the internal dev-facing <c>Error.Message</c>). User-facing failures flow through here as Result
+/// errors; unexpected exceptions are handled separately by <see cref="GlobalExceptionHandler"/> (generic
+/// 500). The frontend resolves the code to a localized message.
 /// </summary>
 public sealed class ResultFilter : IAsyncResultFilter
 {

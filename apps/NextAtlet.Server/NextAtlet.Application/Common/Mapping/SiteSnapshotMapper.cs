@@ -1,4 +1,5 @@
 using NextAtlet.Application.Common.DTOs;
+using NextAtlet.Application.Contracts.Sites.Response;
 using NextAtlet.Domain.Entities.Sites;
 
 namespace NextAtlet.Application.Common.Mapping;
@@ -9,7 +10,7 @@ namespace NextAtlet.Application.Common.Mapping;
 /// </summary>
 public static class SiteSnapshotMapper
 {
-    public static SiteSnapshotDto ToDto(SiteSnapshot snapshot) => new()
+    public static SiteSnapshotResponse ToDto(SiteSnapshot snapshot) => new()
     {
         Id = snapshot.Id,
         SiteId = snapshot.SiteId,

@@ -1,15 +1,16 @@
 import { cookies } from 'next/headers';
+import { auth0 } from '@/lib/auth0'; // your auth0 client instance
 
-export const AUTH_TOKEN_COOKIE_NAME = 'bulletproof_react_app_token';
 
-export const getAuthTokenCookie = () => {
-  if (typeof window !== 'undefined') return '';
-  const cookieStore = cookies();
-  return cookieStore.get(AUTH_TOKEN_COOKIE_NAME)?.value;
-};
+export async function getServerCookies(): Promise<string> {
+    const cookieStore = await cookies();
+    return cookieStore
+        .getAll()
+        .map((c) => `${c.name}=${c.value}`)
+        .join('; ');
+}
 
-export const checkLoggedIn = () => {
-  const cookieStore = cookies();
-  const isLoggedIn = !!cookieStore.get(AUTH_TOKEN_COOKIE_NAME);
-  return isLoggedIn;
+export const checkLoggedIn = async () => {
+    const session = auth0.getSession();
+    return !!session
 };

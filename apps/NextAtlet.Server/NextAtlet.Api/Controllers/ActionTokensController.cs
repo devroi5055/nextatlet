@@ -22,8 +22,7 @@ public class ActionTokensController : ControllerBase
     /// the token's type. Identity comes from the validated token, never the body.
     /// </summary>
     [HttpPost("{id:guid}/accept")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]                     // success: empty (the action's outcome is recorded server-side)
-    [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]  // failure: stable errorCode the frontend maps to a message
+    [ProducesResponseType(StatusCodes.Status204NoContent)] // success: empty (the action's outcome is recorded server-side; errors use the default ApiError responses)
     public async Task<IActionResult> Accept(Guid id)
     => Ok(await _sender.Send(new AcceptActionTokenCommand(id, User.TryGetAuthProviderId())));
 }

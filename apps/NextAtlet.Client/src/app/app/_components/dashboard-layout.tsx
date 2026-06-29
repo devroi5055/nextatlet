@@ -4,6 +4,7 @@ import { Home, PanelLeft, Folder, Users, User2 } from 'lucide-react';
 import NextLink from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { ErrorBoundary } from 'react-error-boundary';
+import { useUser } from '@auth0/nextjs-auth0'
 
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
@@ -16,7 +17,7 @@ import {
 } from '@/components/ui/dropdown';
 import { Link } from '@/components/ui/link';
 import { paths } from '@/config/paths';
-import { useLogout, useUser } from '@/lib/auth';
+import { auth0 } from '@/lib/auth0';
 import { cn } from '@/utils/cn';
 
 type SideNavigationItem = {
@@ -40,7 +41,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const user = useUser();
   const pathname = usePathname();
   const router = useRouter();
-  const logout = useLogout({
+  const logout = auth0.({
     onSuccess: () => router.push(paths.auth.login.getHref(pathname)),
   });
   const navigation = [

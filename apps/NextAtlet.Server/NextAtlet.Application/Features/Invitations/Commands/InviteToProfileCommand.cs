@@ -5,6 +5,7 @@ using NextAtlet.Application.Abstractions.Services;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Options;
+using NextAtlet.Application.Contracts.Invitations.Response;
 using NextAtlet.Application.Common.Results;
 using NextAtlet.Application.Common.Time;
 using NextAtlet.Domain.Entities.Identity;
@@ -24,9 +25,9 @@ public record InviteToProfileCommand(
     string CallerAuthProviderId,
     string CallerEmail,
     string Email,
-    string RoleId) : IRequest<Result<InvitationDto>>;
+    string RoleId) : IRequest<Result<InvitationResponse>>;
 
-public class InviteToProfileCommandHandler : IRequestHandler<InviteToProfileCommand, Result<InvitationDto>>
+public class InviteToProfileCommandHandler : IRequestHandler<InviteToProfileCommand, Result<InvitationResponse>>
 {
     private readonly IUserRepository _users;
     private readonly ISiteLoginRepository _logins;
@@ -57,7 +58,7 @@ public class InviteToProfileCommandHandler : IRequestHandler<InviteToProfileComm
         _options = options.Value;
     }
 
-    public async Task<Result<InvitationDto>> Handle(InviteToProfileCommand request, CancellationToken cancellationToken)
+    public async Task<Result<InvitationResponse>> Handle(InviteToProfileCommand request, CancellationToken cancellationToken)
     {
         // Role must be a known IndividualRole — reject early rather than create an unusable invite.
         if (request.RoleId != IndividualRole.Owner.Id && request.RoleId != IndividualRole.Guardian.Id)
@@ -66,10 +67,10 @@ public class InviteToProfileCommandHandler : IRequestHandler<InviteToProfileComm
         // The caller must already be a known user; an unknown subject holds no rights anywhere.
         var caller = await _users.GetByAuthProviderIdAsync(request.CallerAuthProviderId, cancellationToken);
         if (caller is null)
-            return Error.FromCode(ErrorCodes.NotAuthorized);
+            throw new InvalidOperationException("Authenticated user must have DB row");
 
-        var profile = await _profiles.GetBySiteIdAsync(request.SiteId, cancellationToken);
-        if (profile is null)
+        var site = await _profiles.GetBySiteIdAsync(request.SiteId, cancellationToken);
+        if (site is null)
             return Error.FromCode(ErrorCodes.SiteNotFound);
 
         // Authorization: only someone with an Active login on this site may invite to it.
@@ -77,7 +78,7 @@ public class InviteToProfileCommandHandler : IRequestHandler<InviteToProfileComm
             return Error.FromCode(ErrorCodes.NotAuthorized);
 
         // A guardian only makes sense for a minor — refuse to invite one onto an adult site.
-        if (request.RoleId == IndividualRole.Guardian.Id && !profile.IsMinor(_clock.UtcNow))
+        if (request.RoleId == IndividualRole.Guardian.Id && !site.IsMinor(_clock.UtcNow))
             return Error.FromCode(ErrorCodes.GuardianCannotRegisterAdult);
 
         // Don't double-invite the same email+role on the same site.
@@ -96,6 +97,6 @@ public class InviteToProfileCommandHandler : IRequestHandler<InviteToProfileComm
         // Sent after the token is durably committed (the token is the source of truth, send is best-effort).
         await _email.SendInviteAsync(request.Email, token.Id, cancellationToken);
 
-        return new InvitationDto(token.Id, token.TargetSiteId, request.Email, request.RoleId, token.ExpiresUtc);
+        return new InvitationResponse(token.Id, token.TargetSiteId, request.Email, request.RoleId, token.ExpiresUtc);
     }
 }

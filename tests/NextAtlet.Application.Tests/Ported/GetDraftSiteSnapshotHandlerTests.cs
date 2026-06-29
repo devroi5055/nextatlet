@@ -16,17 +16,17 @@ public class GetDraftSiteSnapshotHandlerTests
     // ── Sad path ──────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task Handle_SnapshotNotFound_ThrowsDomainException()
+    public async Task Handle_SnapshotNotFound_ReturnsDraftConfigNotFoundError()
     {
         _snapshots.GetCurrentDraftBySiteIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
                   .Returns((SiteSnapshot?)null);
 
-        var ex = await Assert.ThrowsAsync<DomainException>(() =>
-            BuildHandler().Handle(
-                new GetDraftAthleteSiteSnapshotQuery(Guid.NewGuid()),
-                CancellationToken.None));
+        var result = await BuildHandler().Handle(
+            new GetDraftAthleteSiteSnapshotQuery(Guid.NewGuid()),
+            CancellationToken.None);
 
-        Assert.Equal(ErrorCodes.DraftConfigNotFound, ex.ErrorCode);
+        Assert.True(result.IsFailure);
+        Assert.Equal(ErrorCodes.DraftConfigNotFound, result.Error!.Code);
     }
 
     // ── Happy path ────────────────────────────────────────────────────────────
@@ -49,9 +49,10 @@ public class GetDraftSiteSnapshotHandlerTests
         var result = await BuildHandler().Handle(
             new GetDraftAthleteSiteSnapshotQuery(siteId), CancellationToken.None);
 
-        Assert.Equal(snapshot.Id,     result.Id);
-        Assert.Equal(siteId,          result.SiteId);
-        Assert.NotNull(result.Layout);
-        Assert.NotNull(result.GlobalSettings);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(snapshot.Id,     result.Value!.Id);
+        Assert.Equal(siteId,          result.Value!.SiteId);
+        Assert.NotNull(result.Value!.Layout);
+        Assert.NotNull(result.Value!.GlobalSettings);
     }
 }

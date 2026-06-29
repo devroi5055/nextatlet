@@ -1,14 +1,18 @@
 using Microsoft.EntityFrameworkCore;
 using NextAtlet.Application.Abstractions.Persistence;
+using NextAtlet.Application.Common.Models;
+using NextAtlet.Application.Contracts.Sites.Request;
 using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.Individual;
 using NextAtlet.Infrastructure.Persistence;
+using NextAtlet.Infrastructure.Persistence.Querying;
 
 namespace NextAtlet.Infrastructure.Persistence.Repositories;
 
 public class SiteRepository : ISiteRepository
 {
     private readonly NextAtletDbContext _context;
+    private readonly SiteListQueryBuilder _listQuery = new();
 
     public SiteRepository(NextAtletDbContext context) => _context = context;
 
@@ -25,6 +29,9 @@ public class SiteRepository : ISiteRepository
             p => p.SiteLogins.Any(l => l.UserId == userId && l.SiteRoleId == ownerRoleId),
             cancellationToken);
     }
+
+    public Task<PagedResult<Site>> GetPagedAsync(SiteListRequest filter, CancellationToken cancellationToken = default)
+        => _listQuery.BuildAsync(_context.Sites.AsNoTracking(), filter, cancellationToken);
 
     public void Add(Site site) => _context.Sites.Add(site);
 }

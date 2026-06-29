@@ -3,6 +3,7 @@ using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Common.DTOs;
 using NextAtlet.Application.Common.Errors;
 using NextAtlet.Application.Common.Extensions;
+using NextAtlet.Application.Contracts.Sites.Response;
 using NextAtlet.Application.Common.Options;
 using NextAtlet.Application.Common.Results;
 using NextAtlet.Application.Common.Time;
@@ -66,7 +67,7 @@ public abstract class IndividualSiteRegistrationHandlerBase
     /// default draft AthleteSiteSnapshot. Returns the tracked profile with NO logins attached — the
     /// caller attaches owner/guardian logins per its flow.
     /// </summary>
-    protected async Task<Result<SiteDto>> CreateIndividualProfileCoreAsync(
+    protected async Task<Result<SiteResponse>> CreateIndividualProfileCoreAsync(
         string slug, string displayName, DateTime dateOfBirth, string defaultLocaleId, ControlModes controlMode, CancellationToken cancellationToken)
     {
         slug = slug.ToLowerInvariant();
@@ -109,7 +110,7 @@ public abstract class IndividualSiteRegistrationHandlerBase
     protected Task<User> GetOrCreateUserAsync(string email, string authProviderId, CancellationToken cancellationToken)
         => _userProvisioner.GetOrCreateAsync(email, authProviderId, cancellationToken);
 
-    protected SiteDto MapToDto(Site site) => new()
+    protected SiteResponse MapToDto(Site site) => new()
     {
         Id = site.Id,
         Slug = site.Slug,
