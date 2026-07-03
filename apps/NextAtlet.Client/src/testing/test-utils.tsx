@@ -1,8 +1,5 @@
-import {
-  render as rtlRender,
-  waitForElementToBeRemoved,
-  screen,
-} from '@testing-library/react';
+import { render as rtlRender, screen } from '@testing-library/react';
+import { waitForElementToBeRemoved } from '@testing-library/dom';
 import userEvent from '@testing-library/user-event';
 import Cookies from 'js-cookie';
 
