@@ -30,16 +30,15 @@ export const SectionHeading = ({
       )}
     >
       {eyebrow && (
-        <p className="mb-4 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.25em] text-brand-gold">
-          {!centered && <span className="h-px w-8 bg-brand-gold" />}
+        <p className="eyebrow">
           {eyebrow}
         </p>
       )}
-      <h2 className="font-display text-3xl font-extrabold uppercase leading-tight tracking-tight text-brand-cream sm:text-4xl lg:text-5xl">
+      <h2 className="h2">
         {title}
       </h2>
       {description && (
-        <p className="mt-5 text-base leading-relaxed text-brand-muted sm:text-lg">
+        <p className="muted">
           {description}
         </p>
       )}

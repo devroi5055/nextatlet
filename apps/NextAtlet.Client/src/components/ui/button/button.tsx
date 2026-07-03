@@ -11,33 +11,29 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default:
-          'bg-primary text-primary-foreground shadow hover:bg-primary/90',
-        destructive:
-          'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90',
-        outline:
-          'border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground',
-        secondary:
-          'bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80',
-        ghost: 'hover:bg-accent hover:text-accent-foreground',
-        link: 'text-primary underline-offset-4 hover:underline',
+        // Primary action = gold (the default CTA across the app).
+        primary: 'btn-primary',
+        destructive: 'btn-destructive',
+        outline: 'btn-outline',
+        outlineGold: 'btn-outline btn-outline-gold',
+        outlineMuted: 'btn-outline btn-outline-muted',
+        secondary: 'btn-secondary',
+        ghost: 'btn-ghost',
+        link: 'link-arrow',
         // Nordic Gold brand variants (dark marketing surfaces). Add new brand styles here so call
         // sites stay declarative — open for extension without touching the markup that uses them.
-        brand: 'bg-brand-gold text-brand-ink shadow hover:bg-brand-gold-soft',
-        brandOutline:
-          'border border-brand-line bg-transparent text-brand-cream hover:bg-brand-surface',
-        brandGhost: 'text-brand-cream hover:bg-brand-surface hover:text-brand-cream',
+
       },
       size: {
-        default: 'h-9 px-4 py-2',
-        sm: 'h-8 rounded-md px-3 text-xs',
-        lg: 'h-10 rounded-md px-8',
-        icon: 'size-9',
+        primary: 'h-9 rounded-full px-4 py-2',
+        sm: 'h-8 rounded-full px-3 text-xs',
+        lg: 'h-10 rounded-full px-8',
+        icon: 'rounded-full size-9',
       },
     },
     defaultVariants: {
-      variant: 'default',
-      size: 'default',
+      variant: 'primary',
+      size: 'primary',
     },
   },
 );
@@ -71,8 +67,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {isLoading && <Spinner size="sm" className="text-current" />}
-        {!isLoading && icon && <span className="mr-2">{icon}</span>}
         <span className="mx-2">{children}</span>
+        {!isLoading && icon && <span className="mr-2">{icon}</span>}
       </Comp>
     );
   },

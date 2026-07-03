@@ -77,18 +77,23 @@ export type AthleteStat = {
   label: string;
 };
 
+export interface AthleteBadge {
+  label: string;          // "Landshold", "Judo", "U18 Talent"
+  variant: 'accent' | 'solid' | 'neutral' | 'status' | 'warn' | 'info';
+  icon?: 'flag' | 'medal' | 'shield' | 'star'; // maps to a lucide icon in the card
+}
+
 /** The sample athlete profile rendered in the hero / how-it-works cards. */
-export type AthleteShowcase = {
+export interface AthleteShowcase {
   name: string;
   club: string;
+  sport: string;              // new — "Judo"
   weightClass: string;
   ageClass: string;
   slug: string;
-  stats: AthleteStat[];
+  nationalTeam?: boolean;     // new
+  stats: { value: string; label: string }[];
+  badges?: AthleteBadge[];    // new
   tags: string[];
-  notification?: {
-    title: string;
-    brand: string;
-    time: string;
-  };
-};
+  notification: { title: string; brand: string; time: string };
+}

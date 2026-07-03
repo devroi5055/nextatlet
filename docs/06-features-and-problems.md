@@ -2,6 +2,8 @@
 
 **Audience:** developers — this is the *why* behind each feature, so implementation decisions stay anchored to the actual problem. Not marketing copy.
 
+> This is a problem/rationale doc covering the full product vision; many features below (photography, mentoring, club showcases, perk layer, sponsor reach) are **designed but not yet built** — see the status note in `CLAUDE.md` and the per-doc status banners for what exists today.
+
 ---
 
 ## 1. Why NextAtlet exists at all

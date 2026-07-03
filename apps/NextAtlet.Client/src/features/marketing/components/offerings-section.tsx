@@ -11,22 +11,22 @@ const OfferingCard = ({ offering }: { offering: Offering }) => {
   const Icon = offering.icon;
 
   return (
-    <article className="group flex flex-col rounded-2xl border border-brand-line bg-brand-ink-soft p-8 transition-colors hover:border-brand-gold/50">
-      <span className="font-display text-3xl font-bold text-brand-line">
+    <article className="group flex flex-col rounded-2xl border border-border bg-card p-8 transition-colors hover:border-primary-gold/50">
+      <span className="font-display text-3xl font-bold text-border">
         {offering.ordinal}
       </span>
-      <span className="mt-6 flex size-11 items-center justify-center rounded-xl bg-brand-gold/15 text-brand-gold">
+      <span className="mt-6 flex size-11 items-center justify-center rounded-xl bg-primary-gold/15 text-primary-gold">
         <Icon className="size-5" />
       </span>
-      <h3 className="mt-6 font-display text-lg font-bold uppercase tracking-wide text-brand-cream">
+      <h3 className="mt-6 font-display text-lg font-bold uppercase tracking-wide text-foreground">
         {offering.title}
       </h3>
-      <p className="mt-3 flex-1 text-sm leading-relaxed text-brand-muted">
+      <p className="mt-3 flex-1 text-sm leading-relaxed text-muted-foreground">
         {offering.description}
       </p>
       <NextLink
         href={offering.link.href}
-        className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-brand-gold transition-colors hover:text-brand-gold-soft"
+        className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-primary-gold transition-colors hover:text-gold-400"
       >
         {offering.link.label}
         <ArrowRight className="size-4" />
@@ -38,7 +38,7 @@ const OfferingCard = ({ offering }: { offering: Offering }) => {
 /** "What we offer" — the three headline services. */
 export const OfferingsSection = () => {
   return (
-    <Section id="platform" className="bg-brand-ink">
+    <Section id="platform" className="bg-background">
       <SectionHeading
         eyebrow="Hvad vi tilbyder"
         title="Alt hvad en ung atlet behøver"

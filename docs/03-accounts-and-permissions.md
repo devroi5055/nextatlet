@@ -57,21 +57,22 @@ The guardian must be authenticated for consent to be recorded (`authRequired = t
 
 `returnUrl` must be validated to be a local path before use (open-redirect protection).
 
-### Guardian permission configuration
+### Permission model — `ControlMode` + `PermissionResolver`
 
-`ProfileLogin.Permissions` (jsonb) configures what a guardian may do, so families can choose how much autonomy the young athlete has:
+What a login may do is **computed**, not stored per-action and not expressed as Specifications. The domain `PermissionResolver.Resolve(SiteLogin, IndividualProfile)` returns a `SitePermissions` preset from the profile's **`ControlMode`** and the login's role:
 
-```jsonc
-{
-  "canEditContent": true,
-  "canPublish": true,        // typically guardian-only for minors
-  "canApproveChanges": true, // approval authority (see §3)
-  "canManageMedia": true,
-  "canManageMemberships": true
-}
+```csharp
+record SitePermissions(
+  bool CanEditContent, bool CanPublish, bool CanApproveChanges,
+  bool CanManageMedia, bool CanManageMemberships);
+// presets: None · ReadOnly · EditOnly (shared) · FullControl
 ```
 
-Recommended defaults for a minor: guardian holds `canPublish` and `canApproveChanges`; the young athlete (`AthleteOwner`) may edit/propose but not publish. Families can loosen this as the athlete matures.
+- `ControlMode` (`athlete_controlled` | `guardian_controlled` | `*_shared`) decides **who is the controller** → `FullControl`; the other party gets `ReadOnly`, or `EditOnly` if a `*_shared` (collaboration) mode is on.
+- The controller toggles collaboration via the `collaboration` endpoint and hands over via `transfer-control` (athlete must be ≥13 to receive control).
+- Optional per-login overrides can be stored in `SiteLogin.Permissions` (the `LoginPermissions` value object: `MinorCanEditDraft`, `MinorCanPublish`, `MinorCanApproveChanges`, `MinorCanManageMedia`, `MinorCanManageMemberships`) for families that want to widen a minor's autonomy.
+
+Default for a minor (guardian-created → `guardian_controlled`): guardian holds full control incl. publish/approve; the young athlete (`owner` login) is read-only until control is shared or transferred. Families can loosen this as the athlete matures.
 
 > The hard line is **18**. Under 18 → guardian-gated. 18+ → athlete self-approves. The build treats 18 as the boundary and does not implement regional variants now.
 
@@ -96,11 +97,13 @@ Clubs (and other orgs) have multiple staff logins via the shared `SiteLogin` tab
 | `Coach` | submit athlete updates / results |
 | `Photographer` | upload media, no other control |
 
-Authorization should be expressed as composable **Specifications** (`07`) — e.g. `CanManageBilling`, `CanEditClubPage` — not scattered role checks.
+Organization-side authorization is **not yet built** (no org-page editing endpoints exist). When it lands it should reuse the same chokepoint idea as the individual side (a resolver returning a capability set), combined with natural "caller holds an active org login" checks — not scattered role `if`s. (The earlier docs called for a Specification pattern; the implemented individual side uses `PermissionResolver` instead — see §1.)
 
 ---
 
 ## 3. Change-request & approval workflow
+
+> **Status: not built.** §3b (club-proposed changes) describes the intended design. The `ChangeRequest` entity is a scaffold with no create/approve/reject commands and a shape that diverges from the design (`02` §5b). §3a self-editing is also gated on the editor write path, which is currently disabled (`02` §3).
 
 Two distinct workflows depending on who edits what.
 
@@ -110,8 +113,8 @@ Determined by age + guardian config:
 
 | Profile is | Who can edit/propose | Who approves/publishes |
 |------------|----------------------|------------------------|
-| **Minor (<18)** | AthleteOwner (propose), Guardian (edit), Club (propose) | **Guardian approves everything** |
-| **Adult (18+)** | AthleteOwner | **Athlete approves all changes**; club suggestions optional |
+| **Minor (<18)** | Owner (propose), Guardian (edit), Club (propose) | **Guardian approves everything** |
+| **Adult (18+)** | Owner | **Athlete approves all changes**; club suggestions optional |
 
 ### 3b. Club-proposed changes to an affiliated athlete
 
@@ -175,7 +178,7 @@ A single server-side projection (e.g. `ToPublicContract(profile)`) should be the
 
 ## 5. Resource ownership rules (summary)
 
-- An athlete login may only act on its own profile (scoped by `ProfileLogin`).
-- A club login may only act on its own organization (scoped by `OrganizationLogin`) and may only **propose** to affiliated athletes.
+- An athlete login may only act on its own site (scoped by `SiteLogin` + `PermissionResolver`).
+- A club login may only act on its own organization (scoped by its org `SiteLogin`) and may only **propose** to affiliated athletes.
 - Server-managed entities (National Teams at launch) are writable only by **NextAtlet internal admins**.
-- All of the above expressed as Specifications, combined with tier/perk capability checks from `04`.
+- All of the above enforced via `PermissionResolver` + natural "caller holds an active login" checks in handlers, combined with the (planned) tier/perk capability checks from `04`.

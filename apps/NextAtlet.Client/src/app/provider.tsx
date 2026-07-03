@@ -1,5 +1,6 @@
 'use client';
 
+import { Auth0Provider } from '@auth0/nextjs-auth0';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import * as React from 'react';
@@ -23,11 +24,13 @@ export const AppProvider = ({ children }: AppProviderProps) => {
 
   return (
     <ErrorBoundary FallbackComponent={MainErrorFallback}>
-      <QueryClientProvider client={queryClient}>
-        {process.env.DEV && <ReactQueryDevtools />}
-        <Notifications />
-        {children}
-      </QueryClientProvider>
+      <Auth0Provider>
+        <QueryClientProvider client={queryClient}>
+          {process.env.DEV && <ReactQueryDevtools />}
+          <Notifications />
+          {children}
+        </QueryClientProvider>
+      </Auth0Provider>
     </ErrorBoundary>
   );
 };

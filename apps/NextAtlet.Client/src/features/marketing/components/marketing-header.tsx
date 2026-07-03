@@ -17,7 +17,7 @@ export const MarketingHeader = () => {
   const mobileMenu = useDisclosure();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-brand-line/60 bg-brand-ink/80 backdrop-blur">
+    <header className="sticky top-0 z-50 border border-border bg-secondary backdrop-blur">
       <Container className="flex h-16 items-center justify-between">
         <BrandWordmark />
 
@@ -26,16 +26,29 @@ export const MarketingHeader = () => {
             <NextLink
               key={item.label}
               href={item.href}
-              className="text-sm font-medium text-brand-muted transition-colors hover:text-brand-cream"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
               {item.label}
             </NextLink>
           ))}
         </nav>
 
-        <div className="hidden md:block">
+        <div className="hidden md:flex items-center gap-4">
+          <div className="seg" role="group" aria-label="Vælg sprog">
+            <button className="active">DA</button>
+            <button>EN</button>
+          </div>
+
+          <NextLink href={getStartedCta.href} onClick={mobileMenu.close}>
+            <Button variant="ghost" className="w-full">
+              Login
+            </Button>
+          </NextLink>
+
           <NextLink href={getStartedCta.href}>
-            <Button variant="brand">{getStartedCta.label}</Button>
+            <Button variant="primary">
+              {getStartedCta.label}
+            </Button>
           </NextLink>
         </div>
 
@@ -44,7 +57,7 @@ export const MarketingHeader = () => {
           aria-label="Åbn menu"
           aria-expanded={mobileMenu.isOpen}
           onClick={mobileMenu.toggle}
-          className="text-brand-cream md:hidden"
+          className="text-foreground md:hidden"
         >
           {mobileMenu.isOpen ? (
             <X className="size-6" />
@@ -56,7 +69,7 @@ export const MarketingHeader = () => {
 
       <div
         className={cn(
-          'border-t border-brand-line/60 bg-brand-ink md:hidden',
+          'border-t border-border/60 bg-background md:hidden',
           mobileMenu.isOpen ? 'block' : 'hidden',
         )}
       >
@@ -66,13 +79,13 @@ export const MarketingHeader = () => {
               key={item.label}
               href={item.href}
               onClick={mobileMenu.close}
-              className="text-sm font-medium text-brand-muted transition-colors hover:text-brand-cream"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
               {item.label}
             </NextLink>
           ))}
           <NextLink href={getStartedCta.href} onClick={mobileMenu.close}>
-            <Button variant="brand" className="w-full">
+            <Button variant="primary" className="w-full">
               {getStartedCta.label}
             </Button>
           </NextLink>

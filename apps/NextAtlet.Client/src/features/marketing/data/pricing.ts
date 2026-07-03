@@ -13,7 +13,7 @@ export const pricingTiers: PricingTier[] = [
     name: 'Starter',
     price: '0',
     cadence: 'Gratis for evigt',
-    cta: { label: 'Opret gratis profil', href: paths.auth.register.getHref() },
+    cta: { label: 'Opret gratis profil', href: paths.auth.register.getHref(paths.app.dashboard.getHref()) },
     features: [
       { label: 'Automatisk genereret profil', included: true },
       { label: 'Søgbar på nextatlet.dk', included: true },
@@ -32,7 +32,7 @@ export const pricingTiers: PricingTier[] = [
     cadence: 'pr. måned · ingen binding',
     highlighted: true,
     badge: 'Mest populær',
-    cta: { label: 'Kom i gang', href: paths.auth.register.getHref() },
+    cta: { label: 'Kom i gang', href: paths.auth.register.getHref(paths.app.dashboard.getHref()) },
     features: [
       { label: 'Alt i Starter', included: true },
       { label: 'Eget domæne (marcus.nextatlet.dk)', included: true },
@@ -49,7 +49,7 @@ export const pricingTiers: PricingTier[] = [
     name: 'Elite',
     price: '349',
     cadence: 'pr. måned · ingen binding',
-    cta: { label: 'Start Elite', href: paths.auth.register.getHref() },
+    cta: { label: 'Start Elite', href: paths.auth.register.getHref(paths.app.dashboard.getHref()) },
     features: [
       { label: 'Alt i Pro', included: true },
       { label: 'Eget domæne (marcus.dk)', included: true },

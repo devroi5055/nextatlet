@@ -4,7 +4,9 @@
 
 Relational core (EF Core over PostgreSQL) with **structured columns for queryable fields** and **`jsonb` columns for flexible content payloads**. This hybrid avoids over-normalizing every section into its own table while keeping anything you filter/join on as a real column.
 
-> Convention: all PKs are `uuid`. All tables carry `CreatedUtc` / `UpdatedUtc` (omitted below for brevity). Billing/money is modeled in §9.
+> Convention: all PKs are `uuid`. All tables carry `CreatedUtc` / `UpdatedUtc` (omitted below for brevity). Billing/money is modeled in §9. Enumeration columns are stored as **string IDs** (`*Id`, e.g. `ControlModeId`), each backed by a value object carrying a bilingual `LocalizedText`.
+
+> **Implementation status.** Built today: `Site`, `IndividualProfile`, `OrganizationProfile`, `SiteSnapshot`, `SiteLogin`, `User`, `Theme`, `ActionToken`, `GuardianConsent`, `Club`/`ClubOfficial`, and `MediaAsset` (schema only). **Scaffold entities with no handlers and a schema that diverges from the design below:** `Membership` (§5), `ChangeRequest` (§5b). **Not built at all:** the entire billing model (§9 — `Plan`/`PlanPrice`/`Subscription`/`Purchase`/`PlanCapability`) and `ClubPageConfig` (§4). Per-row notes flag this inline.
 
 ---
 
@@ -137,45 +139,47 @@ The GDPR Art. 8 audit record. Immutable (`CreatedOnly` — only inserted, never 
 ## 3. Site configuration (the auto-generation engine)
 
 ### `SiteSnapshot`
-Two snapshot rows per site: one referenced by `Site.CurrentDraftSnapshotId`, one by `Site.CurrentPublishedSnapshotId`. (For rollback/history on higher tiers, add a `SiteSnapshotHistory` table — see open questions in `07`.)
+**Immutable** (`CreatedOnly` — written once, never updated). Two snapshot rows per site: one referenced by `Site.CurrentDraftSnapshotId`, one by `Site.CurrentPublishedSnapshotId`. (For rollback/history on higher tiers, add a `SiteSnapshotHistory` table — see open questions in `07`.)
 
 | Column | Type | Notes |
 |--------|------|-------|
 | Id | uuid PK | |
 | SiteId | uuid FK | |
 | ThemeId | uuid FK | |
-| ThemeVersion | int | pin to a theme version for render stability |
-| Layout | jsonb | ordered sections + per-section data (§4) |
-| GlobalSettings | jsonb | colors/fonts/accents — only slots the effective capability allows |
-| PublishedUtc | timestamp null | |
+| Layout | jsonb | ordered sections + per-section data (§4); `SiteLayout` value object |
+| GlobalSettings | jsonb null | accent color / font family — only slots the effective capability allows |
+| PublishedUtc | timestamp null | non-null on the published snapshot |
 
 > Draft vs. Published state is implicit: which FK on `Site` points at this snapshot determines its role. There is no `State` column on `SiteSnapshot` itself.
+>
+> **No `Version` / `ThemeVersion` column.** The optimistic-concurrency `Version` the earlier draft described was removed when snapshots became immutable; the draft-edit endpoint that relied on it (`PUT .../config/draft`, `ExpectedVersion`) is currently **disabled** in the controller pending a rebuild of the write path.
 
 ### `Theme`
 
 | Column | Type | Notes |
 |--------|------|-------|
 | Id | uuid PK | |
-| Name | varchar | |
-| Version | int | |
-| MinimumCapability | jsonb | the `FeatureKey`(s) that unlock it — same capability vocabulary as §9.3 (`04`) |
-| Manifest | jsonb | supported section types, color/font slots, constraints — the render contract (`01` §4) |
-| PreviewImageUrl | varchar | for the theme picker |
-| IsActive | bool | |
+| Name | varchar | required, init-only |
+| Manifest | jsonb | `ThemeManifest`: supported section types, color/font slots, constraints — the render contract (`01` §4); immutable (init-only) |
+| PreviewImageUrl | varchar null | for the theme picker |
+| RetiredUtc | timestamp null | `IRetirable`; `IsRetired` computed. Replaces the planned `IsActive` flag |
 
-### `MediaAsset`
-Bytes live in blob/CDN; the DB holds the reference. **Owned by the athlete** even when capture was funded by a club (`04`).
+> The earlier `Version` and `MinimumCapability` columns are **not** in the entity. A theme is retired via `RetiredUtc` (soft), and capability-gating (`MinimumCapability`) lives inside the `ThemeManifest` value object rather than as a top-level column. Theme-version pinning on snapshots was also dropped (see `SiteSnapshot`).
+
+### `MediaAsset`  *(schema only — no upload pipeline yet)*
+Bytes live in blob/CDN; the DB holds the reference. **Owned by the athlete** even when capture was funded by a club (`04`). Owner is **XOR**: an individual site **or** an organization, never both, never neither (DB CHECK constraint).
 
 | Column | Type | Notes |
 |--------|------|-------|
 | Id | uuid PK | |
-| AthleteProfileId | uuid FK | the athlete the media belongs to |
-| Type | enum | `Image` / `Video` |
-| Origin | enum | `SelfUpload` / `AdminUpload` / `ClubFundedShoot` |
+| AthleteSiteId | uuid FK **null** | the individual site the media belongs to (XOR) |
+| OrganizationId | uuid FK **null** | the org that owns it (XOR; org nav not wired yet) |
+| TypeId | enum id | `image` / `video` |
+| OriginId | enum id | `self_upload` / `admin_upload` / `club_funded_shoot` / `organization_upload` |
 | IsClubBranding | bool | if true, may revert to club on membership end (the narrow exception) |
-| StorageKey | varchar | content-hashed blob/CDN key |
-| Width / Height | int | responsive layout |
-| AltText | varchar | accessibility + SEO |
+| StorageKey | varchar | content-hashed blob/CDN key; immutable |
+| Width / Height | int null | responsive layout |
+| AltText | varchar null | accessibility + SEO |
 
 > Default: media stays with the athlete on club exit. Only `IsClubBranding = true` assets are club-retained. Capture funded ≠ identity owned.
 
@@ -224,20 +228,22 @@ Mirrors the `SiteSnapshot` draft/published engine exactly (same columns), with o
 
 Generic, time-bounded, many-to-many over time. Replaces any club-specific link table.
 
-### `Membership`
+> **Status: scaffold entity, no handlers.** `Membership` exists but there is **no `AffiliateAthleteCommand`** and no affiliation/slot logic yet. The current entity also diverges from the target design below — it has `IndividualProfileId`, `OrganizationId`, `RoleId`, `EndDate`, `statusId`, `OccupiesSlot` (no `StartDate`; FKs to the profile/org, not role-based `Site` FKs). The table below is the **intended** shape.
+
+### `Membership` *(target design)*
 
 | Column | Type | Notes |
 |--------|------|-------|
 | Id | uuid PK | |
-| IndividualSiteId | uuid FK → Site | the athlete's `Site` |
-| OrganizationSiteId | uuid FK → Site | the org's `Site` |
+| IndividualSiteId | uuid FK → Site | the athlete's `Site` *(today: `IndividualProfileId`)* |
+| OrganizationSiteId | uuid FK → Site | the org's `Site` *(today: `OrganizationId`)* |
 | Role | varchar | athlete's role within the org (e.g. `competitor`, `member`) |
-| StartDate | date | |
+| StartDate | date | *(not on the current entity)* |
 | EndDate | date null | null = ongoing |
 | Status | enum | `Active` / `Inactive` |
 | OccupiesSlot | bool | true when consuming one of the org's athlete slots (`04`) |
 
-> FK names are role-based (`IndividualSite` / `OrganizationSite`), not parent/child — there is no false ownership hierarchy; an athlete is not "owned" by a club. An application-layer guard in `AffiliateAthleteCommand` enforces that each FK targets the correct `SiteType`; the schema does not enforce this as a CHECK constraint.
+> Intended: FK names are role-based (`IndividualSite` / `OrganizationSite`), not parent/child — there is no false ownership hierarchy; an athlete is not "owned" by a club. An application-layer guard in `AffiliateAthleteCommand` would enforce that each FK targets the correct `SiteType`; the schema does not enforce this as a CHECK constraint.
 
 **Derived "primary" contexts** (computed, not stored unless you cache them):
 
@@ -255,7 +261,9 @@ Generic, time-bounded, many-to-many over time. Replaces any club-specific link t
 
 A club may **propose** edits to an affiliated athlete's profile but can never write to it directly. Each proposal is a `ChangeRequest` that lives **outside** both the athlete's draft and published `SiteSnapshot` until the profile side (guardian for a minor, athlete for an adult) resolves it. The full workflow and the two-gate model (approve → draft, then a separate publish) are in `03` §3b.
 
-### `ChangeRequest`
+> **Status: scaffold entity, no workflow.** The `ChangeRequest` entity exists but there are **no create/approve/reject commands**, and its current shape **diverges** from the design below: it has `TargetProfileId`, `ProposingOrganizationId`, `ProposedByUserId`, `ProposedLayout` (a whole `SiteLayout`, not per-section), `Theme`, `ThemeVersion`, `PreviewImageUrl`, and a bare `IsActive` flag — **no `Status` / `ResolvedByUserId` / `ResolvedUtc`** (the `ChangeRequestStatus` enum exists but isn't wired to the entity). The table below is the **intended** shape.
+
+### `ChangeRequest` *(target design)*
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -263,12 +271,12 @@ A club may **propose** edits to an affiliated athlete's profile but can never wr
 | TargetProfileId | uuid FK | the `IndividualProfile` the change is proposed for |
 | ProposingOrganizationId | uuid FK | the org that proposed it |
 | ProposedByUserId | uuid FK | the specific club user — audit trail |
-| ProposedSections | jsonb | **snapshot** of the affected section(s) in proposed form (not a field-level patch) |
-| Status | enum | `Pending` / `Approved` / `Rejected` / `Withdrawn` |
-| ResolvedByUserId | uuid FK null | the guardian/athlete who approved or rejected |
-| ResolvedUtc | timestamp null | |
+| ProposedSections | jsonb | **snapshot** of the affected section(s) *(today the entity stores a full `ProposedLayout`)* |
+| Status | enum | `Pending` / `Approved` / `Rejected` / `Withdrawn` *(enum exists; not yet on the entity)* |
+| ResolvedByUserId | uuid FK null | the guardian/athlete who approved or rejected *(not yet on the entity)* |
+| ResolvedUtc | timestamp null | *(not yet on the entity)* |
 
-> **Snapshot, not patch:** storing the proposed section(s) outright lets the approver see exactly what they are accepting; the "before" is the current draft at review time, so no separate before-snapshot is stored (it would only go stale). On **approval**, `ProposedSections` is merged into the athlete's **draft** — never straight to published. Publishing remains the athlete/guardian's separate action.
+> **Snapshot, not patch:** storing the proposed section(s) outright lets the approver see exactly what they are accepting; the "before" is the current draft at review time, so no separate before-snapshot is stored (it would only go stale). On **approval**, the proposal is merged into the athlete's **draft** — never straight to published. Publishing remains the athlete/guardian's separate action.
 >
 > `Withdrawn` lets a club retract a still-`Pending` proposal. `ProposedByUserId` / `ResolvedByUserId` record *which person* on each side acted — traceability matters for a workflow touching minors' public presence.
 
@@ -300,7 +308,7 @@ Bake locale in now rather than retrofit. Two viable shapes — pick one and appl
 - **Per-field locale maps** inside section `data`: `{ "headline": { "da": "...", "en": "..." } }`. Flexible, more client logic.
 - **Locale-scoped section variants**: a `locale` key per section. Simpler rendering, more duplication.
 
-Recommendation: **per-field locale maps** for short text fields; fall back to `AthleteProfile.DefaultLocale` when a translation is absent.
+Recommendation: **per-field locale maps** for short text fields; fall back to `Site.DefaultLocaleId` when a translation is absent. (Enum titles already use the `LocalizedText` value object — `Da`/`En` with a `Get(locale, fallback)` resolver — but note these `LocalizedText` objects are currently returned raw in read contracts via `EnumerationDto`, not resolved server-side.)
 
 ---
 
@@ -309,19 +317,21 @@ Recommendation: **per-field locale maps** for short text fields; fall back to `A
 - Every save validates the `Layout` payload against each section type's schema **and** against the profile's **effective capability** (own plan + active club perks). Never trust client-claimed tier.
 - Free-text fields are **sanitized** before publish (public XSS surface).
 - Slug uniqueness + reserved words (`admin`, `api`, `about`, …) for both profiles and organizations.
-- Minor/adult status is recomputed from `DateOfBirth` (never read from a stored flag); a minor `AthleteProfile` is created **atomically** with ≥1 `Guardian` `ProfileLogin` (same transaction, never after). The guardian may be `Pending` at creation; **publishing** a minor profile requires an *active* guardian holding `canPublish` (`03`).
-- An organization cannot affiliate more slot-occupying athletes than its (denormalized) `AthleteSlotCount`.
-- Optimistic concurrency via `Version` on configs.
-- Club showcase resolution must read **published + public** athlete data only; a `Private`/unpublished athlete renders as a placeholder.
-- **Change requests (§5b):** a `ChangeRequest` may only be created by a user with an active `OrganizationLogin` on the `ProposingOrganizationId`, and only against an athlete the org currently has an active `Membership` with. On `Approved`, `ProposedSections` is merged into the target's **draft** only — never the published config. Only the resolving authority (guardian for a minor, athlete for an adult, per `03` §3) may set `Approved`/`Rejected`; only the proposing org may set `Withdrawn`, and only while `Pending`.
-- **Billing (§9):** `Subscription` and `Purchase` each reference **exactly one** subscriber — `AthleteProfileId` XOR `OrganizationId` (CHECK constraint). `Subscription.Status` and period fields are written only by the `BillingService` from provider webhooks, never inferred client-side. `Subscription.PlanVersion` is pinned at create time and never mutated in place.
+- Minor/adult status is recomputed from `DateOfBirth` (never read from a stored flag); a minor `IndividualProfile` always ends up with ≥1 `guardian` `SiteLogin` created **atomically** with the profile (guardian-creates-child flow), or — in the self-minor flow — a consent `ActionToken` is issued in the same transaction and the guardian login is created only on acceptance (there is **no** `Pending` login). **Publishing** a minor profile requires `ConsentStateId != pending_guardian_consent` (`03`).
+- *(planned)* An organization cannot affiliate more slot-occupying athletes than its (denormalized) `AthleteSlotCount`.
+- *(removed)* The optimistic-concurrency `Version` on snapshots no longer exists — `SiteSnapshot` is immutable (§3).
+- *(planned, public render)* Club showcase resolution must read **published + public** athlete data only; a `Private`/unpublished athlete renders as a placeholder.
+- *(planned — §5b is a scaffold)* A `ChangeRequest` may only be created by a user with an active org `SiteLogin` (`club_admin`/`club_editor`) on the `ProposingOrganizationId`, and only against an athlete the org currently has an active `Membership` with. On `Approved`, the proposal is merged into the target's **draft** only. Only the resolving authority (guardian for a minor, athlete for an adult, per `03` §3) may approve/reject; only the proposing org may withdraw, while still pending.
+- *(planned — §9 not built)* `Subscription` and `Purchase` each reference **exactly one** subscriber — individual profile XOR organization profile (CHECK constraint). `Subscription.Status` and period fields are written only by `BillingService` from provider webhooks, never inferred client-side. `Subscription.PlanVersion` is pinned at create time and never mutated in place.
 - **Catalog edits never auto-apply to existing subscribers (§9.1):** `PlanPrice` is **append-only** (change a price by adding a new variant + retiring the old via `IsActive`), and `Plan` is edited **in place** with capabilities grandfathered via the pinned `Subscription.PlanVersion` + the code-defined `(Key, Version)` capability history. Reducing a limit/capability on an in-use plan is a deliberate migration, not a routine edit.
 
 ---
 
 ## 9. Billing, Subscriptions & Plans
 
-> **Source-of-truth rule:** `AthleteProfile.SelfTier` and `Organization.SubscriptionTier` are **denormalized "current tier" read fields** for cheap lookups (the `PerkResolver` reads them). They are **derived, not authoritative** — updated whenever the account's active `Subscription` changes. Authoritative billing state lives in the tables below.
+> **Status: none of §9 is built.** There are no `Plan` / `PlanPrice` / `Subscription` / `Purchase` / `PlanCapability` tables, no Stripe integration, and no `BillingService`. What exists today is the `AthleteTier` / `OrganizationTier` **enumerations** and the denormalized `IndividualProfile.SelfTierId` / `OrganizationProfile.OrganizationTierId` string-id fields (the latter set at org registration from `PlanTierId`). Everything below is the intended billing design.
+
+> **Source-of-truth rule (intended):** `IndividualProfile.SelfTierId` and `OrganizationProfile.OrganizationTierId` are **denormalized "current tier" read fields** for cheap lookups (the planned `PerkResolver` would read them). They are **derived, not authoritative** — to be updated whenever the account's active `Subscription` changes. Authoritative billing state would live in the tables below.
 
 ### 9.1 `Plan` — the tier catalog (identity only, no money)
 
@@ -411,8 +421,8 @@ Covers the one-time items the tier model promises (photoshoot bookings, video ed
 | Column | Type | Notes |
 |--------|------|-------|
 | Id | uuid PK | |
-| AthleteProfileId | uuid FK null | exactly one non-null (CHECK) |
-| OrganizationId | uuid FK null | |
+| IndividualProfileId | uuid FK null | exactly one non-null (CHECK) |
+| OrganizationProfileId | uuid FK null | |
 | ItemType | enum | `PhotoshootBooking`, `VideoEdit`, … |
 | Status | enum | `Pending` / `Paid` / `Refunded` |
 | Amount | decimal | |
@@ -430,8 +440,8 @@ Plan (identity, versioned)
             │ subscriber = athlete OR org (XOR)
             │ Stripe* refs; status driven by webhooks
             ▼
-        sets (denormalized) ──► AthleteProfile.SelfTier
-                                 Organization.SubscriptionTier  (+ AthleteSlotCount)
+        sets (denormalized) ──► IndividualProfile.SelfTierId
+                                 OrganizationProfile.OrganizationTierId  (+ AthleteSlotCount)
 
 PerkResolver reads self-plan capabilities and active-club-plan capabilities,
 then max() per FeatureKey  →  EffectiveCapability   (§6, `04` §1, `06`)

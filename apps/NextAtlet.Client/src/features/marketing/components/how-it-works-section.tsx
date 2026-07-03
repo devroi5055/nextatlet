@@ -8,14 +8,14 @@ import { SectionHeading } from './section-heading';
 
 const StepRow = ({ step }: { step: Step }) => (
   <li className="flex gap-5">
-    <span className="font-display text-sm font-bold text-brand-gold">
+    <span className="font-display text-sm font-bold text-primary-gold">
       {step.ordinal}
     </span>
     <div>
-      <h3 className="font-display text-base font-bold text-brand-cream">
+      <h3 className="font-display text-base font-bold text-foreground">
         {step.title}
       </h3>
-      <p className="mt-2 text-sm leading-relaxed text-brand-muted">
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
         {step.description}
       </p>
     </div>
@@ -25,7 +25,7 @@ const StepRow = ({ step }: { step: Step }) => (
 /** "How it works" timeline alongside the live profile preview. */
 export const HowItWorksSection = () => {
   return (
-    <Section className="bg-brand-ink-soft">
+    <Section className="bg-card">
       <div className="grid gap-12 lg:grid-cols-2 lg:gap-16">
         <div>
           <SectionHeading

@@ -9,7 +9,7 @@ import { MarketingHeader } from './marketing-header';
  */
 export const LandingPage = () => {
   return (
-    <div className="min-h-screen bg-brand-ink font-display text-brand-cream antialiased">
+    <div className="min-h-screen bg-background font-display text-foreground antialiased color">
       <MarketingHeader />
       <main>
         {landingSections.map((Section, index) => (

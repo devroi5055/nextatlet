@@ -11,7 +11,7 @@
 | **Strategy** | section validation & rendering contract | one strategy per section type; add a type → add a strategy, no `switch` sprawl |
 | **Factory / Registry** | `SectionTypeRegistry`, `ActionTokenStrategyRegistry` | maps `"hero"` → schema + validator + (frontend) component contract; same idea for club section types. `ActionTokenStrategyRegistry` maps `ActionTokenType` → `IActionTokenStrategy` — same dict-keyed pattern; strategies are Scoped (touch repos/UoW). |
 | **`IActionTokenStrategy`** | ActionToken accept dispatch | Interface: `ActionTokenType` (which kind this handles), `authRequired: bool` (enforced by the handler before dispatch), `ExecuteAsync(token, actor, ct): Task<Result>` (type-specific side effect). Implementations: `ConsentStrategy` (authRequired = true, records `GuardianConsent`), `InvitationStrategy` (authRequired = true, creates Active `SiteLogin`), `OrgEmailVerificationStrategy` (authRequired = false, marks org Verified). |
-| **Specification** | tier/perk gating, ownership, role checks | composable, declarative rules (`CanEditField`, `CanUseTheme`, `CanManageBilling`, `CanProposeToAthlete`) instead of scattered `if`s |
+| **Permission resolver** *(built — replaces the originally-planned Specification pattern)* | profile ownership / edit / publish authority | `PermissionResolver.Resolve(SiteLogin, IndividualProfile) → SitePermissions` derives a capability preset from `ControlMode` + role; handlers add natural "caller holds an active login" checks. No `CanEditField`/`CanManageBilling` Specification classes exist. Tier/perk gating is deferred with billing. |
 | **CQRS via MediatR** | application commands/queries | `IRequest`/`IRequestHandler` dispatched via `ISender`; handlers orchestrate repositories + services; thin controllers; pipeline behaviors for cross-cutting concerns |
 | **Repository + Unit of Work** | all DB access | handlers depend on repository interfaces (in Application); EF implementations + `EfUnitOfWork` in Infrastructure; one `SaveChangesAsync` per request, commit timing owned by the handler |
 | **Read/write path split** | editor (write) vs public (read) paths | separate, sanitized, cacheable public read model from the editable model (`01` §3) — orthogonal to the MediatR dispatch mechanism |
@@ -22,7 +22,7 @@
 | **Dedicated service: `PerkResolver`** | effective-capability resolution | single place that computes `max(SelfTier, ActiveClubPerks)` per feature (`02` §6, `04`) — never persist conflated state |
 | **Dedicated service: `PublicContractProjector`** | the only path athlete data leaves to public/club | `ToPublicContract(profile)` — enforces the privacy boundary in one place (`03` §4) |
 
-> Resist over-engineering. No event sourcing, no microservice-per-concept, no full DDD aggregates at this stage. **Strategy (sections) + Specification (gating) + CQRS via MediatR over repositories + the read/write path split + two focused services (PerkResolver, PublicContractProjector)** give ~90% of the flexibility at a fraction of the cost. Repositories are intention-revealing per aggregate (`GetBySlugAsync`, `GetDraftByProfileIdAsync`), **not** a generic `IRepository<T>` framework.
+> Resist over-engineering. No event sourcing, no microservice-per-concept, no full DDD aggregates at this stage. **Strategy (action tokens / sections) + a `PermissionResolver` for authz + CQRS via MediatR over repositories + the read/write path split** carry the system today; the two focused services (`PerkResolver`, `PublicContractProjector`) are planned with billing and the public render path. Repositories are intention-revealing per aggregate (`GetBySlugAsync`, `GetCurrentDraftBySiteIdAsync`), **not** a generic `IRepository<T>` framework.
 
 ### Layering & dependency direction
 
@@ -50,7 +50,7 @@ Clean Architecture: abstractions (MediatR handlers, repository interfaces, `IUni
 
 **Frontend coherence:** both `DomainException` and `Result.Failure` produce the same `ApiError` JSON at the boundary (via `ResultFilter` and `GlobalExceptionHandler`), so there is no frontend-coherence argument for preferring one over the other for single-rejection flows. Prefer `DomainException` for business rejections that propagate — no threading needed.
 
-One `ErrorCodes` source of truth; one `ApiError` response shape (`01`). A build-time test asserts every code has both `da` and `en` translations (no raw key ever reaches a user). Full plan: `error-handling-implementation-plan.md`.
+One `ErrorCodes` source of truth (codes carry their HTTP status: 400/403/404/409/422); one `ApiError` response shape (`01`). The frontend resolves codes to `da`/`en` text. Mechanisms: a global `ResultFilter` (unwraps `Result<T>`) + a `GlobalExceptionHandler` (`DomainException` + unhandled).
 
 ### Authentication — dual-scheme (cookie + bearer)
 
@@ -60,11 +60,11 @@ Auth0 (OIDC) is the identity provider. The API registers **two authentication sc
 - **Cookie** — the production/Next.js session (httpOnly, `SameSite=Strict`).
 - **`smart`** `AddPolicyScheme` — `ForwardDefaultSelector` routes to bearer if an `Authorization: Bearer` header is present, else cookie. Endpoints carry a plain `[Authorize]`; a global **fallback policy** makes everything authenticated unless it opts out with `[AllowAnonymous]` (the OpenAPI doc does).
 
-Authentication and domain registration are **two gates**: Gate 1 = Auth0 credential (age-blind); Gate 2 = profile registration behind `[Authorize]`. The caller's `sub`/`email` are read from the validated principal via scheme-agnostic `ClaimsPrincipalExtensions` — **never** the request body. (CSRF on the cookie `POST`s and which app issues the production cookie are open items — see `auth_plan.md` / `REFACTOR_ATHLETE_REGISTRATION.md` §6a.)
+Authentication and domain registration are **two gates**: Gate 1 = Auth0 credential (age-blind); Gate 2 = profile registration behind `[Authorize]`. The caller's `sub`/`email` are read from the validated principal via scheme-agnostic `ClaimsPrincipalExtensions` (`GetAuthProviderId()` / `GetEmail()`, email via the `https://nextatlet.dk/email` namespaced claim) — **never** the request body. Auth0 tenant: `nextatlet-dev.eu.auth0.com`, audience `https://api.nextatlet.dk`. (CSRF on the cookie `POST`s and which app issues the production cookie remain open items.)
 
 ### Naming: commands by intent (registration split)
 
-Commands are named for the **use-case**, not CRUD. Athlete creation is two intent-named commands sharing a private core (`IndividualSiteRegistrationHandlerBase.CreateIndividualProfileCoreAsync`): `RegisterIndividualSiteSelfCommand` (caller → `IndividualRole.Owner`) and `RegisterIndividualSiteGuardianCommand` (caller → `IndividualRole.Guardian`, child login deferred). The shared base owns slug validation + `IndividualProfile` + default draft `SiteSnapshot` + user get-or-create; each handler owns only its login-attachment + rules. New athlete-onboarding variants extend the base, not copy it. Full plan: `REFACTOR_ATHLETE_REGISTRATION.md`.
+Commands are named for the **use-case**, not CRUD. Athlete creation is two intent-named commands sharing a private core (`IndividualSiteRegistrationHandlerBase.CreateIndividualProfileCoreAsync`): `RegisterIndividualSiteSelfCommand` (caller → `IndividualRole.owner`) and `RegisterIndividualSiteGuardianCommand` (caller → `IndividualRole.guardian`, child login deferred). The shared base owns slug validation + `IndividualProfile` + default draft `SiteSnapshot` + user get-or-create (`UserProvisioner`); each handler owns only its login-attachment + rules. Org registration follows the same shape (`RegisterOrganizationSiteCommand`). New onboarding variants extend the base, not copy it.
 
 ---
 
@@ -84,23 +84,25 @@ Everything else (tier numbers, theme counts, exact section types, storage vendor
 
 ## 3. Incremental build order
 
-Each step is shippable and additive — later steps don't rewrite earlier ones.
+Each step is shippable and additive — later steps don't rewrite earlier ones. Status: ✅ done · 🟡 partial · ⬜ not started.
 
-1. **Profiles + SiteConfig + auth (multi-login).** One hardcoded theme, two section types (`hero`, `bio`). Draft only. Guardian linking for minors.
-2. **Public render endpoint + minimal Next.js renderer.** Prove data→render end-to-end with the cousin's profile as the first real case. *(Critical milestone — everything after is addition.)*
-3. **Publish flow** (draft → published) + ISR/CDN caching + invalidation on publish.
-4. **Section registry + Strategy validators;** add `results`, `gallery`.
-5. **Theme manifest system + theme picker;** add a 2nd and 3rd theme.
-6. **Athlete self-tiers + Specifications;** wire tier → editable scope + theme access.
-7. **Media pipeline** (upload → blob/CDN → thumbnails); `gallery`/`video` sections; admin-on-behalf uploads.
-8. **Organizations + multi-user roles** (ClubAdmin/ClubEditor); club page engine; club signup.
-9. **Memberships + derived primaries;** affiliate athletes into slots; history retention.
-10. **PerkResolver + additive perk layer;** club subscriptions; effective-capability resolution.
-11. **Club showcases** via published-contract references; placeholder on private/unpublished; dependency revalidation.
-12. **Change-request / approval workflow** (club proposes → guardian/athlete approves).
-13. **Mentoring content + 1:1 scheduling;** photoshoot booking.
-14. **Versioning/history** for rollback (higher tiers).
-15. **Bilingual polish; custom subdomains** (DNS/cert complexity — last).
+1. ✅ **Profiles + `Site`/`SiteSnapshot` + auth (multi-login).** Auth0 dual-scheme; self/guardian/org registration; `SiteLogin`; consent via `ActionToken`; `ControlMode` + `PermissionResolver`; `GET /api/Me` decision gate. (The draft **edit** endpoint is disabled pending a write-path rebuild; section types `hero`/`bio` exist as `SectionData`.)
+2. ⬜ **Public render endpoint + minimal Next.js renderer.** Prove data→render end-to-end with the cousin's profile as the first real case. *(Critical milestone — everything after is addition.)* Only `GET /api/sites` (listing) exists today.
+3. ⬜ **Publish flow** (draft → published) + ISR/CDN caching + invalidation on publish.
+4. 🟡 **Section registry + Strategy validators;** add `results`, `gallery`. (`ISectionTypeRegistry`/`SanitizationService` exist; not yet wired to an editor write endpoint.)
+5. ⬜ **Theme manifest system + theme picker;** add a 2nd and 3rd theme. (One seeded `ClassicTheme`; `Theme.Manifest` is the contract; no picker.)
+6. ⬜ **Athlete self-tiers + tier gating** (the originally-planned "Specifications"); wire tier → editable scope + theme access. (Tier enums exist; no gating, no billing.)
+7. ⬜ **Media pipeline** (upload → blob/CDN → thumbnails); `gallery`/`video` sections; admin-on-behalf uploads. (`MediaAsset` schema only.)
+8. 🟡 **Organizations + multi-user roles** (`club_admin`/`club_editor`); club page engine; club signup. (Org **registration** + email-verification + the imported club registry are built; club **page engine** + staff roles UI are not.)
+9. ⬜ **Memberships + derived primaries;** affiliate athletes into slots; history retention. (`Membership` is a scaffold; no commands.)
+10. ⬜ **PerkResolver + additive perk layer;** club subscriptions; effective-capability resolution. (`PerkResolver` is a commented stub.)
+11. ⬜ **Club showcases** via published-contract references; placeholder on private/unpublished; dependency revalidation.
+12. ⬜ **Change-request / approval workflow** (club proposes → guardian/athlete approves). (`ChangeRequest` is a scaffold; no commands.)
+13. ⬜ **Mentoring content + 1:1 scheduling;** photoshoot booking.
+14. ⬜ **Versioning/history** for rollback (higher tiers).
+15. ⬜ **Bilingual polish; custom subdomains** (DNS/cert complexity — last).
+
+> Beyond the numbered plan, two subsystems already exist that the original order didn't anticipate: **control transfer / collaboration** (`transfer-control`, `collaboration` endpoints + `ControlMode` shared variants) and the **club registry** (scrape Danish clubs + officials, CVR lookup) that feeds organization email-verification.
 
 ---
 

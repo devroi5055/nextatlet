@@ -13,7 +13,8 @@ export const primaryNav: NavItem[] = [
 /** The header / hero call-to-action shared across the page. */
 export const getStartedCta: NavItem = {
   label: 'Kom i gang',
-  href: paths.auth.register.getHref(),
+  // returnTo /app so the post-auth decision gate routes new users into onboarding.
+  href: paths.auth.register.getHref(paths.app.dashboard.getHref()),
 };
 
 /** Footer link columns. */

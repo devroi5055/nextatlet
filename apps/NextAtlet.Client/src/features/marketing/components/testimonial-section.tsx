@@ -12,7 +12,7 @@ const renderQuote = (quote: string, emphasis?: string): ReactNode => {
   return (
     <>
       {before}
-      <span className="text-brand-gold">{emphasis}</span>
+      <span className="text-primary-gold">{emphasis}</span>
       {after}
     </>
   );
@@ -21,12 +21,12 @@ const renderQuote = (quote: string, emphasis?: string): ReactNode => {
 /** Mentor pull-quote. */
 export const TestimonialSection = () => {
   return (
-    <Section className="bg-brand-ink" containerClassName="max-w-3xl text-center">
-      <Quote className="mx-auto size-8 text-brand-gold" />
-      <blockquote className="mt-6 font-display text-2xl font-bold uppercase leading-snug tracking-tight text-brand-cream sm:text-3xl">
+    <Section className="bg-background" containerClassName="max-w-3xl text-center">
+      <Quote className="mx-auto size-8 text-primary-gold" />
+      <blockquote className="mt-6 font-display text-2xl font-bold uppercase leading-snug tracking-tight text-foreground sm:text-3xl">
         {renderQuote(testimonial.quote, testimonial.emphasis)}
       </blockquote>
-      <p className="mt-6 text-sm text-brand-muted">— {testimonial.author}</p>
+      <p className="mt-6 text-sm text-muted-foreground">— {testimonial.author}</p>
     </Section>
   );
 };

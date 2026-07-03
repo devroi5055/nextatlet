@@ -13,11 +13,11 @@ export const BrandWordmark = ({ className }: BrandWordmarkProps) => {
     <NextLink
       href={paths.home.getHref()}
       className={cn(
-        'font-display text-lg font-extrabold uppercase tracking-[0.2em] text-brand-cream',
+        'font-display text-lg font-extrabold uppercase tracking-[0.2em] text-foreground',
         className,
       )}
     >
-      Next<span className="text-brand-gold">Atlet</span>
+      Next<span className="text-primary">Atlet</span>
     </NextLink>
   );
 };

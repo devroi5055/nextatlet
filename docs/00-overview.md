@@ -14,6 +14,9 @@
 | `05-signup-and-onboarding.md` | Signup flows per tier, onboarding, media-later |
 | `06-features-and-problems.md` | Feature → problem → why |
 | `07-patterns-and-build-order.md` | Design patterns, incremental build order, open questions |
+| `08-adr-cqrs-mediatr-and-layering.md` | ADR — CQRS/MediatR, repository/UoW, layering |
+
+> **Naming note (post-refactor).** The codebase renamed several core types since the first draft: `AthleteProfile` → **`IndividualProfile`**, `SiteConfig` → **`Site` + `SiteSnapshot`** (split), `ProfileLogin`/`OrganizationLogin` → one unified **`SiteLogin`**, `Organization` → **`OrganizationProfile`**. The glossary and docs below use the current names; `CLAUDE.md` carries a per-section implemented-vs-planned status.
 
 ---
 
@@ -58,9 +61,10 @@ Defined once here; used consistently across all documents.
 
 | Term | Meaning |
 |------|---------|
-| **Profile** | An athlete's account and public site. One profile = one athlete. |
-| **Linked login / Identity** | A credential attached to a profile with a **role**. A profile can have several (e.g. AthleteOwner + Guardian). |
-| **AthleteOwner** | The role representing the athlete themselves. |
+| **Site** | The shared identity envelope (`SiteType` = `individual` \| `organization`) holding slug, display name, visibility, and the draft/published snapshot pointers. |
+| **Profile** | The per-subject metadata on a `Site`: `IndividualProfile` (one athlete) or `OrganizationProfile` (one org). |
+| **Linked login / Identity** | A `SiteLogin` — a credential (`User`) attached to a `Site` with a **role**. A site can have several (e.g. owner + guardian). |
+| **Owner** (`IndividualRole.owner`) | The role representing the athlete themselves. |
 | **Guardian** | A linked role on a minor's profile with configurable edit/publish/approval permissions. |
 | **Organization** | A B2B entity of a given `OrganizationType`. |
 | **OrganizationType** | One of: `Club`, `NationalTeam`, `Academy`, `TrainingCenter`, `SchoolTeam`. |
@@ -69,8 +73,8 @@ Defined once here; used consistently across all documents.
 | **Display primary** | The athlete's current primary **Club** — drives which club page shows them and which club perks apply. |
 | **Prestige primary** | The athlete's **National Team** affiliation — server-managed, surfaced as a badge. |
 | **Training-context primary** | The athlete's Academy / Training Center affiliation — optional. |
-| **SiteConfig** | The athlete site stored as data (not HTML). Has Draft and Published states. |
-| **Section** | A typed content block inside a SiteConfig (hero, bio, results, gallery, sponsors, video…). |
+| **SiteSnapshot** | The site stored as data (not HTML). Two per `Site` — draft + published — pointed at by `Site.CurrentDraftSnapshotId` / `CurrentPublishedSnapshotId`. Immutable once written. (Formerly `SiteConfig`.) |
+| **Section** | A typed content block inside a `SiteSnapshot.Layout` (hero, bio, results, gallery, sponsors, video…). |
 | **Theme** | A named, versioned visual template the frontend knows how to render. |
 | **Published public data contract** | The sanitized, published subset of an athlete profile. The **only** data organizations may consume. |
 | **Perk layer** | The additive, scoped set of capabilities granted by an active club subscription. Reverts when the membership ends. |

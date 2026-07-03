@@ -7,7 +7,7 @@
 > with the dependency direction inverted (`Infrastructure → Application`). Section payloads are
 > **typed polymorphic DTOs** (the `type` discriminator lives inside `data`), not dictionaries.
 > **For current request/response shapes use `NextAtlet.Api/NextAtlet.Api.http`** — some JSON
-> examples below predate the typed-section + MediatR changes. See `docs/08` (ADR) and `REFACTOR_PLAN.md`.
+> examples below predate the typed-section + MediatR changes. See `docs/08` (ADR) and `CLAUDE.md`.
 
 ## Prerequisites
 
@@ -177,11 +177,10 @@ registry.Register(new BioSectionValidator());
 
 ## Key Features
 
-✅ **External IdP Auth** — User model references external identity provider (not password hashing)
-✅ **Guardian Model** — Minors require linked guardian with configurable permissions
-✅ **Draft-Only Config** — Full draft/published state in schema; publish flow is Step 3
-✅ **Optimistic Concurrency** — SiteConfig.Version prevents lost updates
-✅ **XSS Sanitization** — All text fields sanitized on save
+✅ **External IdP Auth** — Auth0 (OIDC), dual-scheme (JWT bearer + cookie); just-in-time `UserProvisioner`
+✅ **Guardian Model** — Minors get a linked guardian (consent via `ActionToken`); `ControlMode` + `PermissionResolver`
+✅ **Draft/Published schema** — `Site` points at draft + published `SiteSnapshot`; publish flow is still Step 3
+✅ **XSS Sanitization** — `SanitizationService` available for text/layout (wired in once the editor write path returns)
 ✅ **Bilingual Ready** — Locale maps (`{ "da": "...", "en": "..." }`) persisted; rendering deferred
 ✅ **Validation Seam** — Section registry scales to new types without schema changes
 
@@ -270,14 +269,16 @@ dotnet ef database update
 
 ## References
 
+- Global context + implemented-vs-planned status: `CLAUDE.md`
 - Architecture: `docs/01-architecture.md`
 - Data model: `docs/02-data-model.md`
 - Accounts & permissions: `docs/03-accounts-and-permissions.md`
-- Implementation notes: `IMPLEMENTATION_NOTES.md`
-- Step 1 completion: `STEP_1_COMPLETE.md`
+- ADR (CQRS/MediatR, layering): `docs/08-adr-cqrs-mediatr-and-layering.md`
+- Live request/response shapes: `NextAtlet.Api/NextAtlet.Api.http`
+
+> The build has progressed well past "Step 1": auth, the two-gate registration (self/guardian/org), action-token flows, consent, the control model, the club registry, and the `GET /api/Me` decision gate all exist. See the status note in `CLAUDE.md` for what's built vs planned. (The numbered "Step N" docs in `apps/NextAtlet.Server/` are point-in-time session notes from the initial build, not current status.)
 
 ---
 
-**Built with:** ASP.NET Core, EF Core 9, Npgsql, .NET 10
+**Built with:** ASP.NET Core, EF Core, Npgsql, .NET 10
 **Database:** PostgreSQL 14+
-**Status:** ✅ Ready for integration

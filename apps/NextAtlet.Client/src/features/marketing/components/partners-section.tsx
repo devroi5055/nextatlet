@@ -5,16 +5,16 @@ import { Container } from './container';
 /** "Supported by" trust strip with partner logos / names. */
 export const PartnersSection = () => {
   return (
-    <section className="border-y border-brand-line/60 bg-brand-ink-soft py-10">
+    <section className="border-y border-border/60 bg-card py-10">
       <Container>
-        <p className="text-center text-xs font-semibold uppercase tracking-[0.25em] text-brand-muted">
+        <p className="text-center text-xs font-semibold uppercase tracking-[0.25em] text-muted-foreground">
           Støttet af
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
           {partners.map((partner) => (
             <span
               key={partner.name}
-              className="font-display text-sm font-bold uppercase tracking-wider text-brand-muted/70 transition-colors hover:text-brand-cream"
+              className="font-display text-sm font-bold uppercase tracking-wider text-muted-foreground/70 transition-colors hover:text-foreground"
             >
               {partner.name}
             </span>

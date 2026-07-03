@@ -16,26 +16,26 @@ const TierCard = ({ tier }: { tier: PricingTier }) => {
       className={cn(
         'relative flex flex-col rounded-2xl border p-8',
         tier.highlighted
-          ? 'border-brand-gold bg-brand-ink-soft shadow-2xl shadow-black/40'
-          : 'border-brand-line bg-brand-ink-soft',
+          ? 'border-primary bg-card shadow-2xl shadow-black/40'
+          : 'border-border bg-card',
       )}
     >
       {tier.badge && (
-        <span className="absolute -top-3 right-6 rounded-full bg-brand-gold px-3 py-1 text-[0.65rem] font-bold uppercase tracking-wider text-brand-ink">
+        <span className="absolute -top-3 right-6 rounded-full bg-primary px-3 py-1 text-[0.65rem] font-bold uppercase tracking-wider text-background">
           {tier.badge}
         </span>
       )}
 
-      <h3 className="font-display text-xs font-bold uppercase tracking-[0.25em] text-brand-gold">
+      <h3 className="font-display text-xs font-bold uppercase tracking-[0.25em] text-primary-gold">
         {tier.name}
       </h3>
       <p className="mt-4 flex items-baseline gap-1">
-        <span className="text-sm font-medium text-brand-muted">kr</span>
-        <span className="font-display text-4xl font-extrabold text-brand-cream">
+        <span className="text-sm font-medium text-muted-foreground">kr</span>
+        <span className="font-display text-4xl font-extrabold text-foreground">
           {tier.price}
         </span>
       </p>
-      <p className="mt-1 text-xs text-brand-muted">{tier.cadence}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{tier.cadence}</p>
 
       <ul className="mt-6 flex-1 space-y-3">
         {tier.features.map((feature) => (
@@ -43,13 +43,13 @@ const TierCard = ({ tier }: { tier: PricingTier }) => {
             key={feature.label}
             className={cn(
               'flex items-start gap-3 text-sm',
-              feature.included ? 'text-brand-cream' : 'text-brand-muted/50',
+              feature.included ? 'text-foreground' : 'text-muted-foreground/50',
             )}
           >
             {feature.included ? (
-              <Check className="mt-0.5 size-4 shrink-0 text-brand-gold" />
+              <Check className="mt-0.5 size-4 shrink-0 text-primary-gold" />
             ) : (
-              <X className="mt-0.5 size-4 shrink-0 text-brand-line" />
+              <X className="mt-0.5 size-4 shrink-0 text-border" />
             )}
             {feature.label}
           </li>
@@ -58,7 +58,7 @@ const TierCard = ({ tier }: { tier: PricingTier }) => {
 
       <NextLink href={tier.cta.href} className="mt-8 block">
         <Button
-          variant={tier.highlighted ? 'brand' : 'brandOutline'}
+          variant={tier.highlighted ? 'primary' : 'outline'}
           className="w-full"
         >
           {tier.cta.label}
@@ -71,7 +71,7 @@ const TierCard = ({ tier }: { tier: PricingTier }) => {
 /** Athlete subscription tiers. */
 export const PricingSection = () => {
   return (
-    <Section id="priser" className="bg-brand-ink-soft">
+    <Section id="priser" className="bg-card">
       <SectionHeading
         eyebrow="Priser"
         title="Vælg dit niveau"

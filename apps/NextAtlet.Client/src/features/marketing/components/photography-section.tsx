@@ -12,16 +12,16 @@ import { SectionHeading } from './section-heading';
 const GalleryTile = ({ item }: { item: GalleryItem }) => (
   <div
     className={cn(
-      'group relative flex aspect-[4/3] flex-col justify-end overflow-hidden rounded-2xl border border-brand-line bg-gradient-to-br from-brand-surface to-brand-ink p-5',
+      'group relative flex aspect-[4/3] flex-col justify-end overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-muted to-background p-5',
       item.featured && 'sm:col-span-2 sm:row-span-2 sm:aspect-auto',
     )}
   >
-    <Camera className="absolute right-5 top-5 size-6 text-brand-gold/30" />
+    <Camera className="absolute right-5 top-5 size-6 text-primary-gold/30" />
     <div className="relative">
-      <p className="font-display text-sm font-bold uppercase tracking-wide text-brand-cream">
+      <p className="font-display text-sm font-bold uppercase tracking-wide text-foreground">
         {item.title}
       </p>
-      <p className="mt-1 text-xs uppercase tracking-widest text-brand-muted">
+      <p className="mt-1 text-xs uppercase tracking-widest text-muted-foreground">
         {item.caption}
       </p>
     </div>
@@ -31,7 +31,7 @@ const GalleryTile = ({ item }: { item: GalleryItem }) => (
 /** Photography gallery with a featured tile and supporting categories. */
 export const PhotographySection = () => {
   return (
-    <Section id="fotografi" className="bg-brand-ink">
+    <Section id="fotografi" className="bg-background">
       <SectionHeading
         eyebrow="Fotografi"
         title="Billeder der taler for dig"
@@ -44,7 +44,7 @@ export const PhotographySection = () => {
       </div>
       <NextLink
         href="#priser"
-        className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-brand-gold transition-colors hover:text-brand-gold-soft"
+        className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-primary-gold transition-colors hover:text-gold-400"
       >
         Se alle eksempler
         <ArrowRight className="size-4" />

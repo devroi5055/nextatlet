@@ -1,10 +1,11 @@
 'use client';
 
+import { useUser } from '@auth0/nextjs-auth0';
 import { Home, PanelLeft, Folder, Users, User2 } from 'lucide-react';
 import NextLink from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { ErrorBoundary } from 'react-error-boundary';
-import { useUser } from '@auth0/nextjs-auth0'
+import * as React from 'react';
+import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
@@ -17,13 +18,12 @@ import {
 } from '@/components/ui/dropdown';
 import { Link } from '@/components/ui/link';
 import { paths } from '@/config/paths';
-import { auth0 } from '@/lib/auth0';
 import { cn } from '@/utils/cn';
 
 type SideNavigationItem = {
   name: string;
   to: string;
-  icon: (props: React.SVGProps<SVGSVGElement>) => JSX.Element;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 };
 
 const Logo = () => {
@@ -38,16 +38,15 @@ const Logo = () => {
 };
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
-  const user = useUser();
+  const { user } = useUser();
   const pathname = usePathname();
   const router = useRouter();
-  const logout = auth0.({
-    onSuccess: () => router.push(paths.auth.login.getHref(pathname)),
-  });
+  // Auth0 logout is a navigation to the SDK route mounted by middleware.ts.
+  const logout = () => router.push(paths.auth.logout.getHref());
   const navigation = [
     { name: 'Dashboard', to: paths.app.root.getHref(), icon: Home },
     { name: 'Discussions', to: paths.app.discussions.getHref(), icon: Folder },
-    user.data?.role === 'ADMIN' && {
+    user?.['role'] === 'ADMIN' && {
       name: 'Users',
       to: paths.app.users.getHref(),
       icon: Users,
@@ -151,7 +150,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className={cn('block px-4 py-2 text-sm text-gray-700 w-full')}
-                onClick={() => logout.mutate()}
+                onClick={logout}
               >
                 Sign Out
               </DropdownMenuItem>
@@ -166,8 +165,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-function Fallback({ error }: { error: Error }) {
-  return <p>Error: {error.message ?? 'Something went wrong!'}</p>;
+function Fallback({ error }: FallbackProps) {
+  const message = error instanceof Error ? error.message : 'Something went wrong!';
+  return <p>Error: {message}</p>;
 }
 
 export const DashboardLayout = ({

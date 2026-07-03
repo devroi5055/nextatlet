@@ -12,7 +12,7 @@ Step 1 shipped three features (`CreateAthlete`, `GetDraftConfig`, `UpdateDraftCo
 ## Decisions
 
 1. **CQRS via MediatR.** Features are `IRequest` + `IRequestHandler`, dispatched from controllers via `ISender`. Controllers are thin (`return Ok(await _sender.Send(request))`).
-2. **Repository + Unit of Work.** Handlers are orchestrators: they read/write via per-aggregate repository interfaces (`IAthleteProfileRepository`, `IUserRepository`, `IProfileLoginRepository`, `IThemeRepository`, `ISiteConfigRepository`) and commit once via `IUnitOfWork.SaveChangesAsync()`. No handler references `DbContext`. Interfaces are intention-revealing, **not** a generic `IRepository<T>` (avoids leaking `IQueryable`).
+2. **Repository + Unit of Work.** Handlers are orchestrators: they read/write via per-aggregate repository interfaces and commit once via `IUnitOfWork.SaveChangesAsync()`. No handler references `DbContext`. Interfaces are intention-revealing, **not** a generic `IRepository<T>` (avoids leaking `IQueryable`). The current set (renamed since this ADR — `AthleteProfile` → `IndividualProfile`, `ProfileLogin` → `SiteLogin`, `SiteConfig` → `SiteSnapshot`): `ISiteRepository`, `IIndividualProfileRepository`, `IOrganizationProfileRepository`, `ISiteLoginRepository`, `IUserRepository`, `ISiteSnapshotRepository`, `IThemeRepository`, `IActionTokenRepository`, `IGuardianConsentRepository`, `IClubRepository`.
 3. **Dependency inversion (Clean Architecture).** Abstractions live in `Application`; EF Core implementations live in `Infrastructure`, which now references `Application`. The previous `Application → Infrastructure` reference is removed.
 
 ```
@@ -21,7 +21,7 @@ Api ──► Application ◄── Infrastructure
           └──────► Domain ◄──┘
 ```
 
-4. **Global exception handling (Model A — error codes).** Per-action `try/catch` is replaced by an `IExceptionHandler` (`GlobalExceptionHandler`). User-facing failures throw `DomainException(code, params)` → **400** + an `ApiError { errorCode, parameters }`; system failures are logged and returned as a generic **500** `internal_error` (no detail leaked). The backend never emits localized strings — the frontend resolves codes via its `da`/`en` catalog, guarded by a build-time code↔catalog test. (Supersedes the earlier ProblemDetails/`NotFoundException`→404 sketch.) Full plan: `error-handling-implementation-plan.md`; contract documented in `docs/01`.
+4. **Global error handling (Model A — error codes).** Per-action `try/catch` is replaced by two cooperating pieces: a global **`ResultFilter`** (unwraps handler `Result<T>` — success → value/204, failure → `ApiError`) and a **`GlobalExceptionHandler`** (`IExceptionHandler`) for thrown `DomainException(code)` and unhandled exceptions. User-facing failures map to a specific 4xx + `ApiError { errorCode, parameters }` (the `ErrorCodes` catalog carries 400/403/404/409/422 semantics); system failures are logged and returned as a generic **500** `internal_error` (no detail leaked). The backend never emits localized strings — the frontend resolves codes via its `da`/`en` catalog. Contract documented in `docs/01`; mechanism split in `docs/07`.
 5. **Test safety net.** An xUnit project (`NextAtlet.Application.Tests`) dispatches through a real MediatR + repository pipeline backed by EF Core InMemory, pinning behaviour across the refactor.
 
 ## MediatR licensing

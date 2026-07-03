@@ -15,7 +15,7 @@ const LoginPage = () => {
   return (
     <a
       href={`/auth/login?returnTo=${encodeURIComponent(returnTo)}`}
-      className="w-full text-center inline-block px-6 py-3 bg-gradient-to-b from-[#2d2d42] to-[#161620] hover:opacity-90 text-white font-medium rounded-full text-[14px] transition-opacity"
+      className="w-full text-center inline-block px-6 py-3 bg-linear-to-b from-[#2d2d42] to-[#161620] hover:opacity-90 text-white font-medium rounded-full text-[14px] transition-opacity"
     >
       Login
     </a>

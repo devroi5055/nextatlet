@@ -3,14 +3,35 @@ export const paths = {
     getHref: () => '/',
   },
 
+  // These map to the Auth0 SDK routes mounted by middleware.ts. There is no
+  // separate `/auth/register` route — signup is the hosted login with
+  // `screen_hint=signup`. `returnTo` is the Auth0 post-login redirect param.
   auth: {
     register: {
-      getHref: (redirectTo?: string | null | undefined) =>
-        `/auth/login?screen_hint=signup${redirectTo ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ''}`,
+      getHref: (returnTo?: string | null | undefined) =>
+        `/auth/login?screen_hint=signup${returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ''}`,
     },
     login: {
-      getHref: (redirectTo?: string | null | undefined) =>
-        `/auth/login${redirectTo ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ''}`,
+      getHref: (returnTo?: string | null | undefined) =>
+        `/auth/login${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`,
+    },
+    logout: {
+      getHref: () => '/auth/logout',
+    },
+  },
+
+  onboarding: {
+    root: {
+      getHref: () => '/onboarding',
+    },
+    self: {
+      getHref: () => '/onboarding/self',
+    },
+    guardian: {
+      getHref: () => '/onboarding/guardian',
+    },
+    complete: {
+      getHref: () => '/onboarding/complete',
     },
   },
 

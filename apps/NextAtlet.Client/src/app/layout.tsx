@@ -25,7 +25,9 @@ const RootLayout = async ({ children }: { children: ReactNode }) => {
 
   return (
     <html lang="da">
-      <body>
+      {/* Base defaults live on the element (not @layer base) so the old
+          globals.css base rules can be removed without changing the UI. */}
+      <body className="bg-background font-body text-foreground antialiased">
         <AppProvider>
           <HydrationBoundary state={dehydratedState}>
             {children}

@@ -17,7 +17,7 @@
     "build-storybook": "storybook build",
     "run-mock-server": "tsx ./mock-server.ts",
     "gen:api": "npm run gen:spec && npm run gen:types",
-    "gen:spec": "dotnet swagger tofile --output ./openapi/swagger.json ../NextAtlet.Api/bin/Debug/net9.0/NextAtlet.Api.dll v1",
+    "gen:spec": "dotnet swagger tofile --output ./openapi/swagger.json ../NextAtlet.Api/bin/Debug/net10.0/NextAtlet.Api.dll v1",
     "gen:types": "openapi-typescript ./openapi/swagger.json -o ./src/types/api.ts"
   },
   "dependencies": {
@@ -105,7 +105,8 @@
     "plop": "^4.0.5",
     "pm2": "^7.0.1",
     "postcss": "^8.5.16",
-    "prettier": "^3.8.4",
+    "prettier": "^3.9.4",
+    "prettier-plugin-tailwindcss": "^0.8.0",
     "storybook": "^10.4.6",
     "tsx": "^4.22.4",
     "typescript": "^5.8.0",

@@ -11,23 +11,23 @@ export const CtaSection = () => {
   return (
     <Section
       id="om-os"
-      className="bg-brand-ink-soft"
+      className="bg-card"
       containerClassName="max-w-3xl text-center"
     >
-      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-brand-gold">
+      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-primary-gold">
         Klar til at starte?
       </p>
-      <h2 className="mt-5 font-display text-3xl font-extrabold uppercase leading-tight tracking-tight text-brand-cream sm:text-4xl lg:text-5xl">
+      <h2 className="mt-5 font-display text-3xl font-extrabold uppercase leading-tight tracking-tight text-foreground sm:text-4xl lg:text-5xl">
         Byg din profil.
         <br />
-        <span className="text-brand-gold">Skab din fremtid.</span>
+        <span className="text-primary-gold">Skab din fremtid.</span>
       </h2>
-      <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-brand-muted">
+      <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-muted-foreground">
         Opret din gratis profil på under 10 minutter og bliv synlig for
         sponsorer, medier og klubber over hele Danmark.
       </p>
       <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-        <NextLink href={paths.auth.register.getHref()}>
+        <NextLink href={paths.auth.register.getHref(paths.app.dashboard.getHref())}>
           <Button variant="brand" size="lg">
             Opret gratis profil
           </Button>
