@@ -12,14 +12,14 @@ type Story = StoryObj<typeof Button>;
 export const Default: Story = {
   args: {
     children: 'Button',
-    variant: 'default',
+    variant: 'primary',
   },
 };
 
 export const Brand: Story = {
   args: {
     children: 'Opret din profil',
-    variant: 'brand',
+    variant: 'primary',
     size: 'lg',
   },
 };
