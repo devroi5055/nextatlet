@@ -21,7 +21,7 @@ public static class ClaimsPrincipalExtensions
     public static string GetAuthProviderId(this ClaimsPrincipal user) =>
         user.FindFirst("sub")?.Value
         ?? user.FindFirst(ClaimTypes.NameIdentifier)?.Value
-        ?? throw new DomainException(ErrorCodes.AuthSubMissing);
+        ?? throw new InvalidOperationException(ErrorCodes.AuthSubMissing);
 
     public static string GetEmail(this ClaimsPrincipal user)
     {
@@ -33,6 +33,17 @@ public static class ClaimsPrincipalExtensions
 
         return user.FindFirst("https://nextatlet.com/email")?.Value
             ?? user.FindFirst(ClaimTypes.Email)?.Value
-            ?? throw new DomainException(ErrorCodes.AuthEmailMissing);
+            ?? throw new InvalidOperationException(ErrorCodes.AuthEmailMissing);
+    }
+    public static string? TryGetAuthProviderId(this ClaimsPrincipal user)
+    {
+        try
+        {
+            return GetAuthProviderId(user);
+        }
+        catch
+        {
+            return null;
+        }
     }
 }

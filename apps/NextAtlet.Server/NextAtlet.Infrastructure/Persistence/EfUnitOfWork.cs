@@ -1,6 +1,5 @@
 using NextAtlet.Application.Abstractions.Persistence;
-using NextAtlet.Application.Abstractions.Services;
-using NextAtlet.Infrastructure.Data;
+using NextAtlet.Infrastructure.Persistence;
 
 namespace NextAtlet.Infrastructure.Persistence;
 
@@ -16,4 +15,5 @@ public class EfUnitOfWork : IUnitOfWork
 
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         => _context.SaveChangesAsync(cancellationToken);
+
 }

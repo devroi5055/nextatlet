@@ -1,10 +1,9 @@
-using System.Net.Http.Json;
-using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using NextAtlet.Application.Common.Options;
-using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Abstractions.Services;
+using NextAtlet.Application.Common.Options;
+using System.Net.Http.Json;
+using System.Text.Json.Serialization;
 
 namespace NextAtlet.Infrastructure.Services;
 
@@ -27,9 +26,9 @@ public class ResendEmailService : IEmailService
         _logger = logger;
     }
 
-    public Task SendInviteAsync(string email, Guid invitationId, CancellationToken cancellationToken = default)
+    public Task SendInviteAsync(string email, Guid tokenId, CancellationToken cancellationToken = default)
     {
-        var acceptUrl = $"{_options.AppBaseUrl.TrimEnd('/')}/invitations/{invitationId}/accept";
+        var acceptUrl = AcceptUrl(tokenId);
         return SendAsync(
             email,
             subject: "You've been invited to NextAtlet",
@@ -40,13 +39,13 @@ public class ResendEmailService : IEmailService
                 <p>This invitation expires in 7 days. If you weren't expecting it, you can ignore this email.</p>
                 """,
             text: $"You've been invited to a profile on NextAtlet.\n\nAccept the invitation: {acceptUrl}\n\nThis invitation expires in 7 days. If you weren't expecting it, you can ignore this email.",
-            context: $"invite (invitation {invitationId})",
+            context: $"invite (token {tokenId})",
             cancellationToken);
     }
 
-    public Task SendConsentRequestAsync(string email, Guid athleteProfileId, CancellationToken cancellationToken = default)
+    public Task SendConsentRequestAsync(string email, Guid tokenId, CancellationToken cancellationToken = default)
     {
-        var consentUrl = $"{_options.AppBaseUrl.TrimEnd('/')}/athletes/{athleteProfileId}/consent";
+        var consentUrl = AcceptUrl(tokenId);
         return SendAsync(
             email,
             subject: "Approve your child's NextAtlet profile",
@@ -58,9 +57,29 @@ public class ResendEmailService : IEmailService
                 <p>If you weren't expecting this, you can ignore this email — the profile stays private.</p>
                 """,
             text: $"A NextAtlet profile has been created for a child in your care. Your approval is required before it can be made public.\n\nReview and approve: {consentUrl}\n\nIf you weren't expecting this, you can ignore this email.",
-            context: $"consent (profile {athleteProfileId})",
+            context: $"consent (token {tokenId})",
             cancellationToken);
     }
+
+    public Task SendOrgVerificationAsync(string email, Guid tokenId, CancellationToken cancellationToken = default)
+    {
+        var verifyUrl = AcceptUrl(tokenId);
+        return SendAsync(
+            email,
+            subject: "Verify your organization on NextAtlet",
+            html: $"""
+                <p>An organization on NextAtlet has named you as an official to verify it. Following the
+                link below confirms the organization on your authority.</p>
+                <p><a href="{verifyUrl}">Click here to verify the organization</a>.</p>
+                <p>If the link doesn't work, copy and paste this address into your browser:<br>{verifyUrl}</p>
+                <p>This link expires in 7 days. If you weren't expecting this, you can ignore this email.</p>
+                """,
+            text: $"An organization on NextAtlet has named you as an official to verify it.\n\nVerify the organization: {verifyUrl}\n\nThis link expires in 7 days. If you weren't expecting this, you can ignore this email.",
+            context: $"org verification (token {tokenId})",
+            cancellationToken);
+    }
+
+    private string AcceptUrl(Guid tokenId) => $"{_options.AppBaseUrl.TrimEnd('/')}/action-tokens/{tokenId}/accept";
 
     private async Task SendAsync(string email, string subject, string html, string text, string context, CancellationToken cancellationToken)
     {

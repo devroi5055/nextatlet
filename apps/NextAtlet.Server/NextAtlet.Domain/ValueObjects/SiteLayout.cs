@@ -18,7 +18,7 @@ public class SiteLayout
 /// </summary>
 public class SiteSection
 {
-    public required string Id { get; set; }
+    public required Guid Id { get; set; }
     public int Order { get; set; }
     public required SectionData Data { get; set; }
 }

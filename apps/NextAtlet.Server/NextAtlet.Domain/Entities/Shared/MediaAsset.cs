@@ -1,12 +1,12 @@
 using NextAtlet.Domain.Common;
-using NextAtlet.Domain.Entities.AthleteProfile;
+using NextAtlet.Domain.Entities.Sites;
 using NextAtlet.Domain.Enumerations.Media;
 
 namespace NextAtlet.Domain.Entities.Shared;
 
 /// <summary>
 /// Bytes live in blob/CDN — this is the reference only.
-/// Owner is either an AthleteProfile OR an Organization (never both, never neither).
+/// Owner is either an IndividualProfile OR an Organization (never both, never neither).
 /// Enforced by a CHECK constraint in the DB migration.
 /// </summary>
 public class MediaAsset : CreatedOnlyEntity
@@ -34,7 +34,7 @@ public class MediaAsset : CreatedOnlyEntity
     public string? AltText { get; set; }
 
     // Navigation — nullable because owner is XOR
-    public AthleteSite? AthleteSite { get; set; }
+    public IndividualProfile? AthleteSite { get; set; }
 
     //TODO: implement Organization
     // public Organization.Organization? Organization { get; set; }

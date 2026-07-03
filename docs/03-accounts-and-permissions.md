@@ -8,51 +8,71 @@ Covers: the identity model, guardian/parental control, organization multi-user r
 
 ## 1. Identity model — one profile, multiple linked roles
 
-A **profile** represents one athlete. A profile has one or more **linked logins** (`ProfileLogin` in `02`), each carrying a **role**:
+A **Site** represents one athlete or one organization. A site has one or more **linked logins** (`SiteLogin` in `02`), each carrying a **role**. The role vocabulary splits by site type:
 
-| Role | Who | Default capability |
+**Individual sites (`SiteType.Individual`):**
+
+| Role (`SiteLogin.SiteRoleId`) | Who | Default capability |
 |------|-----|--------------------|
-| `AthleteOwner` | the athlete | Owns the profile; capability scales with effective tier + perks. For adults, the final approver. |
-| `Guardian` | parent / legal guardian | Linked to a **minor** profile; permissions configurable; for minors, the final approver. |
+| `owner` (`IndividualRole.Owner`) | the athlete | Owns the profile; capability scales with effective tier + perks. For adults, the final approver. |
+| `guardian` (`IndividualRole.Guardian`) | parent / legal guardian | Linked to a **minor** profile; permissions configurable; for minors, the final approver. |
 
-Why this shape (vs "1 or 2 fixed identities"): it scales cleanly to a second guardian, a temporary delegate, or future roles, and it keeps **legal account-holder** logic in one place. A minor profile must always have at least one `Guardian` login (see registration paths below).
+**Organization sites (`SiteType.Organization`):**
+
+| Role (`SiteLogin.SiteRoleId`) | Who | Default capability |
+|------|-----|--------------------|
+| `club_admin` (`OrganizationRole.ClubAdmin`) | club administrator | Full club control: billing, users, settings, content |
+| `club_editor` (`OrganizationRole.ClubEditor`) | club content editor | Edits club page and manages featured athletes; cannot touch billing or users |
+
+Why this shape (vs "1 or 2 fixed identities"): it scales cleanly to a second guardian, a temporary delegate, or future roles, and it keeps **legal account-holder** logic in one place. A minor profile must always have at least one `guardian` login (see registration paths below).
 
 ### Two registration paths
 
 "Who authenticates" and "who the profile is for" are not always the same person. Two commands, sharing a private profile-creation core, cover both:
 
-| | **Self-registration** (`RegisterOwnAthleteCommand`) | **Guardian-creates-child** (`RegisterChildAthleteCommand`) |
+| | **Self-registration** (`RegisterIndividualSiteSelfCommand`) | **Guardian-creates-child** (`RegisterIndividualSiteGuardianCommand`) |
 |---|---|---|
 | Caller | the athlete (adult, or older minor with their own login) | the parent/guardian |
-| Caller's login becomes | `AthleteOwner` | `Guardian` |
-| `AthleteOwner` login | the caller | **none in v1** (no child login yet — deferred) |
-| `Guardian` login | invited **if** the caller is a minor | **is the caller** (active by construction) |
+| Caller's login becomes | `IndividualRole.Owner` | `IndividualRole.Guardian` |
+| `owner` login | the caller | **none in v1** (no child login yet — deferred) |
+| `guardian` login | consent requested via `ActionToken` **if** the caller is a minor | **is the caller** (active by construction) |
 | Idempotency | one owned profile per caller | a guardian may register **multiple** children |
 
-- **Self + minor:** the command requires `GuardianEmail`; the profile and a **`Pending`** guardian login are written in one transaction. Missing guardian email → reject, nothing written.
-- **Guardian-creates-child:** v1 is for minors only — registering an adult is rejected (`guardian.cannot_register_adult`); an adult must self-register. A child's own `AthleteOwner` login is added later (when old enough) via a future `InviteAthleteOwnerLoginCommand`, reusing the pending-invite/claim machinery.
+- **Self + minor (< self-consent age 16):** the command requires `GuardianEmail`; the profile is written and a `ConsentActionToken` is issued and emailed in the same transaction. Missing guardian email → reject, nothing written.
+- **Guardian-creates-child:** v1 is for minors only — registering an adult is rejected (`guardian.cannot_register_adult`); an adult must self-register. A child's own `owner` login is added later (when old enough) via a future invite flow.
 
 ### Pending vs. active guardian, and the publish gate
 
-A minor profile can be **created** the moment a guardian is named, but a `Pending` (invited, not-yet-accepted) guardian **cannot publish**, and the minor `AthleteOwner` does not hold publish rights by default. So a minor profile stays a private draft until a **real, active** guardian (holding `canPublish`) has accepted and published it — no minor is ever publicly visible without an accountable adult having acted. The guardian-creates-child path skips the pending state (the caller is already an active guardian).
+A minor profile can be **created** the moment a guardian email is provided, but until a real, active guardian has accepted consent, the profile's `ConsentState` is `PendingGuardianConsent` and **cannot be published**. No minor is ever publicly visible without an accountable adult having acted. The guardian-creates-child path skips the consent gate (the caller is already an active guardian — consent is implied by creation).
 
-**Accepting the invite (implemented).** When the invited guardian first authenticates (a new IdP `sub`, same email), the system **links** that subject to the unclaimed user row by matching the verified email (identity reconciliation only — it grants nothing), and `GET /api/me` surfaces the **pending guardian invite** so the frontend can prompt them. The guardian then **explicitly accepts** via `POST /api/guardianships/accept` (`AcceptGuardianInviteCommand`): this claims the account and flips their `Pending` guardian login(s) → `Active`. Acceptance is deliberate and auditable — never a silent side-effect of logging in. (An email-delivered invite link is a later, additive enhancement; the invite today is the guardian email captured at registration.)
+**Accepting the invite (ActionToken flow).** The pending invite is held by an `ActionToken(Invitation)`, not a ghost user row — we never pre-create Users for invitations. When the invited guardian follows the emailed link (authenticating via Auth0 if needed), a single `POST /api/action-tokens/{tokenId}/accept` call validates the token and creates an Active `SiteLogin` for the authenticated user, in one step. There is no separate explicit claim step; authentication via the link IS the redemption.
 
-### Guardian permission configuration
+### Consent flow
 
-`ProfileLogin.Permissions` (jsonb) configures what a guardian may do, so families can choose how much autonomy the young athlete has:
+When a minor self-registers and provides a guardian email, a `ConsentActionToken` is issued and emailed. The guardian follows the link, authenticates through Auth0 (carrying `returnUrl` so login/register navigation preserves the destination), and POSTs to `/api/action-tokens/{id}/accept`. This records an immutable `GuardianConsent` row (WHO, HOW, WHAT, WHEN per GDPR Art. 8) and lifts the publish gate on the minor's profile.
 
-```jsonc
-{
-  "canEditContent": true,
-  "canPublish": true,        // typically guardian-only for minors
-  "canApproveChanges": true, // approval authority (see §3)
-  "canManageMedia": true,
-  "canManageMemberships": true
-}
+Authentication-via-the-link IS the redemption — there is no separate "I agree" button after login; the single accept POST is the consent act.
+
+The guardian must be authenticated for consent to be recorded (`authRequired = true` on `ConsentStrategy`). Email-click alone is NOT the authority — the authenticated guardian identity is what makes the consent GDPR-compliant evidence.
+
+`returnUrl` must be validated to be a local path before use (open-redirect protection).
+
+### Permission model — `ControlMode` + `PermissionResolver`
+
+What a login may do is **computed**, not stored per-action and not expressed as Specifications. The domain `PermissionResolver.Resolve(SiteLogin, IndividualProfile)` returns a `SitePermissions` preset from the profile's **`ControlMode`** and the login's role:
+
+```csharp
+record SitePermissions(
+  bool CanEditContent, bool CanPublish, bool CanApproveChanges,
+  bool CanManageMedia, bool CanManageMemberships);
+// presets: None · ReadOnly · EditOnly (shared) · FullControl
 ```
 
-Recommended defaults for a minor: guardian holds `canPublish` and `canApproveChanges`; the young athlete (`AthleteOwner`) may edit/propose but not publish. Families can loosen this as the athlete matures.
+- `ControlMode` (`athlete_controlled` | `guardian_controlled` | `*_shared`) decides **who is the controller** → `FullControl`; the other party gets `ReadOnly`, or `EditOnly` if a `*_shared` (collaboration) mode is on.
+- The controller toggles collaboration via the `collaboration` endpoint and hands over via `transfer-control` (athlete must be ≥13 to receive control).
+- Optional per-login overrides can be stored in `SiteLogin.Permissions` (the `LoginPermissions` value object: `MinorCanEditDraft`, `MinorCanPublish`, `MinorCanApproveChanges`, `MinorCanManageMedia`, `MinorCanManageMemberships`) for families that want to widen a minor's autonomy.
+
+Default for a minor (guardian-created → `guardian_controlled`): guardian holds full control incl. publish/approve; the young athlete (`owner` login) is read-only until control is shared or transferred. Families can loosen this as the athlete matures.
 
 > The hard line is **18**. Under 18 → guardian-gated. 18+ → athlete self-approves. The build treats 18 as the boundary and does not implement regional variants now.
 
@@ -60,14 +80,14 @@ Recommended defaults for a minor: guardian holds `canPublish` and `canApproveCha
 
 ## 2. Organization multi-user roles
 
-Clubs (and other orgs) have multiple staff logins (`OrganizationLogin` in `02`). Build **two roles now**; document the rest as reserved.
+Clubs (and other orgs) have multiple staff logins via the shared `SiteLogin` table, with `OrganizationRole` values (`club_admin`, `club_editor`) in `SiteLogin.SiteRoleId`. Build **two roles now**; document the rest as reserved.
 
 **Build now**
 
 | Role | Can | Cannot |
 |------|-----|--------|
-| `ClubAdmin` | manage billing & subscription; invite/remove users; control permissions; approve sponsorship/athlete slots; full club settings; everything ClubEditor can | — |
-| `ClubEditor` | edit club page content; manage featured athletes; submit athlete change requests | touch billing/subscription; manage users |
+| `club_admin` (`OrganizationRole.ClubAdmin`) | manage billing & subscription; invite/remove users; control permissions; approve sponsorship/athlete slots; full club settings; everything ClubEditor can | — |
+| `club_editor` (`OrganizationRole.ClubEditor`) | edit club page content; manage featured athletes; submit athlete change requests | touch billing/subscription; manage users |
 
 **Reserved for later (document, do not build)**
 
@@ -77,11 +97,13 @@ Clubs (and other orgs) have multiple staff logins (`OrganizationLogin` in `02`).
 | `Coach` | submit athlete updates / results |
 | `Photographer` | upload media, no other control |
 
-Authorization should be expressed as composable **Specifications** (`07`) — e.g. `CanManageBilling`, `CanEditClubPage` — not scattered role checks.
+Organization-side authorization is **not yet built** (no org-page editing endpoints exist). When it lands it should reuse the same chokepoint idea as the individual side (a resolver returning a capability set), combined with natural "caller holds an active org login" checks — not scattered role `if`s. (The earlier docs called for a Specification pattern; the implemented individual side uses `PermissionResolver` instead — see §1.)
 
 ---
 
 ## 3. Change-request & approval workflow
+
+> **Status: not built.** §3b (club-proposed changes) describes the intended design. The `ChangeRequest` entity is a scaffold with no create/approve/reject commands and a shape that diverges from the design (`02` §5b). §3a self-editing is also gated on the editor write path, which is currently disabled (`02` §3).
 
 Two distinct workflows depending on who edits what.
 
@@ -91,8 +113,8 @@ Determined by age + guardian config:
 
 | Profile is | Who can edit/propose | Who approves/publishes |
 |------------|----------------------|------------------------|
-| **Minor (<18)** | AthleteOwner (propose), Guardian (edit), Club (propose) | **Guardian approves everything** |
-| **Adult (18+)** | AthleteOwner | **Athlete approves all changes**; club suggestions optional |
+| **Minor (<18)** | Owner (propose), Guardian (edit), Club (propose) | **Guardian approves everything** |
+| **Adult (18+)** | Owner | **Athlete approves all changes**; club suggestions optional |
 
 ### 3b. Club-proposed changes to an affiliated athlete
 
@@ -156,7 +178,7 @@ A single server-side projection (e.g. `ToPublicContract(profile)`) should be the
 
 ## 5. Resource ownership rules (summary)
 
-- An athlete login may only act on its own profile (scoped by `ProfileLogin`).
-- A club login may only act on its own organization (scoped by `OrganizationLogin`) and may only **propose** to affiliated athletes.
+- An athlete login may only act on its own site (scoped by `SiteLogin` + `PermissionResolver`).
+- A club login may only act on its own organization (scoped by its org `SiteLogin`) and may only **propose** to affiliated athletes.
 - Server-managed entities (National Teams at launch) are writable only by **NextAtlet internal admins**.
-- All of the above expressed as Specifications, combined with tier/perk capability checks from `04`.
+- All of the above enforced via `PermissionResolver` + natural "caller holds an active login" checks in handlers, combined with the (planned) tier/perk capability checks from `04`.

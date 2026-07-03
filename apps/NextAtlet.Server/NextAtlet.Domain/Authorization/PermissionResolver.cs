@@ -1,6 +1,6 @@
-using NextAtlet.Domain.Entities.Athlete;
-using NextAtlet.Domain.Entities.AthleteProfile;
-using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Domain.Entities.Sites;
+using NextAtlet.Domain.Entities.Identity;
+using NextAtlet.Domain.Enumerations.Individual;
 
 namespace NextAtlet.Domain.Authorization;
 
@@ -10,17 +10,17 @@ namespace NextAtlet.Domain.Authorization;
 /// </summary>
 public class PermissionResolver
 {
-    public SitePermissions Resolve(ProfileLogin login, AthleteSite site)
+    public SitePermissions Resolve(SiteLogin login, IndividualProfile profile)
     {
-        var isOwner = login.RoleId == ProfileRole.AthleteOwner.Id;
-        var isGuardian = login.RoleId == ProfileRole.Guardian.Id;
+        var isOwner = login.SiteRoleId == IndividualRole.Owner.Id;
+        var isGuardian = login.SiteRoleId == IndividualRole.Guardian.Id;
 
-        return site.ControlModeId switch
+        return profile.ControlModeId switch
         {
-            "athlete_controlled"         => isOwner    ? SitePermissions.FullControl : isGuardian ? SitePermissions.ReadOnly : SitePermissions.None,
-            "guardian_controlled"        => isGuardian ? SitePermissions.FullControl : isOwner    ? SitePermissions.ReadOnly : SitePermissions.None,
-            "athlete_controlled_shared"  => isOwner    ? SitePermissions.FullControl : isGuardian ? SitePermissions.EditOnly : SitePermissions.None,
-            "guardian_controlled_shared" => isGuardian ? SitePermissions.FullControl : isOwner    ? SitePermissions.EditOnly : SitePermissions.None,
+            var id when id == ControlModes.AthleteControlled.Id => isOwner ? SitePermissions.FullControl : isGuardian ? SitePermissions.ReadOnly : SitePermissions.None,
+            var id when id == ControlModes.GuardianControlled.Id => isGuardian ? SitePermissions.FullControl : isOwner ? SitePermissions.ReadOnly : SitePermissions.None,
+            var id when id == ControlModes.AthleteControlledShared.Id => isOwner ? SitePermissions.FullControl : isGuardian ? SitePermissions.EditOnly : SitePermissions.None,
+            var id when id == ControlModes.GuardianControlledShared.Id => isGuardian ? SitePermissions.FullControl : isOwner ? SitePermissions.EditOnly : SitePermissions.None,
             _ => SitePermissions.None
         };
     }
@@ -29,15 +29,15 @@ public class PermissionResolver
     /// "Is this login the controlling party?" — used by transfer-control + collaboration and by /me.
     /// The Shared variant of a side still belongs to that side's controller.
     /// </summary>
-    public bool IsController(ProfileLogin login, AthleteSite site)
+    public bool IsController(SiteLogin login, IndividualProfile profile)
     {
-        var isOwner = login.RoleId == ProfileRole.AthleteOwner.Id;
-        var isGuardian = login.RoleId == ProfileRole.Guardian.Id;
+        var isOwner = login.SiteRoleId == IndividualRole.Owner.Id;
+        var isGuardian = login.SiteRoleId == IndividualRole.Guardian.Id;
 
-        return site.ControlModeId switch
+        return profile.ControlModeId switch
         {
-            "athlete_controlled" or "athlete_controlled_shared"   => isOwner,
-            "guardian_controlled" or "guardian_controlled_shared" => isGuardian,
+            var id when id == ControlModes.AthleteControlled.Id || id == ControlModes.AthleteControlledShared.Id => isOwner,
+            var id when id == ControlModes.GuardianControlled.Id || id == ControlModes.GuardianControlledShared.Id => isGuardian,
             _ => false
         };
     }

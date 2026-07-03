@@ -58,7 +58,8 @@ public class SanitizationService : ISanitizationService
         switch (data)
         {
             case HeroSectionData hero:
-                SanitizeLocalized(hero.Headline);
+                if (hero.Headline is not null)
+                    SanitizeLocalized(hero.Headline);
                 if (hero.Subheading is not null)
                     SanitizeLocalized(hero.Subheading);
                 break;

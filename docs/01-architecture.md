@@ -11,9 +11,9 @@
 | Backend | **.NET (ASP.NET Core Web API)** | Domain logic, config CRUD, validation, auth, rendering contract. |
 | ORM | **EF Core** | Hybrid relational + JSON column model (see `02`). |
 | Database | **PostgreSQL** (recommended) | `jsonb` is well-suited to the section-as-data model. SQL Server works too. |
-| Frontend | **Next.js** | Two surfaces: the **editor** (authenticated SPA-style) and the **public site renderer** (SSR/ISR for SEO). |
-| Media storage | **Blob storage + CDN** (Azure Blob / S3 + CloudFront/equivalent) | Bytes never live in the DB; the DB stores references only. |
-| Auth | ASP.NET Core Identity or an external IdP (e.g. Auth0/Entra) | Must support **multiple linked logins per profile** (see `03`). |
+| Frontend | **Next.js (App Router)** | Two surfaces: the **editor** (authenticated SPA-style) and the **public site renderer** (SSR/ISR for SEO). Uses `@auth0/nextjs-auth0`, React Query, Zustand, Tailwind v4, Radix. |
+| Media storage | **Blob storage + CDN** (Azure Blob / S3 + CloudFront/equivalent) | Bytes never live in the DB; the DB stores references only. *Pipeline not built yet.* |
+| Auth | **Auth0 (OIDC)** — confirmed | Dual-scheme (JWT bearer + cookie) behind a `smart` policy scheme; supports **multiple linked logins per site** (see `03`, `07`). |
 
 ### Why Next.js specifically
 
@@ -65,11 +65,11 @@ The backend emits **error codes, never localized strings** — the frontend owns
 { "errorCode": "slug.already_taken", "parameters": ["maria-jensen"] }
 ```
 
-- **User-facing failures** (slug taken, guardian email required, profile not found, version conflict, invalid section) are thrown as `DomainException(code, params)` and mapped to **400** with their code.
-- **System failures** (missing seed theme, DB down) stay plain exceptions — logged, returned as a generic **500** `{ "errorCode": "internal_error" }` that leaks no internal detail.
-- Status codes start coarse (400 for all domain errors, 500 otherwise); finer codes (404/409/403) are a later refinement only if the frontend benefits.
+- **User-facing failures** (slug taken, guardian email required, profile not found, invalid section) surface either as a returned `Result<T>` failure (unwrapped by the global `ResultFilter`) or a thrown `DomainException(code)` — **both** produce the same `ApiError` JSON.
+- **System failures** (missing seed theme, DB down) stay plain exceptions — caught by `GlobalExceptionHandler`, logged, returned as a generic **500** `{ "errorCode": "internal_error" }` that leaks no internal detail.
+- Status codes are **fine-grained**: the `ErrorCodes` catalog maps each code to a specific 4xx — 400 (bad input), 403 (not authorized), 404 (not found), 409 (conflict, e.g. slug taken), 422 (business-rule, e.g. below minimum age). (The earlier "coarse 400 for everything" plan has been superseded.)
 
-This is **Model A** (error codes + one global handler). Rationale, the two-category split, and the deferred upgrades (Result pattern, RFC 9457 Problem Details) are in `docs/07` and the `error-handling-implementation-plan.md`.
+This is **Model A** (error codes + a global handler/filter). Rationale and the two-mechanism split (`Result<T>` vs `DomainException`) are in `docs/07` and the `docs/08` ADR.
 
 **Draft vs Published is a hard rule.** Editing never mutates what the public (or an affiliated club page) sees until publish. This matters doubly for the B2B side: club pages consume the athlete's **published** contract only — never drafts, never private fields (see `03`).
 
@@ -99,7 +99,9 @@ Because the contract is data + manifest (not markup), the frontend is replaceabl
 
 ### Club page rendering reuses the same engine
 
-A club page is itself a SiteConfig-like document with its own section types (e.g. `clubHero`, `featuredAthletes`, `clubResults`). The **`featuredAthletes` section does not duplicate athlete data** — it holds references to athlete profiles, and at render time the public read endpoint resolves each reference against that athlete's **published public data contract**. If an athlete unpublishes or privatizes, the showcase degrades to a graceful placeholder rather than breaking or leaking (see `02` and `03`).
+A club page is itself a `SiteSnapshot`-backed document (same draft/published engine) with its own section types (e.g. `clubHero`, `featuredAthletes`, `clubResults`). The **`featuredAthletes` section does not duplicate athlete data** — it holds references to athlete sites, and at render time the public read endpoint resolves each reference against that athlete's **published public data contract**. If an athlete unpublishes or privatizes, the showcase degrades to a graceful placeholder rather than breaking or leaking (see `02` and `03`).
+
+> **Status.** The public **render** endpoint, the `PublicContractProjector`, the publish flow, and ISR/CDN caching below are **designed, not built**. The only public read endpoint today is `GET /api/sites` — an anonymous paged **listing** of sites (slug, display name, locale, visibility), not the full rendered contract.
 
 ## 5. Caching
 

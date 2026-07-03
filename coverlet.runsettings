@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Code-coverage settings for: dotnet test (XPlat Code Coverage) with this file passed via /settings.
+  Auto-generated EF Core migrations and the model snapshot are excluded; they are scaffolded, not
+  hand-written, so counting their thousands of lines as "uncovered" makes the coverage figure
+  meaningless (they dominated the denominator at roughly 13k of 16k lines).
+-->
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat Code Coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <!-- Exclude generated EF migration code by namespace (assembly-qualified filter). -->
+          <Exclude>[*]NextAtlet.Infrastructure.Migrations.*</Exclude>
+          <!-- Belt and suspenders: exclude by file path too, in case namespaces differ. -->
+          <ExcludeByFile>**/Migrations/**/*.cs,**/*ModelSnapshot.cs</ExcludeByFile>
+          <!-- Skip auto-generated files marked with [GeneratedCode]/[ExcludeFromCodeCoverage]. -->
+          <ExcludeByAttribute>GeneratedCodeAttribute,CompilerGeneratedAttribute,ExcludeFromCodeCoverageAttribute</ExcludeByAttribute>
+          <SkipAutoProps>true</SkipAutoProps>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

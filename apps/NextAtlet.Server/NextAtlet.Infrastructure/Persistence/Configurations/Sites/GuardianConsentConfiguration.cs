@@ -1,0 +1,32 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using NextAtlet.Domain.Entities.Sites;
+using NextAtlet.Domain.Entities.Consent;
+using NextAtlet.Domain.Enumerations.Individual;
+
+namespace NextAtlet.Infrastructure.Persistence.Configurations;
+
+public class GuardianConsentConfiguration : IEntityTypeConfiguration<GuardianConsent>
+{
+    public void Configure(EntityTypeBuilder<GuardianConsent> entity)
+    {
+        //Keys
+        entity.HasKey(e => e.Id);
+
+        //STRINGS
+        entity.Property(e => e.TermsVersion).IsRequired().HasMaxLength(50);
+
+        //SIMPLE SCALARS
+        entity.Property(e => e.CreatedUtc).IsRequired();
+
+        //ENUMS
+        entity.Property(e => e.MethodId).IsRequired().HasMaxLength(30);
+
+        //RELATIONS N:1
+        entity.HasOne(e => e.Site).WithMany().OnDelete(DeleteBehavior.Cascade);
+        entity.HasOne(e => e.Guardian).WithMany().HasForeignKey(e => e.GuardianUserId).OnDelete(DeleteBehavior.Restrict);
+
+        //INDEXES
+        entity.HasIndex(e => e.SiteId);
+    }
+}

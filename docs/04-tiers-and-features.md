@@ -4,6 +4,8 @@
 
 > **Values below are a starting proposal, not final pricing.** Numbers (slot counts, session counts, prices) are marked as placeholders `[…]` where they need a real business decision. The *structure* — additive perks, never-replace — is the part to keep stable.
 
+> **Implementation status:** none of this is built yet. There are `AthleteTier` (`free`/`plus`/`pro`) and `OrganizationTier` (`free`/`plus`/`pro`) **enumerations**, and denormalized `IndividualProfile.SelfTierId` / `OrganizationProfile.OrganizationTierId` fields — but no billing tables, no `Subscription`, no Stripe, no `PerkResolver` (stub only), and no tier-based gating. Tiers don't yet change anything at runtime. The perk layer, slots, and `EffectiveCapability` below describe the intended design.
+
 ---
 
 ## 1. The one rule that governs everything
@@ -83,7 +85,7 @@ What an active club subscription can add on top of an athlete's `SelfTier`:
 | Club/national badges | display affiliation/prestige badges | badge removed when affiliation ends |
 | Recruitment visibility | surfaced in club/recruiter tools | removed |
 
-Perks are **resolved at request time** by the `PerkResolver` (`02` §6, `07`). They are never written into `AthleteProfile.SelfTier`.
+Perks are **resolved at request time** by the (planned) `PerkResolver` (`02` §6, `07`). They are never written into `IndividualProfile.SelfTierId`.
 
 ---
 

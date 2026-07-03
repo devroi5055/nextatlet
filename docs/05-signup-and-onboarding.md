@@ -12,26 +12,30 @@ Signup is **two gates** (`03`): **Gate 1 — authentication** (Auth0 hosted logi
 
 There are **two registration entry flows** (`03` §1) — the athlete sets up their own profile, or a parent sets one up for their child:
 
-### Self-registration (`POST /api/athletes/register`)
+### Self-registration (`POST /api/IndividualSites/self-register`, command: `RegisterIndividualSiteSelfCommand`)
 
 A profile can be created and published (within tier) with **text only**. Required:
 
 | Field | Required | Why |
 |-------|----------|-----|
 | Display name | yes | profile + slug seed |
+| Slug | yes | URL identity; reserved-word + uniqueness checked |
 | Date of birth | yes | determines `IsMinor` → guardian gating (`03`) |
-| Sport | yes (defaults `judo`) | profile context |
 | Preferred locale (da/en) | yes | bilingual default |
-| **If minor:** guardian email | yes | a `Guardian` login is created with the profile; required before publish (`03`) |
+| **If minor (< 16):** guardian email | yes | a consent `ActionToken` is issued and emailed; required before publish (`03`) |
+
+> `Sport` is **not** collected at signup — it defaults to `judo` on the `IndividualProfile` server-side. The request also carries a vestigial `ParentalConsentConfirmed` bool that the handler currently ignores (binding consent is the guardian's emailed action-token acceptance, not a self-checkbox).
 
 (Email/login is not a form field — it's the authenticated caller.) That is the whole gate. Everything else — bio, results, photos, themes — is onboarding.
 
-- **Minor:** guardian email is required; the profile + a **pending** `Guardian` login are created together. The guardian accepts the invite, gets publish + approval defaults, and publishes; the young athlete may build/propose but not publish.
+- **Minor (below self-consent age 16):** guardian email is required; the profile and a `ConsentActionToken` are created in the same transaction. The guardian authenticates and accepts at `POST /api/action-tokens/{tokenId}/accept`, which records consent and lifts the publish gate. The young athlete may build/propose but not publish until consent is recorded.
 - **Adult (≥18):** athlete is sole owner/approver; no guardian step.
 
-### Guardian-creates-profile-for-child (`POST /api/athletes/register-child`)
+### Guardian-creates-profile-for-child (`POST /api/IndividualSites/guardian-register`, command: `RegisterIndividualSiteGuardianCommand`)
 
-The common youth-judo case: a parent sets up their child's profile. The **caller becomes the `Guardian`** (active by construction); the child has **no login in v1**. Required: child display name, child DOB, locale (slug seeded from the name). Registering an adult this way is rejected — an adult must self-register. One guardian may register multiple children.
+The common youth-judo case: a parent sets up their child's profile. The **caller becomes the `guardian`** (active by construction); the child has **no login in v1**. Required: child display name, slug, child DOB, locale. Registering an adult this way is rejected — an adult must self-register. One guardian may register multiple children.
+
+> **Frontend.** This is implemented as the onboarding wizard at `/onboarding`: a profile-type selector ("Mig selv" → self, "Mit barn" → guardian), the two age-conditional forms (`self` / `guardian`), and a completion screen with `ready` / `consent-pending` / `guardian` states. An authenticated session is required to enter (Auth0); the `/app` server layout runs the `GET /api/Me` decision gate that routes a profile-less user here.
 
 ---
 
@@ -74,11 +78,14 @@ Upgrade is always possible later without re-signup — a tier change just re-res
 | Locale | yes | bilingual default |
 | Subscription choice | yes (Free default) | sets athlete slots + perk layer (`04`) |
 
+Route: `POST /api/OrganizationSites/club-register` (command: `RegisterOrganizationSiteCommand`)
+
 Club onboarding:
 1. Create club page (draft) using the club section types.
-2. Invite staff (`ClubAdmin` invites `ClubEditor`s).
-3. Affiliate athletes into slots — each athlete must already have a profile; affiliation creates a `Membership` (`02` §5) and grants the perk layer.
-4. Publish club page (showcases affiliated athletes via published-contract references).
+2. Invite staff (`club_admin` invites `club_editor`s).
+3. **Optional: verify the club** — `POST /api/OrganizationSites/send-offical-email-verification` *(route spelled "offical" in code)* triggers the email-to-official flow: issues an `ActionToken(org_email_verification)` and emails the accept link to the **registry-sourced** official address (sourced from the imported `Club`/`ClubOfficial` registry, never the request body). Completion via `POST /api/action-tokens/{id}/accept` marks the org Verified. Verification gates **powers** (affiliating athletes) not existence (registering/building/publishing a club page is possible without verification — serves CVR-less clubs).
+4. Affiliate athletes into slots — each athlete must already have a profile; affiliation creates a `Membership` (`02` §5) and grants the perk layer.
+5. Publish club page (showcases affiliated athletes via published-contract references).
 
 ---
 

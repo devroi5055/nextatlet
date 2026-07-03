@@ -1,21 +1,24 @@
-using MediatR;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using NextAtlet.Api;
 using NextAtlet.Api.Filters;
+using NextAtlet.Api.Seeding;
 using NextAtlet.Application;
-using NextAtlet.Application.Common.Options;
-using NextAtlet.Application.Common.Time;
-using NextAtlet.Application.Features.Account;
-using NextAtlet.Application.Features.Invitations;
 using NextAtlet.Application.Abstractions.Persistence;
 using NextAtlet.Application.Abstractions.Services;
+using NextAtlet.Application.Common.Errors;
+using NextAtlet.Application.Common.Options;
+using NextAtlet.Application.Common.Time;
+using NextAtlet.Application.Features.ActionTokens.Strategies;
+using NextAtlet.Application.Features.Identity;
 using NextAtlet.Domain.Authorization;
 using NextAtlet.Infrastructure.Common.Time;
-using NextAtlet.Infrastructure.Data;
+using NextAtlet.Infrastructure.ExternalServices.Cvr;
+using NextAtlet.Infrastructure.ExternalServices.Scrape;
 using NextAtlet.Infrastructure.Persistence;
 using NextAtlet.Infrastructure.Persistence.Repositories;
 using NextAtlet.Infrastructure.Services;
@@ -26,10 +29,46 @@ using System.Security.Claims;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+// Controllers + their cross-cutting filters (ResultFilter, default error responses) are registered
+// together further down under "Http code filters".
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.OperationFilter<DefaultApiErrorResponseFilter>();
 
-builder.Services.AddControllers(options => options.Filters.Add<ResultFilter>());
-builder.Services.AddOpenApi(options => options.AddDocumentTransformer<OAuthSecuritySchemeTransformer>());
+    var authority = builder.Configuration["Authentication:Authority"];
 
+    // Only add the security scheme if Authority is configured — guards against
+    // new Uri(null...) throwing during spec generation.
+    if (!string.IsNullOrWhiteSpace(authority))
+    {
+        var baseUri = authority.EndsWith("/") ? authority : authority + "/";   // ensure trailing slash
+
+        options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.OAuth2,
+            Flows = new OpenApiOAuthFlows
+            {
+                AuthorizationCode = new OpenApiOAuthFlow
+                {
+                    AuthorizationUrl = new Uri($"{baseUri}authorize"),
+                    TokenUrl = new Uri($"{baseUri}oauth/token"),
+                    Scopes = new Dictionary<string, string>
+                    {
+                        ["openid"] = "OpenID",
+                        ["profile"] = "Profile",
+                        ["email"] = "Email"
+                    }
+                }
+            }
+        });
+
+        options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+        {
+            [new OpenApiSecuritySchemeReference("oauth2", document)] = []
+        });
+    }
+});
 // Dual-scheme auth: cookie (production / Next.js session) + JWT bearer (Swagger, service clients).
 // A "smart" policy scheme routes each request to the right handler so [Authorize] endpoints serve
 // both transparently. Claim extraction (ClaimsPrincipalExtensions) is scheme-agnostic.
@@ -44,6 +83,20 @@ builder.Services.AddAuthentication(options =>
     options.Cookie.HttpOnly = true;
     options.Cookie.SameSite = SameSiteMode.Strict;
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+
+    // This is an API, not an MVC app — there's no login page to redirect to.
+    // Return 401/403 instead of redirecting, so unauthenticated requests don't
+    // loop endlessly to a nonexistent /Account/Login.
+    options.Events.OnRedirectToLogin = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return Task.CompletedTask;
+    };
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        return Task.CompletedTask;
+    };
 })
 .AddJwtBearer("bearer", options =>
 {
@@ -63,6 +116,11 @@ builder.Services.AddAuthentication(options =>
             ? "bearer"   // Swagger / machine clients
             : "cookie";  // Next.js frontend session
     };
+});
+
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<ResultFilter>();
 });
 
 // Auth0 access tokens omit email by default — point this at the namespaced claim an Action adds.
@@ -95,17 +153,27 @@ builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(IAppl
 // Repositories + Unit of Work (EF implementations over the shared scoped DbContext)
 builder.Services.AddScoped<IUnitOfWork, EfUnitOfWork>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IAthleteSiteRepository, AthleteSiteRepository>();
-builder.Services.AddScoped<IProfileLoginRepository, ProfileLoginRepository>();
-builder.Services.AddScoped<IInvitationRepository, InvitationRepository>();
+builder.Services.AddScoped<ISiteRepository, SiteRepository>();
+builder.Services.AddScoped<IIndividualProfileRepository, IndividualProfileRepository>();
+builder.Services.AddScoped<IOrganizationProfileRepository, OrganizationProfileRepository>();
+builder.Services.AddScoped<ISiteLoginRepository, SiteLoginRepository>();
+builder.Services.AddScoped<IActionTokenRepository, ActionTokenRepository>();
 builder.Services.AddScoped<IGuardianConsentRepository, GuardianConsentRepository>();
 builder.Services.AddScoped<IThemeRepository, ThemeRepository>();
-builder.Services.AddScoped<IAthleteSiteSnapshotRepository, AthleteSiteSnapshotRepository>();
+builder.Services.AddScoped<ISiteSnapshotRepository, SiteSnapshotRepository>();
 
 // Domain services (behind Application abstractions)
 builder.Services.AddScoped<ISectionTypeRegistry, SectionTypeRegistry>();
 builder.Services.AddScoped<ISanitizationService, SanitizationService>();
 builder.Services.AddSingleton<IClock, SystemClock>();
+
+//ActionToken // TODO: might change to singelton
+builder.Services.AddScoped<ActionTokenStrategyRegistry>();
+builder.Services.AddScoped<IActionTokenStrategy, OrgEmailVerificationStrategy>();
+builder.Services.AddScoped<IActionTokenStrategy, ConsentStrategy>();
+builder.Services.AddScoped<IActionTokenStrategy, InvitationStrategy>();
+
+builder.Services.AddCvrLookup(builder.Configuration);
 
 // Email: send real invite mail via Resend when an API key is configured; otherwise log the link
 // (so local dev needs no secrets). Either way handlers depend only on IEmailService.
@@ -125,14 +193,22 @@ else
     builder.Services.AddScoped<IEmailService, LoggingEmailService>();
 }
 
-// Application services shared across handlers (identity provisioning + invitation issuing)
+// Application services shared across handlers (identity provisioning)
 builder.Services.AddScoped<UserProvisioner>();
-builder.Services.AddScoped<InvitationIssuer>();
 builder.Services.AddSingleton<PermissionResolver>(); // stateless: ControlMode + role → permissions
 builder.Services.Configure<InvitationOptions>(builder.Configuration.GetSection(InvitationOptions.SectionName));
 builder.Services.Configure<AgeThresholdOptions>(builder.Configuration.GetSection(AgeThresholdOptions.SectionName));
+// Handlers inject AgeThresholdOptions directly (not IOptions<>), so expose the resolved value.
+builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<AgeThresholdOptions>>().Value);
 builder.Services.Configure<TermsOptions>(builder.Configuration.GetSection(TermsOptions.SectionName));
 
+//strategies
+//builder.Services.AddScoped<IVerificationStrategy, CvrVerificationStrategy>();
+
+//club import: scraper strategies + canonicalizer + repository
+builder.Services.AddScoped<IClubSourceStrategy, DjuPortalScraper>();
+builder.Services.AddScoped<IClubCanonicalizer, ClubCanonicalizer>();
+builder.Services.AddScoped<IClubRepository, ClubRepository>();
 
 // Add CORS (for development)
 builder.Services.AddCors(options =>
@@ -152,21 +228,24 @@ app.UseExceptionHandler();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi().AllowAnonymous(); // serves the OpenAPI document at /openapi/v1.json (Swagger must read it unauthenticated)
+    app.UseSwagger();
     app.UseSwaggerUI(options =>
     {
-        // Swagger UI (at /swagger) reads the document produced by AddOpenApi() — for manual testing.
-        options.SwaggerEndpoint("/openapi/v1.json", "NextAtlet API v1");
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "NextAtlet API v1");
 
-        // OAuth2 login from Swagger ("Authorize" button).
         options.OAuthClientId(builder.Configuration["Authentication:Swagger:ClientId"]);
         options.OAuthUsePkce();
         options.OAuthScopeSeparator(" ");
-        // Auth0 only issues a JWT access token for the API when the 'audience' param is present.
+
         var audience = builder.Configuration["Authentication:Audience"];
         if (!string.IsNullOrWhiteSpace(audience))
-            options.OAuthAdditionalQueryStringParams(new Dictionary<string, string> { ["audience"] = audience });
+        {
+            options.OAuthAdditionalQueryStringParams(
+                new Dictionary<string, string> { ["audience"] = audience }
+            );
+        }
     });
+
     app.UseCors("Development");
 }
 
@@ -177,7 +256,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Apply EF Core migrations on startup (development only)
+// Apply EF Core migrations on startup (development only), then seed a small sample dataset.
 if (app.Environment.IsDevelopment())
 {
     using (var scope = app.Services.CreateScope())
@@ -186,6 +265,7 @@ if (app.Environment.IsDevelopment())
         dbContext.Database.EnsureDeleted();
         dbContext.Database.Migrate();
     }
-}
 
+    await DevelopmentDataSeeder.SeedAsync(app.Services);
+}
 app.Run();

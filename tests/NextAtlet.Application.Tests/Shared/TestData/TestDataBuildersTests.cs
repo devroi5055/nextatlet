@@ -1,4 +1,6 @@
-using NextAtlet.Domain.Enumerations.AthleteProfile;
+using NextAtlet.Domain.Entities.Identity;
+using NextAtlet.Domain.Enumerations.Identity;
+using NextAtlet.Domain.Enumerations.Individual;
 using NextAtlet.Domain.Enumerations.Media;
 using NextAtlet.Domain.Enumerations.Shared;
 using NextAtlet.Domain.Policies;
@@ -32,26 +34,26 @@ public class TestDataBuildersTests
     [Fact]
     public void AnAthlete_DefaultIsCoherentAndAthleteControlled()
     {
-        var athlete = TestAthletes.AnAthlete();
+        var athlete = TestIndividuals.AnAthlete();
 
-        Assert.False(string.IsNullOrWhiteSpace(athlete.Slug));
-        Assert.Equal(ControlMode.AthleteControlled.Id, athlete.ControlModeId);
+        Assert.False(string.IsNullOrWhiteSpace(athlete.SportId));
+        Assert.Equal(ControlModes.AthleteControlled.Id, athlete.ControlModeId);
     }
 
     [Theory]
-    [InlineData(nameof(TestAthletes.AnUnder13Athlete), "below_minimum", true)]
-    [InlineData(nameof(TestAthletes.AYoungMinorAthlete), "young_minor", true)]
-    [InlineData(nameof(TestAthletes.AnOlderMinorAthlete), "older_minor", true)]
-    [InlineData(nameof(TestAthletes.AnAdultAthlete), "adult", false)]
+    [InlineData(nameof(TestIndividuals.AnUnder13Athlete), "below_minimum", true)]
+    [InlineData(nameof(TestIndividuals.AYoungMinorAthlete), "young_minor", true)]
+    [InlineData(nameof(TestIndividuals.AnOlderMinorAthlete), "older_minor", true)]
+    [InlineData(nameof(TestIndividuals.AnAdultAthlete), "adult", false)]
     public void AgeBandVariants_ProduceTheExpectedBand(string variant, string expectedBand, bool expectedMinor)
     {
         var now = DateTime.UtcNow;
         var athlete = variant switch
         {
-            nameof(TestAthletes.AnUnder13Athlete) => TestAthletes.AnUnder13Athlete(now),
-            nameof(TestAthletes.AYoungMinorAthlete) => TestAthletes.AYoungMinorAthlete(now),
-            nameof(TestAthletes.AnOlderMinorAthlete) => TestAthletes.AnOlderMinorAthlete(now),
-            _ => TestAthletes.AnAdultAthlete(now)
+            nameof(TestIndividuals.AnUnder13Athlete) => TestIndividuals.AnUnder13Athlete(now),
+            nameof(TestIndividuals.AYoungMinorAthlete) => TestIndividuals.AYoungMinorAthlete(now),
+            nameof(TestIndividuals.AnOlderMinorAthlete) => TestIndividuals.AnOlderMinorAthlete(now),
+            _ => TestIndividuals.AnAdultAthlete(now)
         };
 
         Assert.Equal(AgeBand.FromId(expectedBand), AgePolicy.BandToday(athlete.DateOfBirth, now));
@@ -67,10 +69,10 @@ public class TestDataBuildersTests
     {
         var athlete = modeId switch
         {
-            "athlete_controlled" => TestAthletes.AnAthleteControlledProfile(),
-            "guardian_controlled" => TestAthletes.AGuardianControlledProfile(),
-            "athlete_controlled_shared" => TestAthletes.AnAthleteControlledSharedProfile(),
-            _ => TestAthletes.AGuardianControlledSharedProfile()
+            "athlete_controlled" => TestIndividuals.AnAthleteControlledProfile(),
+            "guardian_controlled" => TestIndividuals.AGuardianControlledProfile(),
+            "athlete_controlled_shared" => TestIndividuals.AnAthleteControlledSharedProfile(),
+            _ => TestIndividuals.AGuardianControlledSharedProfile()
         };
 
         Assert.Equal(modeId, athlete.ControlModeId);
@@ -79,49 +81,56 @@ public class TestDataBuildersTests
     [Fact]
     public void OwnerAndGuardianLogins_AreActiveWithTheRightRole()
     {
-        var owner = ProfileLogins.AnOwnerLogin();
-        var guardian = ProfileLogins.AGuardianLogin();
+        var owner = SiteLogins.AnOwnerLogin();
+        var guardian = SiteLogins.AGuardianLogin();
 
-        Assert.Equal(ProfileRole.AthleteOwner.Id, owner.RoleId);
+        Assert.Equal(IndividualRole.Owner.Id, owner.SiteRoleId);
         Assert.Equal(ProfileLoginStatus.Active.Id, owner.StatusId);
-        Assert.Equal(ProfileRole.Guardian.Id, guardian.RoleId);
+        Assert.Equal(IndividualRole.Guardian.Id, guardian.SiteRoleId);
         Assert.Equal(ProfileLoginStatus.Active.Id, guardian.StatusId);
     }
 
     [Fact]
     public void RevokedLogin_IsRevoked()
     {
-        Assert.Equal(ProfileLoginStatus.Revoked.Id, ProfileLogins.ARevokedOwnerLogin().StatusId);
-        Assert.Equal(ProfileLoginStatus.Revoked.Id, ProfileLogins.ARevokedGuardianLogin().StatusId);
+        Assert.Equal(ProfileLoginStatus.Revoked.Id, SiteLogins.ARevokedOwnerLogin().StatusId);
+        Assert.Equal(ProfileLoginStatus.Revoked.Id, SiteLogins.ARevokedGuardianLogin().StatusId);
     }
 
     [Fact]
-    public void APendingInvitation_IsPendingGuardianInvite()
+    public void APendingInviteToken_IsPendingGuardianInvite()
     {
-        var invitation = Invitations.APendingInvitation();
+        var token = ActionTokens.APendingInviteToken();
+        var payload = Assert.IsType<InvitePayload>(token.Payload);
 
-        Assert.Equal(InvitationStatus.Pending.Id, invitation.StatusId);
-        Assert.Equal(ProfileRole.Guardian.Id, invitation.RoleId);
-        Assert.False(string.IsNullOrWhiteSpace(invitation.Email));
-        Assert.False(invitation.IsExpired);
+        Assert.Equal(ActionTokenType.Invitation.Id, token.TypeId);
+        Assert.Equal(IndividualRole.Guardian.Id, payload.RoleId);
+        Assert.False(string.IsNullOrWhiteSpace(payload.Email));
+        Assert.True(token.IsPending);
+        Assert.False(token.IsExpired);
     }
 
     [Fact]
-    public void AnExpiredInvitation_IsExpired()
-        => Assert.True(Invitations.AnExpiredInvitation().IsExpired);
+    public void AnExpiredInviteToken_IsExpired()
+        => Assert.True(ActionTokens.AnExpiredInviteToken().IsExpired);
 
     [Fact]
-    public void AnAcceptedInvitation_IsAcceptedWithTimestamp()
+    public void AnAcceptedInviteToken_IsAcceptedWithTimestamp()
     {
-        var invitation = Invitations.AnAcceptedInvitation();
+        var token = ActionTokens.AnAcceptedInviteToken();
 
-        Assert.Equal(InvitationStatus.Accepted.Id, invitation.StatusId);
-        Assert.NotNull(invitation.AcceptedUtc);
+        Assert.False(token.IsPending);
+        Assert.NotNull(token.AcceptedUtc);
     }
 
     [Fact]
-    public void ARevokedInvitation_IsRevoked()
-        => Assert.Equal(InvitationStatus.Revoked.Id, Invitations.ARevokedInvitation().StatusId);
+    public void AConsentToken_CarriesConsentPayload()
+    {
+        var token = ActionTokens.AConsentToken();
+
+        Assert.Equal(ActionTokenType.Consent.Id, token.TypeId);
+        Assert.IsType<ConsentPayload>(token.Payload);
+    }
 
     [Fact]
     public void AClubFundedAsset_StaysWithTheAthlete()
@@ -141,7 +150,7 @@ public class TestDataBuildersTests
     [Fact]
     public void ADraftSiteConfig_IsDraftWithValidLayout()
     {
-        var config = AthleteSiteSnapshots.ADraftSiteSnapshot();
+        var config = SiteSnapshots.ADraftSiteSnapshot();
 
         Assert.Null(config.PublishedUtc);
         Assert.NotNull(config.Layout);
@@ -152,7 +161,7 @@ public class TestDataBuildersTests
     [Fact]
     public void APublishedSiteConfig_IsPublished()
     {
-        var config = AthleteSiteSnapshots.APublishedSiteSnapshot();
+        var config = SiteSnapshots.APublishedSiteSnapshot();
 
         Assert.NotNull(config.PublishedUtc);
     }

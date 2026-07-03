@@ -9,11 +9,21 @@ Read the numbered docs only when working on that specific area (links noted per 
 
 | Layer | Choice |
 |-------|--------|
-| Backend | ASP.NET Core Web API + EF Core |
-| DB | PostgreSQL (`jsonb` for section payloads) |
-| Frontend | Next.js (editor = SPA-style; public site = SSR/ISR) |
-| Media | Blob storage + CDN (Azure Blob / S3); refs only in DB |
-| Auth | ASP.NET Core Identity or external IdP; **must support multiple linked logins per profile** |
+| Backend | ASP.NET Core Web API + EF Core (`NextAtletDbContext`), .NET 10 |
+| DB | PostgreSQL (`jsonb` for section payloads + value objects) |
+| Frontend | Next.js (App Router) — `@auth0/nextjs-auth0`, React Query, Zustand, Tailwind v4, Radix |
+| Media | Blob storage + CDN (Azure Blob / S3); refs only in DB — *pipeline not built yet* |
+| Auth | **Auth0 (OIDC)**, dual-scheme (JWT bearer + cookie); supports **multiple linked logins per site** |
+
+---
+
+## Implementation status (what's actually built)
+
+The numbered docs are a forward-looking **spec**; much is designed but not yet built. Current reality:
+
+**Built:** Auth0 dual-scheme auth + just-in-time `UserProvisioner`; the two-gate registration (self + guardian + org/club) via MediatR/CQRS over repositories + `IUnitOfWork`; `Site`/`IndividualProfile`/`OrganizationProfile`/`SiteSnapshot` schema; `SiteLogin` multi-login; `ActionToken` flow (invite / consent / org-email-verification) with a strategy registry; `GuardianConsent` (GDPR audit); control model (`PermissionResolver` + `ControlMode`, transfer-control + collaboration); `GET /api/Me` decision gate; `GET /api/sites` public paged listing; club registry (scrape Danish clubs + officials, CVR lookup); error-codes pipeline (`Result<T>` + `DomainException` → `ApiError`); dev data seeder. Frontend: marketing landing page, the onboarding wizard (self/guardian/complete), Auth0 proxy + decision gate.
+
+**Not built yet (designed only):** publish flow + public **render** contract / `PublicContractProjector`; section validation strategies wired to the editor; theme picker; tier gating; **all billing** (`Plan`/`PlanPrice`/`Subscription`/`Purchase`, Stripe, `BillingService`); `PerkResolver` (stub only); media pipeline; **memberships/affiliation** (entity scaffold, no commands); **change-request workflow** (entity scaffold, no commands); mentoring; versioning/history; subdomains. `Membership` and `ChangeRequest` entities exist but diverge from the doc schemas below and have no handlers.
 
 ---
 
@@ -29,15 +39,15 @@ Read the numbered docs only when working on that specific area (links noted per 
 
 ## Identity & permissions model
 
-- **`AthleteProfile`** — one per athlete; B2C core.
-- **`ProfileLogin`** — join of `User ↔ AthleteProfile` with role (`AthleteOwner` | `Guardian`) + `Permissions` jsonb. A profile may carry {Owner+Guardian}, {Owner only}, or {Guardian only}.
-- **`User.AuthProviderId` is nullable** — null = an **unclaimed** user (e.g. an invited guardian); `IsClaimed` (computed) once a real IdP `sub` is linked.
-- Minor profile **must** have ≥1 `Guardian` login, **created atomically with the profile** (never after). `Pending` when invited (self-minor flow); `Active` when the caller is the guardian (child flow). Publishing a minor needs an *active* guardian.
-- **Two registration commands** (caller = AthleteOwner vs caller = Guardian-for-child) share `AthleteRegistrationHandlerBase`; identity comes from token claims, never the body. See `docs/03` §1, `docs/05`, `REFACTOR_ATHLETE_REGISTRATION.md`.
-- **`OrganizationLogin`** — `User ↔ Organization` with role (`ClubAdmin` | `ClubEditor`; others reserved).
-- All authorization expressed as composable **Specifications** (`CanEditContent`, `CanPublish`, `CanManageBilling`, etc.) — no scattered `if/role` checks.
-- Guardian permission defaults: guardian holds `canPublish` + `canApproveChanges`; athlete may edit/propose, not publish.
-- **Auth = Auth0 (OIDC), dual-scheme:** JWT bearer (Swagger/services) + cookie (Next.js session) behind a `smart` policy scheme; authenticated-by-default fallback policy; `[AllowAnonymous]` to opt out. See `docs/07` (Authentication).
+- **`Site`** — shared identity envelope (`SiteTypeId`: `individual` | `organization`); holds `Slug`, `DisplayName`, `VisibilityStateId`, `VerificationStatusId`, `DefaultLocaleId`, and FKs to current draft/published `SiteSnapshot`.
+- **`IndividualProfile`** — per-athlete metadata (1:1 with an individual `Site`); B2C core. (Was `AthleteProfile`.)
+- **`SiteLogin`** — join of `User ↔ Site` with `SiteRoleId` + optional `Permissions` jsonb (`LoginPermissions`). Individual roles: `owner` | `guardian`. Organization roles: `club_admin` | `club_editor`. (Was `ProfileLogin` / `OrganizationLogin` — now one unified table.) A site may carry {Owner+Guardian}, {Owner only}, or {Guardian only}.
+- **`User.AuthProviderId` is nullable** in schema, but Users are **provisioned just-in-time** on first authentication (`UserProvisioner`, matched by `sub` only) — a pending invite is an `ActionToken` row, never a ghost user. `IsClaimed` (computed) once a `sub` is linked.
+- Minor profile gets its guardian **atomically**: in the guardian-creates-child flow the caller is attached as an Active `guardian` `SiteLogin` by construction; in the self-minor flow (<16) a consent **`ActionToken`** is issued + emailed (no login until the guardian accepts). Publishing a minor needs `ConsentStateId != pending_guardian_consent`.
+- **Two registration commands** (caller → `owner` vs caller → `guardian`) share `IndividualSiteRegistrationHandlerBase.CreateIndividualProfileCoreAsync`; identity comes from token claims (`User.GetAuthProviderId()`/`GetEmail()`), never the body. See `docs/03` §1, `docs/05`.
+- **Authorization is `PermissionResolver` (domain), not Specifications.** `PermissionResolver.Resolve(SiteLogin, IndividualProfile)` returns a `SitePermissions` preset (`CanEditContent`/`CanPublish`/`CanApproveChanges`/`CanManageMedia`/`CanManageMemberships`) from the profile's **`ControlMode`** + the login's role. Handlers also do natural "caller must hold an active login on this site" checks. There are **no** `CanEditContent`/`CanManageBilling` Specification classes (despite older doc text).
+- **`ControlMode`** (stored, explicit, never age-derived): `athlete_controlled` | `guardian_controlled` | `*_shared`. `transfer-control` and `collaboration` (shared editing) endpoints flip it. Consent gate is the orthogonal **`ConsentState`** (`not_required` | `pending_guardian_consent` | `consented`).
+- **Auth = Auth0 (OIDC), dual-scheme:** JWT bearer (Swagger/services) + cookie (`nextatlet.session`, Next.js) behind a `smart` policy scheme; authenticated-by-default fallback policy; `[AllowAnonymous]` to opt out. See `docs/07` (Authentication).
 
 ---
 
@@ -65,7 +75,7 @@ Api ──► Application ◄── Infrastructure
 
 ## Error handling (Model A — error codes)
 
-Backend emits **error codes, never localized strings**; the frontend resolves `da`/`en`. User-facing failures throw `DomainException(code, params)` → `400` + `ApiError { errorCode, parameters }`; system failures are logged → generic `500` `internal_error` (no leak). `ErrorCodes` is the single source of truth; a build-time test asserts every code has both translations. Don't classify a system/seed failure (e.g. missing Classic theme) as a `DomainException`. Details: `docs/01` (contract), `docs/07`, `error-handling-implementation-plan.md`.
+Backend emits **error codes, never localized strings**; the frontend resolves `da`/`en`. Two boundary mechanisms produce the same `ApiError { errorCode, parameters }` shape: handlers return `Result<T>` (unwrapped by a global `ResultFilter`) or throw `DomainException(code)`; both map to a **specific 4xx** (the `ErrorCodes` catalog now carries fine-grained 400/403/404/409/422 semantics — no longer a coarse "400 for everything"). System failures hit `GlobalExceptionHandler` → generic `500` `internal_error` (no leak). Don't classify a system/seed failure (e.g. missing Classic theme) as a `DomainException`. Details: `docs/01` (contract), `docs/07`.
 
 Club pages reference athletes by id; resolved at render against published contract. If athlete is `Private`/unpublished → graceful placeholder, never a leak or a break.
 
@@ -73,19 +83,31 @@ Club pages reference athletes by id; resolved at render against published contra
 
 ## Key entities (schema summary)
 
-**`AthleteProfile`** — `Slug`, `DateOfBirth`, `SelfTier` (denormalized, not authoritative), `VisibilityState` (`Public`/`Private`).
+Enumerations are stored as **string IDs** (`*Id` columns, e.g. `ControlModeId`, `SportId`); the value-object base carries a bilingual `LocalizedText` Title/Description.
 
-**`SiteConfig`** — two rows per athlete (`Draft` + `Published`). Columns: `ThemeId`, `ThemeVersion`, `Layout` (jsonb: ordered sections), `GlobalSettings` (jsonb), `Version` (optimistic concurrency + cache key).
+**`Site`** — `Slug`, `DisplayName`, `SiteTypeId`, `VisibilityStateId` (`public`/`private`), `VerificationStatusId`, `DefaultLocaleId`, `CurrentDraftSnapshotId`, `CurrentPublishedSnapshotId`.
 
-**`MediaAsset`** — `Origin` (`SelfUpload`/`AdminUpload`/`ClubFundedShoot`), `IsClubBranding`. Media stays with athlete on club exit; only `IsClubBranding = true` assets are club-retained.
+**`IndividualProfile`** (was `AthleteProfile`) — `SiteId`, `SportId` (`judo`), `DateOfBirth` (`DateOnly`), `ControlModeId`, `ConsentStateId`, `SelfTierId` (denormalized, **null until billing**). `IsMinor(now)` computed. (Code TODOs flag `ConsentStateId`/`SelfTierId` as possibly-removable.)
 
-**`Organization`** — `Type` enum: `Club | NationalTeam | Academy | TrainingCenter | SchoolTeam`. `IsServerManaged = true` for NationalTeam (internal-admin only). `SubscriptionTier` + `AthleteSlotCount` are denormalized.
+**`SiteSnapshot`** (was `SiteConfig`) — **immutable** (`CreatedOnly`). Columns: `SiteId`, `ThemeId`, `Layout` (jsonb sections), `GlobalSettings` (jsonb), `PublishedUtc`. Draft vs published = which FK on `Site` points at it. **No `Version` / `ThemeVersion` column** (optimistic-concurrency `Version` was removed; the draft-edit endpoint that used it is currently disabled).
 
-**`Membership`** — `AthleteProfileId`, `OrganizationId`, `StartDate`, `EndDate`, `Status` (`Active`/`Inactive`), `OccupiesSlot`. At most **one active Club** at a time (display primary). NationalTeam = prestige badge only, not a perk source.
+**`Theme`** — `Name`, `Manifest` (jsonb `ThemeManifest`: supported sections + slots), `PreviewImageUrl`, `RetiredUtc` (`IRetirable`). No `Version`/`MinimumCapability`/`IsActive` columns.
 
-**`ChangeRequest`** — club → athlete proposal. `ProposedSections` (jsonb snapshot), `Status` (`Pending`/`Approved`/`Rejected`/`Withdrawn`). Approval merges into **draft only** (gate 1); athlete/guardian publishes separately (gate 2). Club can never write to a profile directly.
+**`MediaAsset`** *(schema only; no pipeline yet)* — XOR owner `AthleteSiteId` | `OrganizationId`, `TypeId`, `OriginId` (`self_upload`/`admin_upload`/`club_funded_shoot`/`organization_upload`), `IsClubBranding`, `StorageKey`.
 
-**Billing** — `Plan` (identity, `Key` is stable code ref) → `PlanPrice` (interval × currency, append-only) → `Subscription` (pins `PlanVersion`; `AthleteProfileId` XOR `OrganizationId`). `Purchase` for one-time items. `SelfTier`/`SubscriptionTier` are denormalized read-fields updated by `BillingService` on Stripe webhooks.
+**`OrganizationProfile`** (was `Organization`) — `SiteId`, `OrganizationTypeId` (`club`/`national_team`/`academy`/`training_center`/`school_team`), `IsServerManaged`, `AthleteSlotCount`, `OrganizationTierId`, `VerificationStatusId` (+ `OrgVerification` value object).
+
+**`ActionToken`** — single-use expiring token (the row `Id` IS the link key). `TypeId` (`invitation`/`consent`/`org_email_verification`), `TargetSiteId`, `ExpiresUtc`, `AcceptedUtc`, polymorphic `Payload`. Accepted via `POST /api/action-tokens/{id}/accept` → strategy registry.
+
+**`GuardianConsent`** — immutable GDPR Art. 8 audit (`SiteId`, `GuardianUserId`, `MethodId`, `TermsVersion`, `CreatedUtc`).
+
+**`Club` / `ClubOfficial`** — imported club registry (DJU scrape + CVR lookup) that backs org email-verification. Not in the older docs.
+
+**`Membership`** *(scaffold; no commands)* — `IndividualProfileId`, `OrganizationId`, `RoleId`, `EndDate`, `statusId`, `OccupiesSlot`. Intended: one active Club at a time (display primary); NationalTeam = badge only.
+
+**`ChangeRequest`** *(scaffold; no workflow commands)* — current fields: `TargetProfileId`, `ProposingOrganizationId`, `ProposedByUserId`, `ProposedLayout` (jsonb), `Theme`, `ThemeVersion`, `IsActive`. The designed `Status`/`ResolvedBy`/two-gate approval (docs `02`/`03`) is **not implemented**.
+
+**Billing** *(designed, not built — no tables, no Stripe)* — planned `Plan` → `PlanPrice` (append-only) → `Subscription` (XOR subscriber) + `Purchase`. Tiers currently exist only as the `AthleteTier`/`OrganizationTier` enumerations behind the denormalized `SelfTierId`/`OrganizationTierId` fields.
 
 ---
 
@@ -103,17 +125,22 @@ One React component per section type. Theme manifest declares supported section 
 
 ## Core services
 
-| Service | Responsibility |
-|---------|---------------|
-| **`PerkResolver`** | Computes `max(selfPlan, activeClubPlan)` per `FeatureKey` at request time. Never persists the conflated result. |
-| **`PublicContractProjector`** | `ToPublicContract(profile)` — the **only** path athlete data leaves to public/club surface. |
-| **`BillingService`** | Consumes Stripe webhooks → updates `Subscription.Status`, `CurrentPeriod*`, and refreshes denormalized `SelfTier`/`SubscriptionTier`/`AthleteSlotCount`. |
+| Service | Status | Responsibility |
+|---------|--------|---------------|
+| **`PermissionResolver`** (domain) | **built** | `Resolve(SiteLogin, IndividualProfile) → SitePermissions` from `ControlMode` + role. The actual authorization chokepoint. |
+| **`UserProvisioner`** | **built** | Just-in-time `User` get-or-create on first auth, matched by `sub`. |
+| **`ActionTokenStrategyRegistry`** + strategies | **built** | `ConsentStrategy` / `InvitationStrategy` / `OrgEmailVerificationStrategy`, dispatched by token type on accept. |
+| **`SectionTypeRegistry`**, **`SanitizationService`** | **built** | Section schema validation + free-text sanitization (defined; not yet wired to a draft-edit endpoint). |
+| Club registry (`DjuPortalScraper`, `ClubCanonicalizer`, CVR lookup) | **built** | Source Danish clubs + officials for org verification. |
+| **`PerkResolver`** | **planned (stub)** | Would compute `max(selfPlan, activeClubPlan)` per `FeatureKey`. Commented-out stub today. |
+| **`PublicContractProjector`** | **planned** | `ToPublicContract(profile)` — the intended single outbound projection. Not built. |
+| **`BillingService`** | **planned** | Stripe webhooks → `Subscription` status + denormalized tier fields. No billing exists yet. |
 
 ---
 
 ## Design patterns in use
 
-`Strategy` (section validation/rendering) · `Factory/Registry` (`SectionTypeRegistry`) · `Specification` (tier/perk/role gating) · `CQRS` via MediatR (`IRequest`/`IRequestHandler`, dispatched via `ISender`) · `Repository` + `Unit of Work` (DB access; interfaces in Application, EF impls in Infrastructure) · read/write path split (editor vs public) · `Builder` (public render payload) · `Decorator/Middleware` (caching + sanitization on public path) · `DTO + mapping` (never expose EF entities) · `Options pattern` (tier/perk/theme config).
+`Strategy` (`IActionTokenStrategy` per token type; section validators) · `Factory/Registry` (`SectionTypeRegistry`, `ActionTokenStrategyRegistry`) · `CQRS` via MediatR (`IRequest`/`IRequestHandler`, dispatched via `ISender`) · `Repository` + `Unit of Work` (DB access; intention-revealing interfaces in Application, EF impls in Infrastructure) · `Result<T>` + global filter/handler for errors · read/write path split (editor vs public) · `DTO + mapping` (static mappers; never expose EF entities) · `Options pattern` (`AgeThresholdOptions`, `TermsOptions`, `InvitationOptions`, `EmailOptions`). **Authorization uses a `PermissionResolver` + `ControlMode` presets — not the Specification pattern** the earlier docs describe. `Builder` (public render payload) and the public-path `Decorator/Middleware` are planned with the public render path.
 
 ---
 
@@ -123,10 +150,10 @@ One React component per section type. Theme manifest declares supported section 
 - Free-text sanitized before publish (XSS surface).
 - `IsMinor` recomputed from `DateOfBirth` every request.
 - Slug uniqueness + reserved-word check (`admin`, `api`, `about`, …).
-- Org cannot affiliate more slot-occupying athletes than `AthleteSlotCount`.
-- `ChangeRequest` only creatable by a user with active `OrganizationLogin` on an org that has an active `Membership` with the target athlete.
-- `PlanPrice` is append-only — never mutate a price row; insert new + retire old with `IsActive = false`.
-- Club showcase resolution reads **published + public** only; `Private`/unpublished = placeholder.
+- *(planned)* Org cannot affiliate more slot-occupying athletes than `AthleteSlotCount`.
+- *(planned)* `ChangeRequest` only creatable by a user with an active org `SiteLogin` (`club_admin`/`club_editor`) on an org with an active `Membership` to the target athlete.
+- *(planned, billing)* `PlanPrice` is append-only — never mutate a price row; insert new + retire old with `IsActive = false`.
+- *(planned, public render)* Club showcase resolution reads **published + public** only; `Private`/unpublished = placeholder.
 
 ---
 
@@ -152,12 +179,12 @@ One React component per section type. Theme manifest declares supported section 
 
 ## Build order (abbreviated)
 
-1. Profiles + SiteConfig + auth + guardian linking
-2. Public render endpoint + Next.js renderer → **first real milestone**
+1. Profiles + `Site`/`SiteSnapshot` + auth + guardian linking ✅ *(done)*
+2. Public render endpoint + Next.js renderer → **first real milestone** *(next)*
 3. Publish flow + ISR/CDN + cache invalidation
 4. Section registry + Strategy validators; add `results`, `gallery`
 5. Theme manifest system + theme picker
-6. Athlete self-tiers + Specifications + billing (`Plan`/`PlanPrice`/`Subscription`)
+6. Athlete self-tiers + tier gating + billing (`Plan`/`PlanPrice`/`Subscription`) — *not built*
 7. Media pipeline (upload → blob → thumbnails)
 8. Organizations + multi-user roles + club page engine
 9. Memberships + derived primaries + history retention
@@ -174,7 +201,7 @@ One React component per section type. Theme manifest declares supported section 
 
 | # | Question | Blocks step |
 |---|----------|-------------|
-| 1 | One-row-per-state vs `SiteConfigHistory` for rollback? | 3 / 14 |
+| 1 | One-row-per-state vs `SiteSnapshotHistory` for rollback? | 3 / 14 |
 | 2 | Final tier prices + slot/session counts? | 6 / 10 |
 | 3 | Club downgrade below roster size — block or mark overflow inactive? | 10 |
 | 4 | Academy/TrainingCenter/SchoolTeam: self-serve vs admin-created? | 8 |
@@ -190,6 +217,7 @@ One React component per section type. Theme manifest declares supported section 
 
 | Topic | Doc |
 |-------|-----|
+| Vision, business model, glossary | `00-overview.md` |
 | Full rendering contract + caching strategy | `01-architecture.md` |
 | Complete schema (all columns, constraints, billing tables) | `02-data-model.md` |
 | Guardian permissions, change-request workflow, privacy boundary | `03-accounts-and-permissions.md` |
@@ -197,3 +225,4 @@ One React component per section type. Theme manifest declares supported section 
 | Signup flows, onboarding checklist, club signup | `05-signup-and-onboarding.md` |
 | Feature → problem → why this design | `06-features-and-problems.md` |
 | All design patterns, full build order, open questions | `07-patterns-and-build-order.md` |
+| ADR — CQRS/MediatR, repositories, layering | `08-adr-cqrs-mediatr-and-layering.md` |

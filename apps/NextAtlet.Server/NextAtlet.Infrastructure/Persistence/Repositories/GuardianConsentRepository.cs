@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using NextAtlet.Application.Abstractions.Persistence;
-using NextAtlet.Application.Abstractions.Services;
-using NextAtlet.Domain.Entities.Athlete;
-using NextAtlet.Infrastructure.Data;
+using NextAtlet.Domain.Entities.Sites;
+using NextAtlet.Domain.Entities.Consent;
+using NextAtlet.Infrastructure.Persistence;
 
 namespace NextAtlet.Infrastructure.Persistence.Repositories;
 
@@ -14,6 +14,6 @@ public class GuardianConsentRepository : IGuardianConsentRepository
 
     public void Add(GuardianConsent consent) => _context.GuardianConsents.Add(consent);
 
-    public Task<bool> ExistsForProfileAsync(Guid athleteProfileId, CancellationToken cancellationToken = default)
-        => _context.GuardianConsents.AnyAsync(c => c.AthleteProfileId == athleteProfileId, cancellationToken);
+    public Task<bool> ExistsForProfileAsync(Guid siteId, CancellationToken cancellationToken = default)
+        => _context.GuardianConsents.AnyAsync(c => c.SiteId == siteId, cancellationToken);
 }
