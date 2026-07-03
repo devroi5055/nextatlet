@@ -28,13 +28,13 @@ export const CtaSection = () => {
       </p>
       <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
         <NextLink href={paths.auth.register.getHref(paths.app.dashboard.getHref())}>
-          <Button variant="brand" size="lg">
+          <Button variant="primary" size="lg">
             Opret gratis profil
           </Button>
         </NextLink>
         <NextLink href="#platform">
           <Button
-            variant="brandGhost"
+            variant="ghost"
             size="lg"
             icon={<ArrowRight className="size-4" />}
           >
