@@ -1,4 +1,5 @@
 import { ArrowRight } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import NextLink from 'next/link';
 
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,7 @@ import { Section } from './section';
 
 /** Closing call-to-action before the footer. */
 export const CtaSection = () => {
+  const t = useTranslations('Cta');
   return (
     <Section
       id="om-os"
@@ -15,30 +17,31 @@ export const CtaSection = () => {
       containerClassName="max-w-3xl text-center"
     >
       <p className="text-xs font-semibold uppercase tracking-[0.25em] text-primary-gold">
-        Klar til at starte?
+        {t('eyebrow')}
       </p>
       <h2 className="mt-5 font-display text-3xl font-extrabold uppercase leading-tight tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-        Byg din profil.
+        {t('titleLine1')}
         <br />
-        <span className="text-primary-gold">Skab din fremtid.</span>
+        <span className="text-primary-gold">{t('titleLine2')}</span>
       </h2>
       <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-muted-foreground">
-        Opret din gratis profil på under 10 minutter og bliv synlig for
-        sponsorer, medier og klubber over hele Danmark.
+        {t('body')}
       </p>
       <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-        <NextLink href={paths.auth.register.getHref(paths.app.dashboard.getHref())}>
+        {/* Plain anchor: /auth/login is an Auth0 middleware route, not a Next
+            page, so it needs a full browser navigation (no RSC fetch). */}
+        <a href={paths.auth.register.getHref(paths.onboarding.root.getHref())}>
           <Button variant="primary" size="lg">
-            Opret gratis profil
+            {t('primary')}
           </Button>
-        </NextLink>
+        </a>
         <NextLink href="#platform">
           <Button
             variant="ghost"
             size="lg"
             icon={<ArrowRight className="size-4" />}
           >
-            Sådan virker det
+            {t('secondary')}
           </Button>
         </NextLink>
       </div>

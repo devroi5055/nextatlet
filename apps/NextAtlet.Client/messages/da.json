@@ -1,0 +1,339 @@
+{
+  "Metadata": {
+    "rootTitle": "NextAtlet — Din profil. Din karriere.",
+    "rootDescription": "NextAtlet hjælper unge judoudøvere med at bygge en stærk digital identitet — automatisk genererede hjemmesider, professionelle fotos og et mentornetværk, der åbner døre til sponsorater.",
+    "authTitle": "Log ind — NextAtlet",
+    "authDescription": "Log ind eller opret en profil på NextAtlet.",
+    "onboardingTitle": "Kom i gang — NextAtlet",
+    "onboardingDescription": "Opret din profil på NextAtlet.",
+    "dashboardTitle": "Dashboard — NextAtlet",
+    "dashboardDescription": "Dit NextAtlet-dashboard."
+  },
+  "Common": {
+    "back": "Tilbage",
+    "loading": "Indlæser",
+    "close": "Luk",
+    "cancel": "Annuller",
+    "refresh": "Genindlæs"
+  },
+  "Header": {
+    "nav": {
+      "platform": "Platform",
+      "photography": "Fotografi",
+      "pricing": "Priser",
+      "about": "Om os"
+    },
+    "cta": "Kom i gang",
+    "openMenu": "Åbn menu",
+    "localeSwitcher": "Vælg sprog"
+  },
+  "HeroSection": {
+    "eyebrow": "Digital tilstedeværelse for unge atleter",
+    "title": {
+      "lead": "Din Rejse. Dit ",
+      "highlight": "Potentiale."
+    },
+    "subtitle": "NextAtlet hjælper unge judoudøvere med at bygge en stærk digital identitet — med automatisk genererede hjemmesider, professionelle fotos og et netværk af mentorer, der åbner døre til sponsorater",
+    "ctaPrimary": "Opret din profil",
+    "ctaSecondary": "Se Pakker"
+  },
+  "Partners": {
+    "supportedBy": "Støttet af"
+  },
+  "Offerings": {
+    "eyebrow": "Hvad vi tilbyder",
+    "title": "Alt hvad en ung atlet behøver",
+    "description": "Tre sammenhængende ydelser, der tilsammen bygger en troværdig og professionel digital identitet — fra første konkurrence til første sponsor.",
+    "items": {
+      "website": {
+        "title": "Atlethjemmeside",
+        "description": "En automatisk genereret hjemmeside, der viser din karriere, dine resultater og din fortælling. Vælg det niveau, der passer dig — fra simpel profil til fuldt tilpasset brand.",
+        "linkLabel": "Se pakker"
+      },
+      "photography": {
+        "title": "Professionelt fotografi",
+        "description": "Professionelle fotos til hjemmesiden — og til privatbrug. Vi fotograferer ved stævner eller i lejede studier. Du ejer billederne. De varer hele karrieren.",
+        "linkLabel": "Se eksempler"
+      },
+      "mentoring": {
+        "title": "Mentornetværk",
+        "description": "Guides, sparring og et netværk af tidligere atleter, der kender vejen til sponsorer. Vi hjælper dig med at skrive den første henvendelse og stå stærkt i forhandlingen.",
+        "linkLabel": "Lær mere"
+      }
+    }
+  },
+  "HowItWorks": {
+    "eyebrow": "Sådan virker det",
+    "title": "Fra oprettelse til sponsor på få uger",
+    "steps": {
+      "profile": {
+        "title": "Opret din profil",
+        "description": "Udfyld dine oplysninger — klub, vægtklasse, resultater. Din hjemmeside genereres automatisk og er klar på under 10 minutter."
+      },
+      "photoshoot": {
+        "title": "Book en fotosession",
+        "description": "Vælg et stævne eller vores studie i din region. Vi sørger for professionelle actionbilleder og portrætter, du kan bruge overalt."
+      },
+      "visible": {
+        "title": "Bliv synlig og søgbar",
+        "description": "Din profil indekseres lokalt og nationalt, så sponsorer, klubber og medier kan finde dig, når de søger efter talenter."
+      },
+      "sponsor": {
+        "title": "Tag imod din første sponsor",
+        "description": "Vores mentorer guider dig i at håndtere henvendelser og indgå aftaler, der styrker — ikke kompromitterer — din karriere."
+      }
+    }
+  },
+  "Photography": {
+    "eyebrow": "Fotografi",
+    "title": "Billeder der taler for dig",
+    "description": "Professionelle fotos fra stævner og studioer. Du ejer dem — brug dem overalt.",
+    "seeAll": "Se alle eksempler",
+    "gallery": {
+      "action": {
+        "title": "Actionfotos",
+        "caption": "Stævnebilleder i høj kvalitet"
+      },
+      "portrait": {
+        "title": "Portræt",
+        "caption": "Studio"
+      },
+      "training": {
+        "title": "Træning",
+        "caption": "Dagligdag"
+      },
+      "podium": {
+        "title": "Podie",
+        "caption": "Resultater"
+      },
+      "team": {
+        "title": "Hold",
+        "caption": "Klub & team"
+      }
+    }
+  },
+  "Pricing": {
+    "eyebrow": "Priser",
+    "title": "Vælg dit niveau",
+    "description": "Start gratis og opgrader, når du er klar til at tage din karriere til næste niveau.",
+    "currency": "kr",
+    "tiers": {
+      "starter": {
+        "name": "Starter",
+        "cadence": "Gratis for evigt",
+        "ctaLabel": "Opret gratis profil",
+        "features": [
+          "Automatisk genereret profil",
+          "Søgbar på nextatlet.dk",
+          "Resultater & karrierestatus",
+          "1 profilbillede",
+          "Eget domæne",
+          "Professionel fotosession",
+          "Mentornetværk",
+          "Sponsormatching"
+        ]
+      },
+      "pro": {
+        "name": "Pro",
+        "cadence": "pr. måned · ingen binding",
+        "badge": "Mest populær",
+        "ctaLabel": "Kom i gang",
+        "features": [
+          "Alt i Starter",
+          "Eget domæne (marcus.nextatlet.dk)",
+          "1 professionel fotosession pr. år",
+          "Tilpasset design & farver",
+          "Mediekit til sponsorer (PDF)",
+          "Sponsorhenvendelsesformular",
+          "Dedikeret mentor",
+          "Prioriteret synlighed"
+        ]
+      },
+      "elite": {
+        "name": "Elite",
+        "cadence": "pr. måned · ingen binding",
+        "ctaLabel": "Start Elite",
+        "features": [
+          "Alt i Pro",
+          "Eget domæne (marcus.dk)",
+          "Ubegrænset fotosessioner",
+          "Dedikeret mentor (1:1 rådgivning)",
+          "Prioriteret synlighed for sponsorer",
+          "Video highlights (op til 3 min.)",
+          "Forhandlingshjælp til aftaler",
+          "Netværksintroduktioner"
+        ]
+      }
+    }
+  },
+  "Testimonial": {
+    "quote": "Sponsorer leder ikke efter den bedste atlet. De leder efter den mest synlige atlet.",
+    "emphasis": "mest synlige atlet",
+    "author": "Thomas Bech, tidligere landsholdsjudoka & mentor hos NextAtlet"
+  },
+  "Cta": {
+    "eyebrow": "Klar til at starte?",
+    "titleLine1": "Byg din profil.",
+    "titleLine2": "Skab din fremtid.",
+    "body": "Opret din gratis profil på under 10 minutter og bliv synlig for sponsorer, medier og klubber over hele Danmark.",
+    "primary": "Opret gratis profil",
+    "secondary": "Sådan virker det"
+  },
+  "Footer": {
+    "blurb": "Digital tilstedeværelse og sponsorplatform for unge judoudøvere i Danmark.",
+    "copyright": "© {year} NextAtlet. Alle rettigheder forbeholdes.",
+    "tagline": "Judo · Sport · Talent",
+    "columns": {
+      "platform": {
+        "heading": "Platform",
+        "athletes": "Atleter",
+        "photography": "Fotografi",
+        "mentors": "Mentorer",
+        "pricing": "Priser"
+      },
+      "sponsors": {
+        "heading": "For sponsorer",
+        "findTalent": "Find talenter",
+        "howWeWork": "Sådan samarbejder vi",
+        "contact": "Kontakt"
+      },
+      "about": {
+        "heading": "Om NextAtlet",
+        "mission": "Vores mission",
+        "team": "Team",
+        "press": "Presse",
+        "privacy": "Privatlivspolitik"
+      }
+    }
+  },
+  "Showcase": {
+    "stats": {
+      "gold": "Guld",
+      "tournaments": "Stævner",
+      "silver": "Sølv"
+    },
+    "badges": {
+      "nationalTeam": "Landshold",
+      "judo": "Judo",
+      "u18Talent": "U18 Talent"
+    },
+    "notification": {
+      "title": "Ny sponsorforespørgsel",
+      "time": "i dag"
+    },
+    "portrait": {
+      "ratio": "3:1 Ratio"
+    }
+  },
+  "Onboarding": {
+    "chooseType": {
+      "title": "Hvem er profilen til?",
+      "subtitle": "Vælg, hvem du opretter en profil for."
+    },
+    "selector": {
+      "self": {
+        "title": "Mig selv",
+        "description": "Jeg er atleten og opretter min egen profil."
+      },
+      "guardian": {
+        "title": "Mit barn",
+        "description": "Jeg opretter en profil for mit barn som forælder/værge."
+      }
+    },
+    "self": {
+      "title": "Opret din profil",
+      "subtitle": "Udfyld dine oplysninger — din hjemmeside genereres automatisk."
+    },
+    "guardian": {
+      "title": "Opret en profil for dit barn",
+      "subtitle": "Du bliver værge for profilen og kan udfylde den, til barnet er klar til selv at overtage."
+    },
+    "form": {
+      "localeDa": "Dansk",
+      "localeEn": "English",
+      "language": "Sprog",
+      "slug": "Profil-URL",
+      "displayName": "Visningsnavn",
+      "slugPlaceholder": "dit-navn",
+      "dateOfBirth": "Fødselsdato",
+      "guardianEmail": "Forælders e-mail",
+      "guardianNote": "Da du er under 16, sender vi en anmodning om samtykke til din forælder. Din profil kan først offentliggøres, når de har godkendt.",
+      "submitSelf": "Opret profil",
+      "childName": "Barnets navn",
+      "childSlugPlaceholder": "barnets-navn",
+      "childDateOfBirth": "Barnets fødselsdato",
+      "submitGuardian": "Opret barnets profil"
+    },
+    "validation": {
+      "required": "Påkrævet",
+      "max80": "Højst 80 tegn",
+      "min3": "Mindst 3 tegn",
+      "max60": "Højst 60 tegn",
+      "slugPattern": "Kun små bogstaver, tal og bindestreger",
+      "invalidEmail": "Ugyldig e-mail",
+      "emailTooLong": "For lang",
+      "belowFloor": "Du skal være mindst 13 år for at oprette din egen profil. Bed en forælder om at oprette den for dig.",
+      "guardianRequired": "En forælders e-mail er påkrævet for atleter under 16 — vi sender dem en anmodning om samtykke.",
+      "adultMustSelfRegister": "En person på 18 år eller derover skal oprette sin egen profil."
+    },
+    "complete": {
+      "ready": {
+        "title": "Din profil er oprettet",
+        "body": "Du er klar. Gå til dit dashboard for at tilføje bio, resultater og vælge tema."
+      },
+      "consentPending": {
+        "title": "Næsten klar — vi mangler samtykke",
+        "body": "Vi har sendt en anmodning om samtykke til din forælder. Din profil er oprettet, men kan først offentliggøres, når de har godkendt via linket i e-mailen."
+      },
+      "guardian": {
+        "title": "Barnets profil er oprettet",
+        "body": "Du er nu værge for profilen. Gå til dit dashboard for at udfylde oplysningerne — profilen kan offentliggøres, når du er klar."
+      },
+      "cta": "Gå til din side"
+    }
+  },
+  "Editor": {
+    "metaTitle": "Din side — NextAtlet",
+    "metaDescription": "Rediger din NextAtlet-side.",
+    "title": "Din side",
+    "subtitle": "Dette er din kladde. Her bygger du din profil, når vi tilføjer sektioner og temaer.",
+    "draftBadge": "Kladde",
+    "comingSoon": "Kommer snart",
+    "sectionsTitle": "Sektioner",
+    "sectionsBody": "Tilføj og arranger sektionerne på din side — resultater, galleri, om dig og mere.",
+    "themesTitle": "Temaer",
+    "themesBody": "Vælg et tema og tilpas farver og skrifttyper, så siden ligner dig."
+  },
+  "Auth": {
+    "loginTitle": "Log ind på din konto",
+    "registerTitle": "Opret din konto",
+    "login": "Log ind",
+    "register": "Opret konto",
+    "logoAlt": "NextAtlet",
+    "somethingWrong": "Noget gik galt!"
+  },
+  "Dashboard": {
+    "welcome": "Velkommen <b>{name}</b>",
+    "logoAlt": "NextAtlet",
+    "brand": "NextAtlet",
+    "toggleMenu": "Skift menu",
+    "openUserMenu": "Åbn brugermenu",
+    "nav": {
+      "dashboard": "Dashboard",
+      "editor": "Din side",
+      "discussions": "Diskussioner",
+      "users": "Brugere"
+    },
+    "profile": "Din profil",
+    "signOut": "Log ud",
+    "error": "Fejl: {message}"
+  },
+  "Errors": {
+    "generic": "Ups, noget gik galt :(",
+    "refresh": "Genindlæs",
+    "notFoundTitle": "404 – Siden blev ikke fundet",
+    "notFoundBody": "Beklager, siden du leder efter, findes ikke.",
+    "goHome": "Gå til forsiden",
+    "somethingWrong": "Noget gik galt!"
+  }
+}

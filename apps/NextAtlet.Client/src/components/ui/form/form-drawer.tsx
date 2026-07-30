@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import * as React from 'react';
 
 import { useDisclosure } from '@/hooks/use-disclosure';
@@ -31,6 +32,7 @@ export const FormDrawer = ({
   submitButton,
 }: FormDrawerProps) => {
   const { close, open, isOpen } = useDisclosure();
+  const t = useTranslations('Common');
 
   React.useEffect(() => {
     if (isDone) {
@@ -60,7 +62,7 @@ export const FormDrawer = ({
         <DrawerFooter>
           <DrawerClose asChild>
             <Button variant="outline" type="submit">
-              Close
+              {t('close')}
             </Button>
           </DrawerClose>
           {submitButton}

@@ -1,6 +1,10 @@
-import { type AthleteShowcase, type Testimonial } from '../types';
+import { type AthleteShowcase } from '../types';
 
-/** Sample athlete profile rendered in the hero and how-it-works cards. */
+/**
+ * Sample athlete profile rendered in the hero and how-it-works cards. Proper
+ * nouns (name, club, brand) stay here; localized labels (stat/badge names,
+ * notification title/time) are resolved from the `Showcase` message namespace.
+ */
 export const featuredAthlete: AthleteShowcase = {
   name: 'Marcus Andersen',
   club: 'Ballerup Judoklub',
@@ -10,27 +14,16 @@ export const featuredAthlete: AthleteShowcase = {
   slug: 'marcus-andersen',
   nationalTeam: true,
   stats: [
-    { value: '8×', label: 'Guld' },
-    { value: '14', label: 'Stævner' },
-    { value: '3', label: 'Sølv' },
+    { value: '8×', key: 'gold' },
+    { value: '14', key: 'tournaments' },
+    { value: '3', key: 'silver' },
   ],
   badges: [
-    { label: 'Landshold', variant: 'accent', icon: 'medal' },
-    { label: 'Judo', variant: 'neutral' },
-    { label: 'U18 Talent', variant: 'neutral' },
+    { key: 'nationalTeam', variant: 'accent', icon: 'medal' },
+    { key: 'judo', variant: 'neutral' },
+    { key: 'u18Talent', variant: 'neutral' },
   ],
-  tags: ['Søger sponsor', 'Kamp', 'Coaching', 'Udstyr'],
   notification: {
-    title: 'Ny sponsorforespørgsel',
     brand: 'SportGear Danmark',
-    time: 'i dag',
   },
-};
-
-/** Pull-quote shown between the pricing and final call-to-action. */
-export const testimonial: Testimonial = {
-  quote:
-    'Sponsorer leder ikke efter den bedste atlet. De leder efter den mest synlige atlet.',
-  emphasis: 'mest synlige atlet',
-  author: 'Thomas Bech, tidligere landsholdsjudoka & mentor hos NextAtlet',
 };

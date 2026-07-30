@@ -1,6 +1,7 @@
 'use client';
 
 import { CircleAlert, Info } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import * as React from 'react';
 import { useEffect } from 'react';
 
@@ -31,11 +32,12 @@ export const ConfirmationDialog = ({
   confirmButton,
   title,
   body = '',
-  cancelButtonText = 'Cancel',
+  cancelButtonText,
   icon = 'danger',
   isDone = false,
 }: ConfirmationDialogProps) => {
   const { close, open, isOpen } = useDisclosure();
+  const t = useTranslations('Common');
   const cancelButtonRef = React.useRef(null);
 
   useEffect(() => {
@@ -81,7 +83,7 @@ export const ConfirmationDialog = ({
         <DialogFooter>
           {confirmButton}
           <Button ref={cancelButtonRef} variant="outline" onClick={close}>
-            {cancelButtonText}
+            {cancelButtonText ?? t('cancel')}
           </Button>
         </DialogFooter>
       </DialogContent>

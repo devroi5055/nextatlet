@@ -1,35 +1,40 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
+import { useMemo } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Form, Input, Select } from '@/components/ui/form';
 import { paths } from '@/config/paths';
 
-import { selfRegisterInputSchema, useSelfRegister } from '../api/self-register';
+import { makeSelfRegisterInputSchema, useSelfRegister } from '../api/self-register';
 import { requiresGuardianConsent } from '../utils/derive-minor';
 import { slugify } from '../utils/slugify';
-
-const localeOptions = [
-  { label: 'Dansk', value: 'da' },
-  { label: 'English', value: 'en' },
-];
 
 /** Step 2a — the athlete registers their own profile (age-conditional). */
 export const SelfRegisterForm = () => {
   const router = useRouter();
+  const t = useTranslations('Onboarding.form');
+  const tv = useTranslations('Onboarding.validation');
+  const schema = useMemo(() => makeSelfRegisterInputSchema(tv), [tv]);
+
+  const localeOptions = [
+    { label: t('localeDa'), value: 'da' },
+    { label: t('localeEn'), value: 'en' },
+  ];
+
   const registering = useSelfRegister({
-    onSuccess: (_site, variables) => {
-      const state = requiresGuardianConsent(variables.dateOfBirth)
-        ? 'consent-pending'
-        : 'ready';
-      router.push(`${paths.onboarding.complete.getHref()}?state=${state}`);
+    // The register endpoint has succeeded (profile created); land the athlete
+    // straight on their own site editor.
+    onSuccess: () => {
+      router.push(paths.app.editor.getHref());
     },
   });
 
   return (
     <Form
-      schema={selfRegisterInputSchema}
+      schema={schema}
       onSubmit={(values) => registering.mutate(values)}
       options={{ defaultValues: { defaultLocaleId: 'da' } }}
     >
@@ -43,7 +48,7 @@ export const SelfRegisterForm = () => {
         return (
           <>
             <Input
-              label="Visningsnavn"
+              label={t('displayName')}
               error={formState.errors['displayName']}
               registration={register('displayName', {
                 // Suggest a slug from the name, but only if the user hasn't typed one.
@@ -59,25 +64,25 @@ export const SelfRegisterForm = () => {
 
             <div>
               <Input
-                label="Profil-URL"
-                placeholder="dit-navn"
+                label={t('slug')}
+                placeholder={t('slugPlaceholder')}
                 error={formState.errors['slug']}
                 registration={register('slug')}
               />
               <p className="mt-1 text-xs text-gray-500">
-                nextatlet.dk/{slug || 'dit-navn'}
+                nextatlet.dk/{slug || t('slugPlaceholder')}
               </p>
             </div>
 
             <Input
               type="date"
-              label="Fødselsdato"
+              label={t('dateOfBirth')}
               error={formState.errors['dateOfBirth']}
               registration={register('dateOfBirth')}
             />
 
             <Select
-              label="Sprog"
+              label={t('language')}
               options={localeOptions}
               error={formState.errors['defaultLocaleId']}
               registration={register('defaultLocaleId')}
@@ -87,15 +92,11 @@ export const SelfRegisterForm = () => {
               <div className="space-y-2">
                 <Input
                   type="email"
-                  label="Forælders e-mail"
+                  label={t('guardianEmail')}
                   error={formState.errors['guardianEmail']}
                   registration={register('guardianEmail')}
                 />
-                <p className="text-xs text-gray-500">
-                  Da du er under 16, sender vi en anmodning om samtykke til din
-                  forælder. Din profil kan først offentliggøres, når de har
-                  godkendt.
-                </p>
+                <p className="text-xs text-gray-500">{t('guardianNote')}</p>
               </div>
             )}
 
@@ -104,7 +105,7 @@ export const SelfRegisterForm = () => {
               isLoading={registering.isPending}
               className="w-full"
             >
-              Opret profil
+              {t('submitSelf')}
             </Button>
           </>
         );

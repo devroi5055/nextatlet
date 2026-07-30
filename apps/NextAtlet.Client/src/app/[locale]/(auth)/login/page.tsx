@@ -1,0 +1,27 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
+import { paths } from '@/config/paths';
+// import { LoginForm } from '@/features/auth/components/login-form';
+
+const LoginPage = () => {
+  const t = useTranslations('Auth');
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams?.get('redirectTo');
+
+  const returnTo = redirectTo
+    ? decodeURIComponent(redirectTo)
+    : paths.home.getHref();
+
+  return (
+    <a
+      href={`/auth/login?returnTo=${encodeURIComponent(returnTo)}`}
+      className="w-full text-center inline-block px-6 py-3 bg-linear-to-b from-[#2d2d42] to-[#161620] hover:opacity-90 text-white font-medium rounded-full text-[14px] transition-opacity"
+    >
+      {t('login')}
+    </a>
+  );
+};
+
+export default LoginPage;

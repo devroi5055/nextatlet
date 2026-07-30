@@ -1,6 +1,6 @@
 import { landingSections } from './landing-sections';
-import { MarketingFooter } from './marketing-footer';
-import { MarketingHeader } from './marketing-header';
+
+
 
 /**
  * The public marketing landing page: sticky header, the ordered section
@@ -10,13 +10,11 @@ import { MarketingHeader } from './marketing-header';
 export const LandingPage = () => {
   return (
     <div className="min-h-screen bg-background font-display text-foreground antialiased color">
-      <MarketingHeader />
       <main>
         {landingSections.map((Section, index) => (
           <Section key={index} />
         ))}
       </main>
-      <MarketingFooter />
     </div>
   );
 };

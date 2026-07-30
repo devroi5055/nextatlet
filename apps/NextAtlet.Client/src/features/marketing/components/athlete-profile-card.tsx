@@ -1,4 +1,5 @@
 import { BellRing, Flag, Medal, Shield, Star } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 import { cn } from '@/utils/cn';
 
@@ -16,34 +17,40 @@ export type AthleteProfileCardProps = {
   className?: string;
 };
 
-const Portrait = () => (
-  <div className="relative flex justify-center aspect-3/1 ph">
-    <p className="ph-label">
-      marcus-andersen.jpg
-      <br />
-      3:1 Ratio
-    </p>
-    <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-background/80 to-transparent" />
-  </div >
-);
+const Portrait = ({ athlete }: { athlete: AthleteShowcase }) => {
+  const t = useTranslations('Showcase');
+  return (
+    <div className="relative flex justify-center aspect-3/1 ph">
+      <p className="ph-label">
+        {athlete.slug}.jpg
+        <br />
+        {t('portrait.ratio')}
+      </p>
+      <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-background/80 to-transparent" />
+    </div >
+  );
+};
 
-const Stats = ({ athlete }: { athlete: AthleteShowcase }) => (
-  <div className="grid grid-cols-3 gap-2 sm:gap-3">
-    {athlete.stats.map((stat, index) => (
-      <div key={stat.label} className="text-center">
-        <p
-          className={`font-display text-md sm:text-2xl font-bold ${index === 0 ? 'text-primary' : 'text-foreground'
-            }`}
-        >
-          {stat.value}
-        </p>
-        <p className="mt-1 text-[0.6rem] font-semibold uppercase tracking-widest text-muted-foreground">
-          {stat.label}
-        </p>
-      </div>
-    ))}
-  </div>
-);
+const Stats = ({ athlete }: { athlete: AthleteShowcase }) => {
+  const t = useTranslations('Showcase.stats');
+  return (
+    <div className="grid grid-cols-3 gap-2 sm:gap-3">
+      {athlete.stats.map((stat, index) => (
+        <div key={stat.key} className="text-center">
+          <p
+            className={`font-display text-md sm:text-2xl font-bold ${index === 0 ? 'text-primary' : 'text-foreground'
+              }`}
+          >
+            {stat.value}
+          </p>
+          <p className="mt-1 text-[0.6rem] font-semibold uppercase tracking-widest text-muted-foreground">
+            {t(stat.key)}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 /** Showcase of the generated athlete site — the product, made tangible. */
 export const AthleteProfileCard = ({
@@ -51,6 +58,7 @@ export const AthleteProfileCard = ({
   variant = 'hero',
   className,
 }: AthleteProfileCardProps) => {
+  const t = useTranslations('Showcase');
   return (
     <div
       className={cn(
@@ -69,7 +77,7 @@ export const AthleteProfileCard = ({
         </div>
       )}
 
-      <Portrait />
+      <Portrait athlete={athlete} />
 
       <span className='relative avatar avatar-auto -mt-8 xl:-mt-15 mb-2 mx-5'>MA</span>
 
@@ -88,9 +96,9 @@ export const AthleteProfileCard = ({
             {athlete.badges.map((badge) => {
               const Icon = badge.icon ? badgeIcon[badge.icon] : null;
               return (
-                <span key={badge.label} className={`badge badge-${badge.variant} badge-sm`}>
+                <span key={badge.key} className={`badge badge-${badge.variant} badge-sm`}>
                   {Icon && <Icon className="ico-sm hidden sm:block" />}
-                  {badge.label}
+                  {t(`badges.${badge.key}`)}
                 </span>
               );
             })}
@@ -110,10 +118,10 @@ export const AthleteProfileCard = ({
           </span>
           <div className="min-w-0">
             <p className="truncate text-xs font-semibold text-foreground">
-              {athlete.notification.title}
+              {t('notification.title')}
             </p>
             <p className="truncate text-[0.7rem] text-muted-foreground">
-              {athlete.notification.brand} — {athlete.notification.time}
+              {athlete.notification.brand} — {t('notification.time')}
             </p>
           </div>
         </div>

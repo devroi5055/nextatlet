@@ -42,6 +42,7 @@
     "marked": "^18.0.5",
     "nanoid": "^5.1.15",
     "next": "^16.2.9",
+    "next-intl": "^4.13.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-error-boundary": "^6.1.2",

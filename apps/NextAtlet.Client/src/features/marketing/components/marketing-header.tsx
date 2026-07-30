@@ -1,6 +1,7 @@
 'use client';
 
 import { Menu, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import NextLink from 'next/link';
 
 import { Button } from '@/components/ui/button';
@@ -11,10 +12,12 @@ import { getStartedCta, primaryNav } from '../data/navigation';
 
 import { BrandWordmark } from './brand-wordmark';
 import { Container } from './container';
+import { LocaleSwitcher } from './locale-switcher';
 
 /** Sticky top navigation for the marketing site. */
 export const MarketingHeader = () => {
   const mobileMenu = useDisclosure();
+  const t = useTranslations('Header');
 
   return (
     <header className="sticky top-0 z-50 border border-border bg-secondary backdrop-blur">
@@ -24,37 +27,31 @@ export const MarketingHeader = () => {
         <nav className="hidden items-center gap-8 md:flex">
           {primaryNav.map((item) => (
             <NextLink
-              key={item.label}
+              key={item.key}
               href={item.href}
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
-              {item.label}
+              {t(`nav.${item.key}`)}
             </NextLink>
           ))}
         </nav>
 
         <div className="hidden md:flex items-center gap-4">
-          <div className="seg" role="group" aria-label="Vælg sprog">
-            <button className="active">DA</button>
-            <button>EN</button>
-          </div>
 
-          <NextLink href={getStartedCta.href} onClick={mobileMenu.close}>
-            <Button variant="ghost" className="w-full">
-              Login
-            </Button>
-          </NextLink>
+          <LocaleSwitcher />
 
-          <NextLink href={getStartedCta.href}>
+          {/* Plain anchor: /auth/login is an Auth0 middleware route, not a
+              Next page, so it needs a full browser navigation (no RSC fetch). */}
+          <a href={getStartedCta.href}>
             <Button variant="primary">
-              {getStartedCta.label}
+              {t('cta')}
             </Button>
-          </NextLink>
+          </a>
         </div>
 
         <button
           type="button"
-          aria-label="Åbn menu"
+          aria-label={t('openMenu')}
           aria-expanded={mobileMenu.isOpen}
           onClick={mobileMenu.toggle}
           className="text-foreground md:hidden"
@@ -76,19 +73,19 @@ export const MarketingHeader = () => {
         <Container className="flex flex-col gap-4 py-6">
           {primaryNav.map((item) => (
             <NextLink
-              key={item.label}
+              key={item.key}
               href={item.href}
               onClick={mobileMenu.close}
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
-              {item.label}
+              {t(`nav.${item.key}`)}
             </NextLink>
           ))}
-          <NextLink href={getStartedCta.href} onClick={mobileMenu.close}>
+          <a href={getStartedCta.href} onClick={mobileMenu.close}>
             <Button variant="primary" className="w-full">
-              {getStartedCta.label}
+              {t('cta')}
             </Button>
-          </NextLink>
+          </a>
         </Container>
       </div>
     </header>

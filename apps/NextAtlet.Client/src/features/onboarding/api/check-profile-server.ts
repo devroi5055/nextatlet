@@ -1,19 +1,20 @@
-// Server-only by construction: getServerCookies imports `next/headers`, which
-// throws if this module is ever pulled into a client bundle.
+// Server-only by construction: imports `@/lib/auth0`, which pulls in
+// `next/headers` and must never reach a client bundle.
 import { env } from '@/config/env';
-import { getServerCookies } from '@/lib/server-cookies';
+import { auth0 } from '@/lib/auth0';
 import { MeResponse } from '@/types/api';
 
 /**
  * Server-only profile-existence check for the decision gate (§3). Calls
- * `GET /api/Me` with the request's session cookie forwarded, so it can run in
- * the `/app` server layout. Kept out of the client api-client to avoid pulling
- * `next/headers` into the browser bundle.
+ * `GET /api/Me` with the Auth0 access token as a Bearer header — the API's
+ * "smart" scheme validates it via JWT. Kept out of the client api-client to
+ * avoid pulling `next/headers` into the browser bundle.
  */
 export const getMeServer = async (): Promise<MeResponse> => {
-  const cookie = await getServerCookies();
+  const { token } = await auth0.getAccessToken();
+
   const response = await fetch(`${env.API_URL}/api/Me`, {
-    headers: cookie ? { Cookie: cookie } : undefined,
+    headers: { Authorization: `Bearer ${token}` },
     cache: 'no-store',
   });
   if (!response.ok) {

@@ -14,47 +14,56 @@ import { getMeQueryOptions } from './check-profile';
 
 const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-export const selfRegisterInputSchema = z
-  .object({
-    displayName: z.string().min(1, 'Påkrævet').max(80, 'Højst 80 tegn'),
-    slug: z
-      .string()
-      .min(3, 'Mindst 3 tegn')
-      .max(60, 'Højst 60 tegn')
-      .regex(slugRegex, 'Kun små bogstaver, tal og bindestreger'),
-    // ISO date string (yyyy-mm-dd) from a native date input.
-    dateOfBirth: z.string().min(1, 'Påkrævet'),
-    defaultLocaleId: z.enum(['da', 'en']),
-    guardianEmail: z
-      .string()
-      .email('Ugyldig e-mail')
-      .max(254, 'For lang')
-      .optional()
-      .or(z.literal('')),
-  })
-  .superRefine((val, ctx) => {
-    if (isBelowSelfRegisterFloor(val.dateOfBirth)) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['dateOfBirth'],
-        message:
-          'Du skal være mindst 13 år for at oprette din egen profil. Bed en forælder om at oprette den for dig.',
-      });
-    }
-    // Below the self-consent age we need the guardian's email so the backend
-    // can send them a consent request (the binding consent happens when they
-    // confirm the emailed link — not from any checkbox here).
-    if (requiresGuardianConsent(val.dateOfBirth) && !val.guardianEmail) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['guardianEmail'],
-        message:
-          'En forælders e-mail er påkrævet for atleter under 16 — vi sender dem en anmodning om samtykke.',
-      });
-    }
-  });
+/** Resolves a validation message from the `Onboarding.validation` namespace. */
+type Translate = (key: string) => string;
 
-export type SelfRegisterInput = z.infer<typeof selfRegisterInputSchema>;
+/**
+ * Builds the self-registration schema with localized validation messages.
+ * The message-agnostic shape is identical across locales, so the inferred
+ * `SelfRegisterInput` type is stable regardless of which translator is passed.
+ */
+export const makeSelfRegisterInputSchema = (t: Translate) =>
+  z
+    .object({
+      displayName: z.string().min(1, t('required')).max(80, t('max80')),
+      slug: z
+        .string()
+        .min(3, t('min3'))
+        .max(60, t('max60'))
+        .regex(slugRegex, t('slugPattern')),
+      // ISO date string (yyyy-mm-dd) from a native date input.
+      dateOfBirth: z.string().min(1, t('required')),
+      defaultLocaleId: z.enum(['da', 'en']),
+      guardianEmail: z
+        .string()
+        .email(t('invalidEmail'))
+        .max(254, t('emailTooLong'))
+        .optional()
+        .or(z.literal('')),
+    })
+    .superRefine((val, ctx) => {
+      if (isBelowSelfRegisterFloor(val.dateOfBirth)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['dateOfBirth'],
+          message: t('belowFloor'),
+        });
+      }
+      // Below the self-consent age we need the guardian's email so the backend
+      // can send them a consent request (the binding consent happens when they
+      // confirm the emailed link — not from any checkbox here).
+      if (requiresGuardianConsent(val.dateOfBirth) && !val.guardianEmail) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['guardianEmail'],
+          message: t('guardianRequired'),
+        });
+      }
+    });
+
+export type SelfRegisterInput = z.infer<
+  ReturnType<typeof makeSelfRegisterInputSchema>
+>;
 
 const toRequest = (
   input: SelfRegisterInput,

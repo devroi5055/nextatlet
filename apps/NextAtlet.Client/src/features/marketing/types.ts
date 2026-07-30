@@ -1,84 +1,83 @@
 import { type LucideIcon } from 'lucide-react';
 
-/** A single navigation entry in the marketing header / footer. */
+/**
+ * A single navigation entry in the marketing header / footer. `key` resolves the
+ * display label from the message catalog; `href` is the anchor/route target.
+ */
 export type NavItem = {
-  label: string;
+  key: string;
   href: string;
 };
 
 /** A grouped column of links in the footer. */
 export type NavColumn = {
-  heading: string;
+  key: string;
   items: NavItem[];
 };
 
-/** One of the headline services shown in the "what we offer" grid. */
+/**
+ * One of the headline services shown in the "what we offer" grid. Text (title,
+ * description, link label) is resolved from `Offerings.items.<key>`.
+ */
 export type Offering = {
+  /** Message key under `Offerings.items`. */
+  key: string;
   /** Display ordinal, e.g. "01". */
   ordinal: string;
   icon: LucideIcon;
-  title: string;
-  description: string;
-  link: NavItem;
+  href: string;
 };
 
-/** A step in the "how it works" timeline. */
+/** A step in the "how it works" timeline. Text from `HowItWorks.steps.<key>`. */
 export type Step = {
+  key: string;
   ordinal: string;
-  title: string;
-  description: string;
 };
 
-/** A logo/name shown in the "supported by" strip. */
+/** A logo/name shown in the "supported by" strip (proper nouns, not localized). */
 export type Partner = {
   name: string;
 };
 
-/** A category tile in the photography gallery. */
+/** A category tile in the photography gallery. Text from `Photography.gallery.<key>`. */
 export type GalleryItem = {
-  title: string;
-  caption: string;
+  key: string;
   /** Featured tiles span a larger area in the grid. */
   featured?: boolean;
 };
 
 /** A single feature line inside a pricing tier. */
 export type PricingFeature = {
-  label: string;
   included: boolean;
 };
 
-/** A subscription tier in the pricing table. */
+/**
+ * A subscription tier in the pricing table. Names, cadence, badge, CTA label and
+ * feature labels come from `Pricing.tiers.<id>`; only structure lives here.
+ */
 export type PricingTier = {
   id: string;
-  name: string;
   /** Numeric amount rendered next to the currency prefix. */
   price: string;
-  /** Sub-label under the price, e.g. "pr. måned · ingen binding". */
-  cadence: string;
+  /** `included` flags parallel to `Pricing.tiers.<id>.features`. */
   features: PricingFeature[];
-  cta: NavItem;
+  href: string;
   /** Visually emphasises the tier and renders the badge. */
   highlighted?: boolean;
-  badge?: string;
-};
-
-/** A pull-quote / testimonial. */
-export type Testimonial = {
-  quote: string;
-  /** Portion of the quote rendered in the accent colour. */
-  emphasis?: string;
-  author: string;
+  /** Whether the tier renders a "most popular" badge. */
+  hasBadge?: boolean;
 };
 
 /** A single statistic shown on the athlete showcase card. */
 export type AthleteStat = {
   value: string;
-  label: string;
+  /** Message key under `Showcase.stats`. */
+  key: string;
 };
 
 export interface AthleteBadge {
-  label: string;          // "Landshold", "Judo", "U18 Talent"
+  /** Message key under `Showcase.badges`. */
+  key: string;
   variant: 'accent' | 'solid' | 'neutral' | 'status' | 'warn' | 'info';
   icon?: 'flag' | 'medal' | 'shield' | 'star'; // maps to a lucide icon in the card
 }
@@ -87,13 +86,13 @@ export interface AthleteBadge {
 export interface AthleteShowcase {
   name: string;
   club: string;
-  sport: string;              // new — "Judo"
+  sport: string;
   weightClass: string;
   ageClass: string;
   slug: string;
-  nationalTeam?: boolean;     // new
-  stats: { value: string; label: string }[];
-  badges?: AthleteBadge[];    // new
-  tags: string[];
-  notification: { title: string; brand: string; time: string };
+  nationalTeam?: boolean;
+  stats: AthleteStat[];
+  badges?: AthleteBadge[];
+  /** Notification brand is a proper noun; title/time are localized in the card. */
+  notification: { brand: string };
 }

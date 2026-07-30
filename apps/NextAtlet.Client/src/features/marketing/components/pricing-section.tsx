@@ -1,5 +1,5 @@
 import { Check, X } from 'lucide-react';
-import NextLink from 'next/link';
+import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/utils/cn';
@@ -11,6 +11,11 @@ import { Section } from './section';
 import { SectionHeading } from './section-heading';
 
 const TierCard = ({ tier }: { tier: PricingTier }) => {
+  const t = useTranslations('Pricing');
+  const tt = useTranslations(`Pricing.tiers.${tier.id}`);
+  // Feature labels are localized; `included` flags run parallel in the tier data.
+  const featureLabels = tt.raw('features') as string[];
+
   return (
     <article
       className={cn(
@@ -20,27 +25,29 @@ const TierCard = ({ tier }: { tier: PricingTier }) => {
           : 'border-border bg-card',
       )}
     >
-      {tier.badge && (
+      {tier.hasBadge && (
         <span className="absolute -top-3 right-6 rounded-full bg-primary px-3 py-1 text-[0.65rem] font-bold uppercase tracking-wider text-background">
-          {tier.badge}
+          {tt('badge')}
         </span>
       )}
 
       <h3 className="font-display text-xs font-bold uppercase tracking-[0.25em] text-primary-gold">
-        {tier.name}
+        {tt('name')}
       </h3>
       <p className="mt-4 flex items-baseline gap-1">
-        <span className="text-sm font-medium text-muted-foreground">kr</span>
+        <span className="text-sm font-medium text-muted-foreground">
+          {t('currency')}
+        </span>
         <span className="font-display text-4xl font-extrabold text-foreground">
           {tier.price}
         </span>
       </p>
-      <p className="mt-1 text-xs text-muted-foreground">{tier.cadence}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{tt('cadence')}</p>
 
       <ul className="mt-6 flex-1 space-y-3">
-        {tier.features.map((feature) => (
+        {tier.features.map((feature, index) => (
           <li
-            key={feature.label}
+            key={index}
             className={cn(
               'flex items-start gap-3 text-sm',
               feature.included ? 'text-foreground' : 'text-muted-foreground/50',
@@ -51,31 +58,34 @@ const TierCard = ({ tier }: { tier: PricingTier }) => {
             ) : (
               <X className="mt-0.5 size-4 shrink-0 text-border" />
             )}
-            {feature.label}
+            {featureLabels[index]}
           </li>
         ))}
       </ul>
 
-      <NextLink href={tier.cta.href} className="mt-8 block">
+      {/* Plain anchor: /auth/login is an Auth0 middleware route, not a Next
+          page, so it needs a full browser navigation (no RSC fetch). */}
+      <a href={tier.href} className="mt-8 block">
         <Button
           variant={tier.highlighted ? 'primary' : 'outline'}
           className="w-full"
         >
-          {tier.cta.label}
+          {tt('ctaLabel')}
         </Button>
-      </NextLink>
+      </a>
     </article>
   );
 };
 
 /** Athlete subscription tiers. */
 export const PricingSection = () => {
+  const t = useTranslations('Pricing');
   return (
     <Section id="priser" className="bg-card">
       <SectionHeading
-        eyebrow="Priser"
-        title="Vælg dit niveau"
-        description="Start gratis og opgrader, når du er klar til at tage din karriere til næste niveau."
+        eyebrow={t('eyebrow')}
+        title={t('title')}
+        description={t('description')}
       />
       <div className="mt-14 grid gap-6 lg:grid-cols-3">
         {pricingTiers.map((tier) => (

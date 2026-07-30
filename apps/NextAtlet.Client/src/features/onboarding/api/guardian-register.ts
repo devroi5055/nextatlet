@@ -14,30 +14,39 @@ import { getMeQueryOptions } from './check-profile';
 
 const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-export const guardianRegisterInputSchema = z
-  .object({
-    childDisplayName: z.string().min(1, 'Påkrævet').max(80, 'Højst 80 tegn'),
-    slug: z
-      .string()
-      .min(3, 'Mindst 3 tegn')
-      .max(60, 'Højst 60 tegn')
-      .regex(slugRegex, 'Kun små bogstaver, tal og bindestreger'),
-    childDateOfBirth: z.string().min(1, 'Påkrævet'),
-    defaultLocaleId: z.enum(['da', 'en']),
-  })
-  .superRefine((val, ctx) => {
-    // Guardian-register is for minors only; an adult must self-register.
-    if (isAdult(val.childDateOfBirth)) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['childDateOfBirth'],
-        message:
-          'En person på 18 år eller derover skal oprette sin egen profil.',
-      });
-    }
-  });
+/** Resolves a validation message from the `Onboarding.validation` namespace. */
+type Translate = (key: string) => string;
 
-export type GuardianRegisterInput = z.infer<typeof guardianRegisterInputSchema>;
+/**
+ * Builds the guardian-registration schema with localized validation messages.
+ * The shape is identical across locales, so `GuardianRegisterInput` is stable.
+ */
+export const makeGuardianRegisterInputSchema = (t: Translate) =>
+  z
+    .object({
+      childDisplayName: z.string().min(1, t('required')).max(80, t('max80')),
+      slug: z
+        .string()
+        .min(3, t('min3'))
+        .max(60, t('max60'))
+        .regex(slugRegex, t('slugPattern')),
+      childDateOfBirth: z.string().min(1, t('required')),
+      defaultLocaleId: z.enum(['da', 'en']),
+    })
+    .superRefine((val, ctx) => {
+      // Guardian-register is for minors only; an adult must self-register.
+      if (isAdult(val.childDateOfBirth)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['childDateOfBirth'],
+          message: t('adultMustSelfRegister'),
+        });
+      }
+    });
+
+export type GuardianRegisterInput = z.infer<
+  ReturnType<typeof makeGuardianRegisterInputSchema>
+>;
 
 const toRequest = (
   input: GuardianRegisterInput,

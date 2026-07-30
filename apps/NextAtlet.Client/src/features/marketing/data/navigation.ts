@@ -2,47 +2,54 @@ import { paths } from '@/config/paths';
 
 import { type NavColumn, type NavItem } from '../types';
 
-/** Primary header navigation (anchors into the on-page sections). */
+/**
+ * Primary header navigation (anchors into the on-page sections). Labels are
+ * resolved from the `Header.nav` message namespace by `key`, so the display
+ * text is localized while the structure stays here.
+ */
 export const primaryNav: NavItem[] = [
-  { label: 'Platform', href: '#platform' },
-  { label: 'Fotografi', href: '#fotografi' },
-  { label: 'Priser', href: '#priser' },
-  { label: 'Om os', href: '#om-os' },
+  { key: 'platform', href: '#platform' },
+  { key: 'photography', href: '#fotografi' },
+  { key: 'pricing', href: '#priser' },
+  { key: 'about', href: '#om-os' },
 ];
 
 /** The header / hero call-to-action shared across the page. */
-export const getStartedCta: NavItem = {
-  label: 'Kom i gang',
-  // returnTo /app so the post-auth decision gate routes new users into onboarding.
-  href: paths.auth.register.getHref(paths.app.dashboard.getHref()),
+export const getStartedCta = {
+  // returnTo onboarding: after Auth0 signup the user picks self/guardian, the
+  // register endpoint runs, and success routes them to their own site editor.
+  href: paths.auth.register.getHref(paths.onboarding.root.getHref()),
 };
 
-/** Footer link columns. */
+/**
+ * Footer link columns. Each column and item carries a `key` resolved against the
+ * `Footer.columns` message namespace; only the anchor targets live here.
+ */
 export const footerColumns: NavColumn[] = [
   {
-    heading: 'Platform',
+    key: 'platform',
     items: [
-      { label: 'Atleter', href: '#platform' },
-      { label: 'Fotografi', href: '#fotografi' },
-      { label: 'Mentorer', href: '#platform' },
-      { label: 'Priser', href: '#priser' },
+      { key: 'athletes', href: '#platform' },
+      { key: 'photography', href: '#fotografi' },
+      { key: 'mentors', href: '#platform' },
+      { key: 'pricing', href: '#priser' },
     ],
   },
   {
-    heading: 'For sponsorer',
+    key: 'sponsors',
     items: [
-      { label: 'Find talenter', href: '#om-os' },
-      { label: 'Sådan samarbejder vi', href: '#om-os' },
-      { label: 'Kontakt', href: '#om-os' },
+      { key: 'findTalent', href: '#om-os' },
+      { key: 'howWeWork', href: '#om-os' },
+      { key: 'contact', href: '#om-os' },
     ],
   },
   {
-    heading: 'Om NextAtlet',
+    key: 'about',
     items: [
-      { label: 'Vores mission', href: '#om-os' },
-      { label: 'Team', href: '#om-os' },
-      { label: 'Presse', href: '#om-os' },
-      { label: 'Privatlivspolitik', href: '#om-os' },
+      { key: 'mission', href: '#om-os' },
+      { key: 'team', href: '#om-os' },
+      { key: 'press', href: '#om-os' },
+      { key: 'privacy', href: '#om-os' },
     ],
   },
 ];

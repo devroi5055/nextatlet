@@ -215,9 +215,13 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("Development", policyBuilder =>
     {
-        policyBuilder.AllowAnyOrigin()
+        // Reflect the request origin (any localhost port in dev) rather than
+        // "*", because the SPA sends credentialed requests (cookies) and
+        // browsers reject a wildcard ACAO when credentials are included.
+        policyBuilder.SetIsOriginAllowed(_ => true)
                      .AllowAnyMethod()
-                     .AllowAnyHeader();
+                     .AllowAnyHeader()
+                     .AllowCredentials();
     });
 });
 
@@ -249,7 +253,13 @@ if (app.Environment.IsDevelopment())
     app.UseCors("Development");
 }
 
-app.UseHttpsRedirection();
+// Don't force HTTPS in development: the SPA calls the http endpoint (5278) and
+// a redirect to https (7162) would break the CORS preflight and hit the
+// self-signed dev cert.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthentication();
 app.UseAuthorization();

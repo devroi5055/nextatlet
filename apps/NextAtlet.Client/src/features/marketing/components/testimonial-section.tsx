@@ -1,7 +1,6 @@
 import { Quote } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { type ReactNode } from 'react';
-
-import { testimonial } from '../data/showcase';
 
 import { Section } from './section';
 
@@ -20,13 +19,14 @@ const renderQuote = (quote: string, emphasis?: string): ReactNode => {
 
 /** Mentor pull-quote. */
 export const TestimonialSection = () => {
+  const t = useTranslations('Testimonial');
   return (
     <Section className="bg-background" containerClassName="max-w-3xl text-center">
       <Quote className="mx-auto size-8 text-primary-gold" />
       <blockquote className="mt-6 font-display text-2xl font-bold uppercase leading-snug tracking-tight text-foreground sm:text-3xl">
-        {renderQuote(testimonial.quote, testimonial.emphasis)}
+        {renderQuote(t('quote'), t('emphasis'))}
       </blockquote>
-      <p className="mt-6 text-sm text-muted-foreground">— {testimonial.author}</p>
+      <p className="mt-6 text-sm text-muted-foreground">— {t('author')}</p>
     </Section>
   );
 };

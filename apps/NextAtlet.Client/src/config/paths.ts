@@ -42,6 +42,11 @@ export const paths = {
     dashboard: {
       getHref: () => '/app',
     },
+    // The authenticated athlete's own site draft editor — the post-onboarding
+    // landing where sections + themes will be edited (content TBD).
+    editor: {
+      getHref: () => '/app/editor',
+    },
     discussions: {
       getHref: () => '/app/discussions',
     },

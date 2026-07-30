@@ -9,39 +9,42 @@ import { featuredAthlete } from '../data/showcase';
 import { AthleteProfileCard } from './athlete-profile-card';
 import { Container } from './container';
 
+import {useTranslations} from 'next-intl';
+
 
 /** Above-the-fold hero: value proposition + sample athlete card. */
 export const HeroSection = () => {
+  const t = useTranslations('HeroSection');
   return (
     <section className="relative overflow-hidden bg-background py-5 lg:pb-20">
-      <div className="pointer-events-none absolute -right-40 top-0 size-[32rem] rounded-full bg-primary/10 blur-3xl" />
+      <div className="pointer-events-none absolute -right-40 top-0 size-128 rounded-full bg-primary/10 blur-3xl" />
       <Container className="relative grid gap-16 lg:grid-cols-2 grid-cols-1" >
 
         {/* LEFT */}
         <div className="grid justify-center justify-items-center lg:justify-items-start gap-6 lg:max-w-lg ">
           <p className="eyebrow">
-            Digital tilstedeværelse for unge atleter
+            {t('eyebrow')}
           </p>
 
-          <h1 className="display text-center lg:text-left">
-            Din  &nbsp; <br />
-            profil. <br />
-            Din &nbsp; <br />
-            <span className="text-primary">karriere.</span>
+          <h1 className="display text-center lg:text-left text-balance-xs max-w-xs">
+            {t("title.lead")}
+            <span className="text-primary">
+              {t("title.highlight")}
+            </span>
           </h1>
 
           <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg ">
-            NextAtlet hjælper unge judoudøvere med at bygge en stærk digital
-            identitet — med automatisk genererede hjemmesider, professionelle
-            fotos og et netværk af mentorer, der åbner døre til sponsorater.
+            {t("subtitle")}
           </p>
 
           <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <NextLink href={paths.auth.register.getHref(paths.app.dashboard.getHref())}>
+            {/* Plain anchor: /auth/login is an Auth0 middleware route, not a
+                Next page, so it needs a full browser navigation (no RSC fetch). */}
+            <a href={paths.auth.register.getHref(paths.onboarding.root.getHref())}>
               <Button variant="primary" size="lg">
-                Opret din profil
+                {t('ctaPrimary')}
               </Button>
-            </NextLink>
+            </a>
 
             <NextLink href="#priser">
               <Button
@@ -49,7 +52,7 @@ export const HeroSection = () => {
                 size="lg"
                 icon={<ArrowRight className="size-4" />}
               >
-                Se Pakker
+                {t('ctaSecondary')}
               </Button>
             </NextLink>
           </div>

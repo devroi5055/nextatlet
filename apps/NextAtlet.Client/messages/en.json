@@ -1,0 +1,339 @@
+{
+  "Metadata": {
+    "rootTitle": "NextAtlet — Your profile. Your career.",
+    "rootDescription": "NextAtlet helps young judo athletes build a strong digital identity — automatically generated websites, professional photos, and a network of mentors that opens doors to sponsorships.",
+    "authTitle": "Log in — NextAtlet",
+    "authDescription": "Log in or create a profile on NextAtlet.",
+    "onboardingTitle": "Get started — NextAtlet",
+    "onboardingDescription": "Create your profile on NextAtlet.",
+    "dashboardTitle": "Dashboard — NextAtlet",
+    "dashboardDescription": "Your NextAtlet dashboard."
+  },
+  "Common": {
+    "back": "Back",
+    "loading": "Loading",
+    "close": "Close",
+    "cancel": "Cancel",
+    "refresh": "Refresh"
+  },
+  "Header": {
+    "nav": {
+      "platform": "Platform",
+      "photography": "Photography",
+      "pricing": "Pricing",
+      "about": "About"
+    },
+    "cta": "Get started",
+    "openMenu": "Open menu",
+    "localeSwitcher": "Select language"
+  },
+  "HeroSection": {
+    "eyebrow": "Digital presence for young athletes",
+    "title": {
+      "lead": "Your Journey. Your ",
+      "highlight": "Potential."
+    },
+    "subtitle": "NextAtlet helps young judo athletes build a strong digital identity — with automatically generated websites, professional photos, and a network of mentors that opens doors to sponsorship opportunities.",
+    "ctaPrimary": "Create your profile",
+    "ctaSecondary": "See plans"
+  },
+  "Partners": {
+    "supportedBy": "Supported by"
+  },
+  "Offerings": {
+    "eyebrow": "What we offer",
+    "title": "Everything a young athlete needs",
+    "description": "Three connected services that together build a credible and professional digital identity — from your first competition to your first sponsor.",
+    "items": {
+      "website": {
+        "title": "Athlete website",
+        "description": "An automatically generated website that showcases your career, your results, and your story. Choose the level that fits you — from a simple profile to a fully customized brand.",
+        "linkLabel": "See plans"
+      },
+      "photography": {
+        "title": "Professional photography",
+        "description": "Professional photos for your website — and for personal use. We shoot at competitions or in rented studios. You own the images. They last your entire career.",
+        "linkLabel": "See examples"
+      },
+      "mentoring": {
+        "title": "Mentor network",
+        "description": "Guides, sparring, and a network of former athletes who know the path to sponsors. We help you write your first outreach and stand strong in the negotiation.",
+        "linkLabel": "Learn more"
+      }
+    }
+  },
+  "HowItWorks": {
+    "eyebrow": "How it works",
+    "title": "From sign-up to sponsor in just a few weeks",
+    "steps": {
+      "profile": {
+        "title": "Create your profile",
+        "description": "Fill in your details — club, weight class, results. Your website is generated automatically and ready in under 10 minutes."
+      },
+      "photoshoot": {
+        "title": "Book a photo session",
+        "description": "Choose a competition or our studio in your region. We deliver professional action shots and portraits you can use anywhere."
+      },
+      "visible": {
+        "title": "Become visible and searchable",
+        "description": "Your profile is indexed locally and nationally, so sponsors, clubs, and media can find you when they search for talent."
+      },
+      "sponsor": {
+        "title": "Land your first sponsor",
+        "description": "Our mentors guide you in handling inquiries and closing deals that strengthen — not compromise — your career."
+      }
+    }
+  },
+  "Photography": {
+    "eyebrow": "Photography",
+    "title": "Images that speak for you",
+    "description": "Professional photos from competitions and studios. You own them — use them anywhere.",
+    "seeAll": "See all examples",
+    "gallery": {
+      "action": {
+        "title": "Action photos",
+        "caption": "High-quality competition shots"
+      },
+      "portrait": {
+        "title": "Portrait",
+        "caption": "Studio"
+      },
+      "training": {
+        "title": "Training",
+        "caption": "Everyday"
+      },
+      "podium": {
+        "title": "Podium",
+        "caption": "Results"
+      },
+      "team": {
+        "title": "Team",
+        "caption": "Club & team"
+      }
+    }
+  },
+  "Pricing": {
+    "eyebrow": "Pricing",
+    "title": "Choose your level",
+    "description": "Start for free and upgrade when you're ready to take your career to the next level.",
+    "currency": "DKK",
+    "tiers": {
+      "starter": {
+        "name": "Starter",
+        "cadence": "Free forever",
+        "ctaLabel": "Create free profile",
+        "features": [
+          "Automatically generated profile",
+          "Searchable on nextatlet.dk",
+          "Results & career status",
+          "1 profile photo",
+          "Custom domain",
+          "Professional photo session",
+          "Mentor network",
+          "Sponsor matching"
+        ]
+      },
+      "pro": {
+        "name": "Pro",
+        "cadence": "per month · no commitment",
+        "badge": "Most popular",
+        "ctaLabel": "Get started",
+        "features": [
+          "Everything in Starter",
+          "Custom domain (marcus.nextatlet.dk)",
+          "1 professional photo session per year",
+          "Custom design & colors",
+          "Media kit for sponsors (PDF)",
+          "Sponsor inquiry form",
+          "Dedicated mentor",
+          "Priority visibility"
+        ]
+      },
+      "elite": {
+        "name": "Elite",
+        "cadence": "per month · no commitment",
+        "ctaLabel": "Start Elite",
+        "features": [
+          "Everything in Pro",
+          "Custom domain (marcus.dk)",
+          "Unlimited photo sessions",
+          "Dedicated mentor (1:1 advice)",
+          "Priority visibility for sponsors",
+          "Video highlights (up to 3 min.)",
+          "Negotiation help for deals",
+          "Network introductions"
+        ]
+      }
+    }
+  },
+  "Testimonial": {
+    "quote": "Sponsors aren't looking for the best athlete. They're looking for the most visible athlete.",
+    "emphasis": "most visible athlete",
+    "author": "Thomas Bech, former national team judoka & mentor at NextAtlet"
+  },
+  "Cta": {
+    "eyebrow": "Ready to start?",
+    "titleLine1": "Build your profile.",
+    "titleLine2": "Create your future.",
+    "body": "Create your free profile in under 10 minutes and become visible to sponsors, media, and clubs across Denmark.",
+    "primary": "Create free profile",
+    "secondary": "How it works"
+  },
+  "Footer": {
+    "blurb": "Digital presence and sponsorship platform for young judo athletes in Denmark.",
+    "copyright": "© {year} NextAtlet. All rights reserved.",
+    "tagline": "Judo · Sport · Talent",
+    "columns": {
+      "platform": {
+        "heading": "Platform",
+        "athletes": "Athletes",
+        "photography": "Photography",
+        "mentors": "Mentors",
+        "pricing": "Pricing"
+      },
+      "sponsors": {
+        "heading": "For sponsors",
+        "findTalent": "Find talent",
+        "howWeWork": "How we work together",
+        "contact": "Contact"
+      },
+      "about": {
+        "heading": "About NextAtlet",
+        "mission": "Our mission",
+        "team": "Team",
+        "press": "Press",
+        "privacy": "Privacy policy"
+      }
+    }
+  },
+  "Showcase": {
+    "stats": {
+      "gold": "Gold",
+      "tournaments": "Tournaments",
+      "silver": "Silver"
+    },
+    "badges": {
+      "nationalTeam": "National team",
+      "judo": "Judo",
+      "u18Talent": "U18 Talent"
+    },
+    "notification": {
+      "title": "New sponsorship inquiry",
+      "time": "today"
+    },
+    "portrait": {
+      "ratio": "3:1 Ratio"
+    }
+  },
+  "Onboarding": {
+    "chooseType": {
+      "title": "Who is the profile for?",
+      "subtitle": "Choose who you're creating a profile for."
+    },
+    "selector": {
+      "self": {
+        "title": "Myself",
+        "description": "I'm the athlete and I'm creating my own profile."
+      },
+      "guardian": {
+        "title": "My child",
+        "description": "I'm creating a profile for my child as a parent/guardian."
+      }
+    },
+    "self": {
+      "title": "Create your profile",
+      "subtitle": "Fill in your details — your website is generated automatically."
+    },
+    "guardian": {
+      "title": "Create a profile for your child",
+      "subtitle": "You become the guardian of the profile and can fill it in until your child is ready to take over."
+    },
+    "form": {
+      "localeDa": "Dansk",
+      "localeEn": "English",
+      "language": "Language",
+      "slug": "Profile URL",
+      "displayName": "Display name",
+      "slugPlaceholder": "your-name",
+      "dateOfBirth": "Date of birth",
+      "guardianEmail": "Parent's email",
+      "guardianNote": "Since you're under 16, we'll send a consent request to your parent. Your profile can only be published once they've approved.",
+      "submitSelf": "Create profile",
+      "childName": "Child's name",
+      "childSlugPlaceholder": "childs-name",
+      "childDateOfBirth": "Child's date of birth",
+      "submitGuardian": "Create child's profile"
+    },
+    "validation": {
+      "required": "Required",
+      "max80": "At most 80 characters",
+      "min3": "At least 3 characters",
+      "max60": "At most 60 characters",
+      "slugPattern": "Only lowercase letters, numbers, and hyphens",
+      "invalidEmail": "Invalid email",
+      "emailTooLong": "Too long",
+      "belowFloor": "You must be at least 13 to create your own profile. Ask a parent to create it for you.",
+      "guardianRequired": "A parent's email is required for athletes under 16 — we'll send them a consent request.",
+      "adultMustSelfRegister": "A person aged 18 or over must create their own profile."
+    },
+    "complete": {
+      "ready": {
+        "title": "Your profile has been created",
+        "body": "You're all set. Go to your dashboard to add a bio, results, and choose a theme."
+      },
+      "consentPending": {
+        "title": "Almost ready — we need consent",
+        "body": "We've sent a consent request to your parent. Your profile has been created, but can only be published once they approve via the link in the email."
+      },
+      "guardian": {
+        "title": "The child's profile has been created",
+        "body": "You are now the guardian of the profile. Go to your dashboard to fill in the details — the profile can be published whenever you're ready."
+      },
+      "cta": "Go to your site"
+    }
+  },
+  "Editor": {
+    "metaTitle": "Your site — NextAtlet",
+    "metaDescription": "Edit your NextAtlet site.",
+    "title": "Your site",
+    "subtitle": "This is your draft. You'll build your profile here once we add sections and themes.",
+    "draftBadge": "Draft",
+    "comingSoon": "Coming soon",
+    "sectionsTitle": "Sections",
+    "sectionsBody": "Add and arrange the sections on your site — results, gallery, about you, and more.",
+    "themesTitle": "Themes",
+    "themesBody": "Pick a theme and customize colors and fonts so the site looks like you."
+  },
+  "Auth": {
+    "loginTitle": "Log in to your account",
+    "registerTitle": "Register your account",
+    "login": "Log in",
+    "register": "Register",
+    "logoAlt": "NextAtlet",
+    "somethingWrong": "Something went wrong!"
+  },
+  "Dashboard": {
+    "welcome": "Welcome <b>{name}</b>",
+    "logoAlt": "NextAtlet",
+    "brand": "NextAtlet",
+    "toggleMenu": "Toggle menu",
+    "openUserMenu": "Open user menu",
+    "nav": {
+      "dashboard": "Dashboard",
+      "editor": "Your site",
+      "discussions": "Discussions",
+      "users": "Users"
+    },
+    "profile": "Your profile",
+    "signOut": "Sign out",
+    "error": "Error: {message}"
+  },
+  "Errors": {
+    "generic": "Ooops, something went wrong :(",
+    "refresh": "Refresh",
+    "notFoundTitle": "404 – Not Found",
+    "notFoundBody": "Sorry, the page you are looking for does not exist.",
+    "goHome": "Go to Home",
+    "somethingWrong": "Something went wrong!"
+  }
+}

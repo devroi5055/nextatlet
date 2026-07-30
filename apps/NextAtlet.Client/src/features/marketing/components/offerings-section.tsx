@@ -1,4 +1,5 @@
 import { ArrowRight } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import NextLink from 'next/link';
 
 import { offerings } from '../data/offerings';
@@ -8,6 +9,7 @@ import { Section } from './section';
 import { SectionHeading } from './section-heading';
 
 const OfferingCard = ({ offering }: { offering: Offering }) => {
+  const t = useTranslations('Offerings.items');
   const Icon = offering.icon;
 
   return (
@@ -19,16 +21,16 @@ const OfferingCard = ({ offering }: { offering: Offering }) => {
         <Icon className="size-5" />
       </span>
       <h3 className="mt-6 font-display text-lg font-bold uppercase tracking-wide text-foreground">
-        {offering.title}
+        {t(`${offering.key}.title`)}
       </h3>
       <p className="mt-3 flex-1 text-sm leading-relaxed text-muted-foreground">
-        {offering.description}
+        {t(`${offering.key}.description`)}
       </p>
       <NextLink
-        href={offering.link.href}
+        href={offering.href}
         className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-primary-gold transition-colors hover:text-gold-400"
       >
-        {offering.link.label}
+        {t(`${offering.key}.linkLabel`)}
         <ArrowRight className="size-4" />
       </NextLink>
     </article>
@@ -37,16 +39,17 @@ const OfferingCard = ({ offering }: { offering: Offering }) => {
 
 /** "What we offer" — the three headline services. */
 export const OfferingsSection = () => {
+  const t = useTranslations('Offerings');
   return (
     <Section id="platform" className="bg-background">
       <SectionHeading
-        eyebrow="Hvad vi tilbyder"
-        title="Alt hvad en ung atlet behøver"
-        description="Tre sammenhængende ydelser, der tilsammen bygger en troværdig og professionel digital identitet — fra første konkurrence til første sponsor."
+        eyebrow={t('eyebrow')}
+        title={t('title')}
+        description={t('description')}
       />
       <div className="mt-14 grid gap-6 md:grid-cols-3">
         {offerings.map((offering) => (
-          <OfferingCard key={offering.ordinal} offering={offering} />
+          <OfferingCard key={offering.key} offering={offering} />
         ))}
       </div>
     </Section>
