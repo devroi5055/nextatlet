@@ -1,191 +1,139 @@
-%% NextAtlet data model — ER diagram
-%% Reflects the unified Site model + the ActionToken unification (replaces Invitation).
-%% Notes:
-%%  - ActionToken replaces the old Invitation entity and also backs Consent and the
-%%    email-to-official org verification (Type discriminates; Payload is a jsonb polymorphic blob).
-%%  - GuardianConsent stays as the durable consent AUDIT record (outcome), written when a
-%%    Consent-type ActionToken is accepted.
-%%  - SiteLogin.Permissions is marked deprecated (resolved from ControlMode + role at runtime).
-%%  - Membership links two Sites (Individual <-> Organization) via SiteType-discriminated FKs.
+%% NextAtlet database ER diagram
+%% Source of truth: apps/NextAtlet.Server/NextAtlet.Infrastructure/Migrations/NextAtletDbContextModelSnapshot.cs
+%% 15 DbSets → 14 tables (OrgVerification is an owned type folded into OrganizationProfiles).
+%% NOTE: the "SiteId" columns on IndividualProfiles / OrganizationProfiles / SiteSnapshots and
+%%       MediaAssets.OrganizationId are BARE uuid columns with NO foreign key constraint.
 
 erDiagram
+    Users ||--o{ SiteLogins : "has (Cascade)"
+    Sites ||--o{ SiteLogins : "grants (Cascade)"
+    Sites ||--o{ ActionTokens : "targets (Cascade)"
+    Sites ||--o{ GuardianConsents : "for (Cascade)"
+    Users ||--o{ GuardianConsents : "by (Restrict)"
+    Sites ||--o{ MediaAssets : "owns opt (Cascade)"
+    Sites |o--o| SiteSnapshots : "current draft (Restrict)"
+    Sites |o--o| SiteSnapshots : "current published (Restrict)"
+    Themes ||--o{ SiteSnapshots : "renders (Restrict)"
+    Themes ||--o{ ChangeRequests : "theme (Restrict)"
+    IndividualProfiles ||--o{ Memberships : "affiliates (Cascade)"
+    OrganizationProfiles ||--o{ Memberships : "rosters (Cascade)"
+    IndividualProfiles ||--o{ ChangeRequests : "targets (Cascade)"
+    OrganizationProfiles ||--o{ ChangeRequests : "proposes (Cascade)"
+    Users ||--o{ ChangeRequests : "author (Restrict)"
+    Clubs ||--o{ ClubOfficials : "has (Cascade)"
 
-    User ||--o{ SiteLogin : "has"
-    User ||--o{ GuardianConsent : "gave (guardian)"
-
-    Site ||--o{ SiteLogin : "accessed via"
-    Site ||--o| IndividualProfile : "extends (SiteType=Individual)"
-    Site ||--o| OrganizationProfile : "extends (SiteType=Organization)"
-    Site ||--o{ SiteSnapshot : "has draft/published"
-    Site ||--o{ ActionToken : "targeted by"
-    Site ||--o{ GuardianConsent : "for"
-    Site ||--o{ ChangeRequest : "target of"
-    Site ||--o{ Subscription : "billed via"
-
-    SiteSnapshot }o--|| Theme : "renders with"
-
-    Site ||--o{ Membership : "individual side"
-    Site ||--o{ Membership : "organization side"
-
-    Plan ||--o{ PlanPrice : "priced by"
-    Plan ||--o{ PlanCapability : "grants"
-    PlanPrice ||--o{ Subscription : "subscribed at"
-
-    Club ||--o{ ClubOfficial : "has officials"
-
-    User {
-        guid Id PK
-        string Email
-        string AuthProviderId "external IdP subject"
-    }
-
-    Site {
-        guid Id PK
+    Sites {
+        uuid Id PK
         string Slug UK
         string DisplayName
-        string VisibilityStateId
-        string DefaultLocaleId
-        string SiteType "Individual | Organization"
+        string SiteTypeId "individual | organization"
+        string VisibilityStateId "public | private"
+        string VerificationStatusId
+        string DefaultLocaleId "da | en"
+        uuid CurrentDraftSnapshotId FK
+        uuid CurrentPublishedSnapshotId FK
     }
-
-    IndividualProfile {
-        guid Id PK
-        guid SiteId FK
-        date DateOfBirth "source of truth for minor status"
-        string ControlMode
-        string ConsentState
-        string SelfTierId "denormalized, derived"
+    IndividualProfiles {
+        uuid Id PK
+        uuid SiteId "NO FK, NO index"
+        string SportId "default judo"
+        date DateOfBirth
+        string ControlModeId
+        string ConsentStateId
+        string SelfTierId "never written"
     }
-
-    OrganizationProfile {
-        guid Id PK
-        guid SiteId FK
-        string OrgVerification "Pending | Verified | Rejected"
-        string OrgType "Club | NationalTeam | ..."
+    OrganizationProfiles {
+        uuid Id PK
+        uuid SiteId "NO FK, NO index"
+        string OrganizationTypeId
+        string OrganizationTierId
+        int AthleteSlotCount
+        bool IsServerManaged
+        string VerificationStatusId
+        string Verification_MethodId "owned OrgVerification"
     }
-
-    SiteLogin {
-        guid Id PK
-        guid UserId FK
-        guid SiteId FK
-        string RoleId
-        string Status
-        string Permissions "DEPRECATED - resolved at runtime"
+    SiteSnapshots {
+        uuid Id PK
+        uuid SiteId "indexed, NO FK"
+        uuid ThemeId FK
+        jsonb Layout
+        jsonb GlobalSettings
+        datetime PublishedUtc
     }
-
-    ActionToken {
-        guid Id PK "the token / link key"
-        string Type "Invite | Consent | OrgEmailVerification"
-        guid TargetSiteId FK
+    Themes {
+        uuid Id PK
+        string Name
+        jsonb Manifest
+        string PreviewImageUrl
+        datetime RetiredUtc
+    }
+    Users {
+        uuid Id PK
+        string Email UK
+        string AuthProviderId UK "Auth0 sub, nullable"
+    }
+    SiteLogins {
+        uuid Id PK
+        uuid UserId FK
+        uuid SiteId FK
+        string SiteRoleId "owner | guardian"
+        string StatusId "pending | active | revoked"
+        jsonb Permissions "always null (dead)"
+    }
+    ActionTokens {
+        uuid Id PK "= link secret"
+        string TypeId "invitation | consent | org_email_verification"
+        uuid TargetSiteId FK
         datetime ExpiresUtc
         datetime AcceptedUtc "null = pending"
-        json Payload "polymorphic per Type (jsonb)"
+        jsonb Payload "polymorphic"
     }
-
-    GuardianConsent {
-        guid Id PK
-        guid SiteId FK
-        guid GuardianUserId FK
-        string Method
+    GuardianConsents {
+        uuid Id PK
+        uuid SiteId FK
+        uuid GuardianUserId FK
+        string MethodId "email"
         string TermsVersion
-        datetime CreatedUtc
     }
-
-    ChangeRequest {
-        guid Id PK
-        guid RequestingSiteId FK
-        guid RequestingUserId FK
-        guid TargetSiteId FK
-        string VisibilityState
-        string OrgType
+    MediaAssets {
+        uuid Id PK
+        uuid AthleteSiteId FK "nullable"
+        uuid OrganizationId "NO FK"
+        string TypeId "image | video"
+        string OriginId
+        bool IsClubBranding
+        string StorageKey
     }
-
-    SiteSnapshot {
-        guid Id PK
-        guid SiteId FK
-        guid ThemeId FK
-        int ThemeVersion
-        json Layout "jsonb"
-        json GlobalSettings "jsonb"
-        int Version
-        datetime PublishedUtc "null = draft"
-    }
-
-    Theme {
-        guid Id PK
-        string Name
-        int Version
-        json Manifest "jsonb"
-        string PreviewImageUrl
-        bool IsActive
-    }
-
-    Membership {
-        guid Id PK
-        guid IndividualSiteId FK
-        guid OrganizationSiteId FK
-        string Role
-        date StartDate
-        date EndDate "null = ongoing"
-        string Status "Active | Inactive"
+    Memberships {
+        uuid Id PK
+        uuid IndividualProfileId FK
+        uuid OrganizationId FK
+        string RoleId
+        string statusId
         bool OccupiesSlot
     }
-
-    Plan {
-        guid Id PK
-        string Key UK
-        string Audience "Athlete | Organization"
-        string DisplayName
-        int AthleteSlotCount
-        int Version
-        bool IsActive
+    ChangeRequests {
+        uuid Id PK
+        uuid TargetProfileId FK
+        uuid ProposingOrganizationId FK
+        uuid ProposedByUserId FK
+        uuid ThemeId FK
+        jsonb ProposedLayout
+        bool IsActive "no StatusId column"
     }
-
-    PlanCapability {
-        guid Id PK
-        string Key
-        string Audience
-        string DisplayName
-        int AthleteSlotCount
-        int Version
-        bool IsActive
-    }
-
-    PlanPrice {
-        guid Id PK
-        guid PlanId FK
-        string BillingInterval
-        decimal Price
-        string Currency
-        bool IsActive
-    }
-
-    Subscription {
-        guid Id PK
-        guid SiteId FK
-        guid PlanPriceId FK
-        int PlanVersion
-        string Status
-        datetime CurrentPeriodStart
-        datetime CurrentPeriodEnd
-        string StripeCustomerId
-        string StripeSubscriptionId
-    }
-
-    Club {
-        guid Id PK
-        string SourceKey "external register id"
-        string Source
-        string Name
+    Clubs {
+        uuid Id PK
+        string Source "UK with SourceKey"
+        string SourceKey
         string CountryId
-        string SportIds
+        string Name
         string Address
-        datetime LastImportedUtc
+        stringarray SportIds
+        bool IsActive
     }
-
-    ClubOfficial {
-        guid Id PK
-        guid ClubId FK
+    ClubOfficials {
+        uuid Id PK
+        uuid ClubId FK
         string Name
         string Email
         string Phone

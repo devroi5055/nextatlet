@@ -1,91 +1,70 @@
-# 06 · Features & Problems They Solve
+# 06 · Feature Status & Known Problems
 
-**Audience:** developers — this is the *why* behind each feature, so implementation decisions stay anchored to the actual problem. Not marketing copy.
+An honest status board. This replaces the older aspirational "features & problems" narrative.
 
-> This is a problem/rationale doc covering the full product vision; many features below (photography, mentoring, club showcases, perk layer, sponsor reach) are **designed but not yet built** — see the status note in `CLAUDE.md` and the per-doc status banners for what exists today.
+## Feature status
 
----
+| Area | Status | Notes |
+|------|--------|-------|
+| Auth0 authentication (bearer) | ✅ Working | Cookie scheme is vestigial |
+| Just-in-time user provisioning | ✅ Working | `UserProvisioner`, matched by `sub` |
+| Self / guardian registration | ✅ Working | Age-gated; creates the full starter bundle |
+| Permission model | ✅ Working | `PermissionResolver` × `ControlMode` |
+| ActionToken flow (invite/consent/verify) | ⚠️ Partial | Works, but no accept-time email match; org-verify anonymous branch unreachable |
+| Guardian consent audit | ✅ Working | `GuardianConsent` written on accept |
+| Control transfer | ❌ Broken | Passes profile id where a site id is needed; also `GetByIdAsync` `FindAsync` bug |
+| Collaboration (shared editing) | ✅ Working | Toggles `_shared` modes |
+| `GET /api/Me` decision gate | ✅ Working | O(all pending invites) query; 500 on org-owner edge case |
+| `GET /api/sites` listing | ⚠️ Partial | No visibility enforcement (`?visibility=private` leaks) |
+| Draft read (`config/draft`) | ⚠️ Partial | No authorization; `version` always 0 |
+| Draft **write** / editor | ❌ Not built | Command deleted in refactor; `ISanitizationService`/`ISectionTypeRegistry` orphaned |
+| Public render endpoint + renderer | ❌ Not built | The next real milestone |
+| Publish flow + ISR/CDN | ❌ Not built | |
+| Theme system | ⚠️ Minimal | One seeded "Classic" theme; no picker |
+| Club registry (scrape) | ⚠️ Partial | Works but `[AllowAnonymous]`; deactivation source-key mismatch |
+| Org email verification | ❌ Insecure | No ownership check (see below) |
+| Billing / tiers / perks | ❌ Not built | Enumerations only; `PerkResolver`/`ResolveCapabilities` commented out |
+| Media pipeline | ❌ Not built | `MediaAsset` schema-only |
+| Memberships | ❌ Not built | `Membership` schema-only |
+| Change-request workflow | ❌ Not built | `ChangeRequest` schema-only, no `StatusId` |
+| Frontend marketing page | ✅ Working | Section-registry driven |
+| Frontend onboarding wizard | ✅ Working | Only fully-working authed flow |
+| Frontend dashboard/editor | ❌ Stub | Placeholder cards |
 
-## 1. Why NextAtlet exists at all
+## Known problems (prioritised)
 
-Young athletes are digitally underserved. They have results and potential but no credible, discoverable online presence, and no realistic path to sponsorship. Generic site builders (Wix, Instagram) don't solve this: they're undiscoverable, inconsistent, unprofessional for a sponsor's eyes, and isolated from the athlete's competitive context. NextAtlet bundles **presence + professional media + mentoring + affiliation**, hosted coherently under one searchable domain.
+### Security (fix before production)
 
----
+1. **`SendOfficialEmailVerificationCommand`** — no ownership check and returns the token id in the body → any authenticated user can verify an arbitrary organization.
+2. **`GetDraftAthleteSiteSnapshotQuery`** — no authorization → any authenticated user reads any site's unpublished draft.
+3. **`ClubsController`** — `scrape` / `add-sports` / `remove-sports` are all `[AllowAnonymous]` (unauthenticated crawl + DB writes).
+4. **Invitation/Consent strategies** — never compare the accepting user's email to the token payload; the link-holder gets the role. `invitation.email_mismatch` exists but is unused.
+5. **`GetSitesQuery`** — `visibility` is a client filter, not a server constraint; private sites are enumerable.
+6. **CORS** `SetIsOriginAllowed(_ => true) + AllowCredentials()` (Development only, but dangerous if promoted).
+7. Missing claims produce **500**, not 401.
 
-## 2. Feature → problem → why this design
+### Bugs
 
-### Auto-generated athlete websites
-- **Problem:** athletes can't build a credible site; ad-hoc sites are unfindable and inconsistent.
-- **Solution:** config-as-data + themes; one hosted, SEO-coherent domain.
-- **Why this way:** storing configuration (not HTML) means one engine serves every tier, themes scale without migrations, and everything is searchable in one place. (`01`, `02`)
+- **`TransferControlCommand`** always fails: passes `ProfileId` to login checks that expect a site id; tests mirror the bug so they pass.
+- **`IndividualProfileRepository`/`OrganizationProfileRepository.GetByIdAsync`** misuse `FindAsync(id, ct)` → EF throws at runtime.
+- **Guardian-registered under-16s** stuck in `pending_guardian_consent` with no token to clear it.
+- **`SiteSnapshotResponse.Version`** always serializes as 0.
+- **`CountPendingInvitesByEmailAsync`** loads every pending invite in the DB on every `/api/Me`.
+- Scraper `Source` mismatch (`dju_portalen` vs `dju_portal`) breaks deactivation.
+- `SanitizationService` HTML-decodes *after* stripping tags, so `&lt;script&gt;` survives.
 
-### Free athlete tier
-- **Problem:** youth athletes (really their parents) have little money; a paywall at the door kills adoption.
-- **Solution:** a genuinely useful free page.
-- **Why:** adoption first; the free page is the funnel into paid tiers, club affiliation, and photography. (`04`)
+### Error contract
 
-### Professional photography as a bookable service
-- **Problem:** amateur photos undermine credibility with sponsors; athletes can't self-produce pro media.
-- **Solution:** internal photographers, studios/competitions; media addable to the profile anytime.
-- **Why bookable (not always-on):** photography is the strongest differentiator but the hardest to scale; modeling it as a one-time/booked service keeps quality controlled and lets tiers/clubs discount or fund it. (`04`, `05`)
+- Every business failure is **HTTP 400** regardless of category (403/404/409/422 are comments only).
+- `ApiError.Parameters` is always empty.
+- The frontend error catalog (`da.json`/`en.json`) contains **no** error-code translations, contradicting `ErrorCodes.cs`'s own comment.
 
-### Media never blocks signup
-- **Problem:** the pro photos don't exist yet when a youth athlete joins.
-- **Solution:** lightweight text-only signup; media is post-signup onboarding, addable by owner/guardian/admin.
-- **Why:** any media gate would make youth signup literally impossible. (`05`)
+### Dead / unwired code
 
-### One profile + linked roles (guardian model)
-- **Problem:** most athletes are minors; legal account-holder, consent, and parental control must be explicit.
-- **Solution:** one profile, multiple linked logins with roles; guardian permissions configurable.
-- **Why:** keeps legal/consent logic in one place and scales to second guardians or delegates without redesign. (`03`)
+`PerkResolver`, `ResolveCapabilitiesCommand`, `RequestsAndResponses.cs`, `PlanCapabilities.cs`, three `strings/*.cs` files — all commented out. `ActionTokenActor`, `ActionTokenAcceptedResponse`, `IndividualProfileResponse`, `CvrLookupResult`, `UpdateSiteSnapshotRequest` — unreferenced. `ISanitizationService`, `ISectionTypeRegistry`, `ICvrLookupService` — registered but unused. 12 of 33 error codes unreferenced. `ListClubOfficialsCommand` tested but has no route.
 
-### Approval workflow (minor vs adult)
-- **Problem:** who is allowed to change/publish a minor's public presence?
-- **Solution:** minors → guardian approves everything; adults → self-approve; clubs may only *propose*.
-- **Why:** child-safety and trust; clubs never write directly to an athlete's profile. (`03`)
+### Infra / hygiene
 
-### Organizations (clubs et al.) — the B2B hybrid
-- **Problem:** athletes are hard to reach one by one; clubs already aggregate them; clubs want showcase value.
-- **Solution:** clubs register, manage their own page, affiliate athletes via slots.
-- **Why:** clubs are a distribution channel and add athlete value (funded shoots, exposure) without taking ownership. (`00`, `04`)
-
-### Generic memberships (Club / NationalTeam / Academy / TrainingCenter / SchoolTeam)
-- **Problem:** an athlete's affiliations are plural and change over time; club-only modeling gets messy fast.
-- **Solution:** time-bounded many-to-many memberships with derived display/prestige/training primaries.
-- **Why:** clean, realistic, and supports "leaves active roster but history retained" + moving between clubs. (`02`)
-
-### Additive perk layer (never replaces tier)
-- **Problem:** if a club slot replaced an athlete's paid tier, clubs become a way to dodge individual payment → athlete revenue collapses, billing/trust break.
-- **Solution:** perks resolved at request time as a per-feature max on top of `SelfTier`.
-- **Why:** protects B2C revenue, avoids billing confusion, makes "join/leave club" behavior predictable. (`04`)
-
-### Live-reference club showcases (published contract only)
-- **Problem:** duplicating athlete data onto club pages goes stale and risks leaking private/draft data.
-- **Solution:** club pages reference athletes and resolve against the published public contract at render.
-- **Why:** single source of truth + a hard privacy boundary; athletes editing their profile update everywhere. (`01`, `03`)
-
-### Affiliation history retained
-- **Problem:** clubs and sponsors gain value from knowing an athlete's lineage; deleting links destroys it.
-- **Solution:** ending a membership marks it inactive but keeps the row.
-- **Why:** transparency + club value (current roster *and* alumni), without trapping the athlete. (`02`)
-
-### National Team as server-managed prestige
-- **Problem:** prestige affiliations can't be self-claimed without losing credibility.
-- **Solution:** NT entities created/assigned only by internal admins; surfaced as a badge.
-- **Why:** keeps prestige trustworthy; clean upgrade path to federation self-service later. (`00`, `02`)
-
-### Mentoring (guides + 1:1)
-- **Problem:** young athletes lack guidance on presence, sponsorship, and career steps.
-- **Solution:** tiered mentoring content and 1:1 sessions.
-- **Why:** deepens the service moat beyond "a website" and justifies recurring subscription. (`04`)
-
----
-
-## 3. Problems intentionally deferred
-
-| Deferred | Why it's safe to wait |
-|----------|------------------------|
-| Sponsor marketplace | needs reach/results data and aggregation to be valuable; model leaves room (`01`) |
-| Federation self-service | internal-admin NT entities cover MVP; clean upgrade path (`02`) |
-| Free-form custom HTML sections | reopens XSS + quality problems the engine exists to avoid (`07`) |
-| Multi-sport beyond judo | `Sport` field generalizes; focus wins the first niche (`00`) |
+- CI (`.github/workflows/dotnet.yml`) pins .NET 8 against net10.0 — cannot pass. `infra/` empty.
+- Frontend: `pnpm lint` broken (Next 16), `pnpm gen:api` would break the client, `tailwind.config.cjs` inert, `text-primary-gold` generates no CSS, `/onboarding/complete` and several dashboard nav links are dead.
+- Numerous file-name ≠ type-name mismatches (see [`07-patterns-and-build-order.md`](07-patterns-and-build-order.md)).

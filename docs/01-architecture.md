@@ -1,117 +1,70 @@
 # 01 · Architecture
 
-**Depends on:** `00-overview.md`. **Pairs with:** `02-data-model.md`, `07-patterns-and-build-order.md`.
+> Onboarding-friendly version with sequence diagrams: [`docs/confluence/02-architecture.md`](confluence/02-architecture.md).
 
----
-
-## 1. Tech stack
-
-| Layer | Choice | Notes |
-|-------|--------|-------|
-| Backend | **.NET (ASP.NET Core Web API)** | Domain logic, config CRUD, validation, auth, rendering contract. |
-| ORM | **EF Core** | Hybrid relational + JSON column model (see `02`). |
-| Database | **PostgreSQL** (recommended) | `jsonb` is well-suited to the section-as-data model. SQL Server works too. |
-| Frontend | **Next.js (App Router)** | Two surfaces: the **editor** (authenticated SPA-style) and the **public site renderer** (SSR/ISR for SEO). Uses `@auth0/nextjs-auth0`, React Query, Zustand, Tailwind v4, Radix. |
-| Media storage | **Blob storage + CDN** (Azure Blob / S3 + CloudFront/equivalent) | Bytes never live in the DB; the DB stores references only. *Pipeline not built yet.* |
-| Auth | **Auth0 (OIDC)** — confirmed | Dual-scheme (JWT bearer + cookie) behind a `smart` policy scheme; supports **multiple linked logins per site** (see `03`, `07`). |
-
-### Why Next.js specifically
-
-The public athlete and club pages live or die on **SEO and load speed** — discoverability under one domain is a core value proposition. Next.js gives:
-
-- **SSR / ISR** for public pages → crawlable, fast, cacheable per published version.
-- **Client-side interactivity** for the editor.
-- A natural home for the **section-component registry** (one React component per section type — see §4).
-
-> Public pages should be **statically regenerated on publish** (ISR with on-demand revalidation), not rendered fresh per request. Publishing an athlete or club page triggers revalidation of exactly the affected routes.
-
-## 2. System topology
+## Backend: four projects
 
 ```
-                         ┌───────────────────────────────────────────┐
-                         │              .NET Web API                  │
-   ┌──────────────┐      │                                            │     ┌──────────────┐
-   │ Next.js      │      │  Auth / Identity (multi-login per profile) │     │ PostgreSQL   │
-   │ EDITOR       │─────►│  Athlete config CRUD  (draft/publish)      │────►│ profiles,    │
-   │ (athletes,   │      │  Organization CRUD    (club pages, roster) │     │ orgs,        │
-   │  guardians,  │      │  Membership service   (affiliations)       │     │ memberships, │
-   │  club staff) │      │  Tier + Perk resolver (additive layer)     │     │ themes,      │
-   └──────────────┘      │  Approval workflow    (change requests)    │     │ media refs   │
-                         │  Validation (schema + tier + ownership)    │     └──────────────┘
-   ┌──────────────┐      │                                            │     ┌──────────────┐
-   │ Next.js      │      │  PUBLIC read endpoints                     │     │ Blob + CDN   │
-   │ PUBLIC SITE  │◄─────│  (published public data contract only,     │◄────│ images,      │
-   │ (visitors)   │      │   cached, sanitized)                       │     │ video        │
-   └──────────────┘      └───────────────────────────────────────────┘     └──────────────┘
+Api  ──►  Application  ◄──  Infrastructure
+              │                   │
+              └────►  Domain  ◄───┘
 ```
 
-## 3. Read/write path separation
+| Project | Responsibility | References |
+|---------|----------------|------------|
+| `NextAtlet.Domain` | Entities, smart-enumerations, value objects, `PermissionResolver`, `AgePolicy`. | Framework only (has a vestigial EF package ref, unused). |
+| `NextAtlet.Application` | MediatR commands/queries + handlers, repository **interfaces**, `IUnitOfWork`, service interfaces, DTOs, `Result<T>`, options. **No EF.** | Domain |
+| `NextAtlet.Infrastructure` | EF Core (`NextAtletDbContext`), repositories, `EfUnitOfWork`, external services (email, CVR, scraper), migrations. | Application, Domain |
+| `NextAtlet.Api` | Controllers, `Program.cs`, filters, `GlobalExceptionHandler`, auth, dev seeder. | Application, Infrastructure, Domain |
 
-Two fundamentally different read paths. Do **not** share a model between them.
+## Request pattern: CQRS-lite via MediatR
 
-1. **Editor path** (authenticated): returns the full editable draft config **plus** a schema describing what *this profile's tier + active perks* may edit. Never cached.
-2. **Public path** (anonymous): returns only the **published public data contract** — sanitized, with resolved CDN media URLs and the theme manifest. Aggressively cached; invalidated on publish.
+- Every write is a **command**, every read a **query** — records implementing `IRequest<T>`. Handlers live beside them under `Features/**`.
+- Controllers contain **no logic**; each action is `Ok(await _sender.Send(...))`.
+- **MediatR 13**, wired by assembly scan (`IApplicationMarker`). **No pipeline behaviours** — no cross-cutting validation/logging/transactions. Validation is hand-rolled in each handler.
+- Handlers are **orchestrators**: they use repository interfaces (never `DbContext`) and call `IUnitOfWork.SaveChangesAsync()` **once**. There is **no explicit transaction API** — atomicity is EF's implicit single-`SaveChanges` transaction.
+- Identity comes from validated JWT claims, never the request body.
 
-The same separation applies to organizations: club staff edit a draft club page; visitors see the published one.
+### Flow
 
-**Implementation.** The write/editor path runs through **MediatR** — controllers dispatch `IRequest` commands/queries via `ISender`; handlers orchestrate **repositories** + domain services and commit once through `IUnitOfWork`. Repository interfaces and handlers live in the Application layer; EF Core implementations live in Infrastructure (which references Application). No handler touches `DbContext` directly. See `docs/07` §1 and the `docs/08` ADR.
-
-### API error contract (errors as codes)
-
-The backend emits **error codes, never localized strings** — the frontend owns the `da`/`en` catalog and resolves codes to text. Every error response is the single shape:
-
-```jsonc
-// HTTP 400 (user-facing) or 500 (system)
-{ "errorCode": "slug.already_taken", "parameters": ["maria-jensen"] }
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant Ctrl as Controller
+    participant H as Handler
+    participant R as Repository
+    participant DB as PostgreSQL
+    participant RF as ResultFilter
+    C->>Ctrl: HTTP + Bearer JWT
+    Ctrl->>H: _sender.Send(command)
+    H->>R: read/write via interface
+    R->>DB: EF Core
+    H->>DB: SaveChangesAsync() once
+    H-->>Ctrl: Result<T>
+    Ctrl->>RF: Ok(result)
+    RF-->>C: 200 / 204 / 400
 ```
 
-- **User-facing failures** (slug taken, guardian email required, profile not found, invalid section) surface either as a returned `Result<T>` failure (unwrapped by the global `ResultFilter`) or a thrown `DomainException(code)` — **both** produce the same `ApiError` JSON.
-- **System failures** (missing seed theme, DB down) stay plain exceptions — caught by `GlobalExceptionHandler`, logged, returned as a generic **500** `{ "errorCode": "internal_error" }` that leaks no internal detail.
-- Status codes are **fine-grained**: the `ErrorCodes` catalog maps each code to a specific 4xx — 400 (bad input), 403 (not authorized), 404 (not found), 409 (conflict, e.g. slug taken), 422 (business-rule, e.g. below minimum age). (The earlier "coarse 400 for everything" plan has been superseded.)
+## Error pipeline
 
-This is **Model A** (error codes + a global handler/filter). Rationale and the two-mechanism split (`Result<T>` vs `DomainException`) are in `docs/07` and the `docs/08` ADR.
+`ApiError(string ErrorCode, IReadOnlyList<object> Parameters)`.
 
-**Draft vs Published is a hard rule.** Editing never mutates what the public (or an affiliated club page) sees until publish. This matters doubly for the B2B side: club pages consume the athlete's **published** contract only — never drafts, never private fields (see `03`).
+- Handlers return `Result<T>`; the global `ResultFilter` maps: success+value → **200** (bare value), success+no value → **204**, failure → **400** + `ApiError`.
+- Unhandled exceptions → `GlobalExceptionHandler` → **500** `internal_error`.
+- **Every business failure is 400** regardless of category; the 403/404/409/422 groupings in `ErrorCodes.cs` are comments only. **`ApiError.Parameters` is always empty.**
 
-## 4. The rendering contract (backend ↔ Next.js)
+## Authentication (summary)
 
-The backend **never emits HTML**. The athlete site is *configuration as data*; the frontend renders it. The contract has three parts:
+Auth0 (OIDC). Three schemes: `bearer` (JWT — the working path), `cookie` (`nextatlet.session`, vestigial — never issued), and a default `smart` policy scheme that routes on the `Authorization` header. A **global fallback policy** requires auth on every endpoint unless `[AllowAnonymous]`. Detail: [`03-accounts-and-permissions.md`](03-accounts-and-permissions.md) and [`confluence/backend/authentication-and-tokens.md`](confluence/backend/authentication-and-tokens.md).
 
-1. **Layout** — the published ordered list of typed sections + each section's data.
-2. **Theme manifest** — which section types the theme supports, its color/font slots and constraints.
-3. **Resolved media** — fully-resolved CDN URLs for referenced assets.
+## Frontend
 
-```
- published Layout.sections[]
-        │  (ordered, typed)
-        ▼
- Next.js SectionComponentRegistry      Theme tokens (from manifest)
-   "hero"    → <HeroSection/>                 │
-   "bio"     → <BioSection/>          ────────┤ applied as CSS variables /
-   "results" → <ResultsSection/>              │ design tokens per theme
-   "gallery" → <GallerySection/>              │
-        │                                     │
-        ▼                                     ▼
-        └──────────────► rendered public page ◄──────────
-```
+Next.js 16 App Router; everything under `src/app/[locale]/` (no root `app/layout.tsx`). Middleware entry is `src/proxy.ts` (Next 16 rename), composing next-intl + Auth0. Route protection lives in the `/app` and `/onboarding` server layouts. React Query for server state; one Zustand store; Tailwind v4 tokens in `globals.css`.
 
-Because the contract is data + manifest (not markup), the frontend is replaceable and the theme set grows without backend changes. A theme that doesn't support `video` simply omits it from its manifest, and the editor won't offer it.
+## How the halves talk
 
-### Club page rendering reuses the same engine
+Browser React Query → generated `Api` client (`src/types/api.ts`) → `customFetch` fetches a fresh token from `/auth/access-token` and adds `Authorization: Bearer …` → API at `NEXT_PUBLIC_API_URL` (origin; client adds `/api`). The token's audience (`AUTH0_AUDIENCE`) must equal the backend's `Authentication:Audience`.
 
-A club page is itself a `SiteSnapshot`-backed document (same draft/published engine) with its own section types (e.g. `clubHero`, `featuredAthletes`, `clubResults`). The **`featuredAthletes` section does not duplicate athlete data** — it holds references to athlete sites, and at render time the public read endpoint resolves each reference against that athlete's **published public data contract**. If an athlete unpublishes or privatizes, the showcase degrades to a graceful placeholder rather than breaking or leaking (see `02` and `03`).
+## Dev startup behaviour
 
-> **Status.** The public **render** endpoint, the `PublicContractProjector`, the publish flow, and ISR/CDN caching below are **designed, not built**. The only public read endpoint today is `GET /api/sites` — an anonymous paged **listing** of sites (slug, display name, locale, visibility), not the full rendered contract.
-
-## 5. Caching
-
-- Public athlete/club pages → ISR + CDN, keyed by slug + published version. **Invalidate on publish** by bumping the published version (cache key changes naturally).
-- A club page that live-references athletes must also revalidate when a **featured athlete republishes** — track the dependency so the club route is revalidated too.
-- Editor/draft endpoints → never cached.
-- Media → immutable, content-hashed URLs → cache forever at the CDN.
-
-## 6. Boundaries deliberately left out of MVP
-
-- Sponsor marketplace (data model leaves room; no endpoints yet).
-- Federation self-service for National Teams (internal-admin-managed only at launch).
-- Fully free-form custom HTML sections (reopens XSS + quality problems the engine exists to prevent — see open questions in `07`).
+In Development, `Program.cs` runs `Database.EnsureDeleted()` → `Migrate()` → seed on every start — **the DB is dropped each run**. Ports: 5278 (http), 7162 (https); Swagger at `/swagger`.

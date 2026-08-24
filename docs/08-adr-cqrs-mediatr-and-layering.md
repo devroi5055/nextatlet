@@ -1,47 +1,32 @@
-# 08 · ADR — CQRS via MediatR, Repository/Unit-of-Work, and Dependency Inversion
+# 08 · ADR — CQRS via MediatR, Repository/Unit-of-Work, and Layering
 
-**Status:** Accepted · **Date:** 2026-06-03 · **Scope:** `apps/NextAtlet.Server`
-**Supersedes:** the hand-rolled `*Command`/`*Query` classes and the `Application → Infrastructure` reference described in earlier Step-1 notes.
-
----
+**Status:** Accepted and implemented (with the caveats noted).
 
 ## Context
 
-Step 1 shipped three features (`CreateAthlete`, `GetDraftConfig`, `UpdateDraftConfig`) as plain classes with an `ExecuteAsync` method that injected `NextAtletDbContext` directly. DB access and orchestration were fused, the `Application` project referenced `Infrastructure` (dependency arrow pointing the wrong way for testability/layering), and error handling was per-action `try/catch` in the controller.
+The backend needs a clear write/read organization, testable business logic, and a clean separation between HTTP, orchestration, domain rules, and persistence.
 
-## Decisions
+## Decision
 
-1. **CQRS via MediatR.** Features are `IRequest` + `IRequestHandler`, dispatched from controllers via `ISender`. Controllers are thin (`return Ok(await _sender.Send(request))`).
-2. **Repository + Unit of Work.** Handlers are orchestrators: they read/write via per-aggregate repository interfaces and commit once via `IUnitOfWork.SaveChangesAsync()`. No handler references `DbContext`. Interfaces are intention-revealing, **not** a generic `IRepository<T>` (avoids leaking `IQueryable`). The current set (renamed since this ADR — `AthleteProfile` → `IndividualProfile`, `ProfileLogin` → `SiteLogin`, `SiteConfig` → `SiteSnapshot`): `ISiteRepository`, `IIndividualProfileRepository`, `IOrganizationProfileRepository`, `ISiteLoginRepository`, `IUserRepository`, `ISiteSnapshotRepository`, `IThemeRepository`, `IActionTokenRepository`, `IGuardianConsentRepository`, `IClubRepository`.
-3. **Dependency inversion (Clean Architecture).** Abstractions live in `Application`; EF Core implementations live in `Infrastructure`, which now references `Application`. The previous `Application → Infrastructure` reference is removed.
+1. **CQRS-lite via MediatR 13.** Writes are commands, reads are queries — records implementing `IRequest<T>`, each with a co-located handler under `Features/**`. Controllers dispatch via `ISender.Send` and contain no logic.
+2. **Repository + Unit of Work.** Persistence is abstracted behind intention-revealing interfaces in `NextAtlet.Application` (`ISiteRepository`, `IUnitOfWork`, …), implemented over EF Core in `NextAtlet.Infrastructure` (`EfUnitOfWork`, `NextAtletDbContext`). Handlers never touch `DbContext`.
+3. **Dependency inversion / Clean layering.** `Api → Application ← Infrastructure`, both `→ Domain`. Domain depends on nothing (a lone EF package reference on the Domain csproj is vestigial and unused).
+4. **Result<T> for expected failures**, exceptions for system faults. A global `ResultFilter` and `GlobalExceptionHandler` map both to the `ApiError` shape.
 
-```
-Api ──► Application ◄── Infrastructure
-          │                  │
-          └──────► Domain ◄──┘
-```
+## Consequences and current reality
 
-4. **Global error handling (Model A — error codes).** Per-action `try/catch` is replaced by two cooperating pieces: a global **`ResultFilter`** (unwraps handler `Result<T>` — success → value/204, failure → `ApiError`) and a **`GlobalExceptionHandler`** (`IExceptionHandler`) for thrown `DomainException(code)` and unhandled exceptions. User-facing failures map to a specific 4xx + `ApiError { errorCode, parameters }` (the `ErrorCodes` catalog carries 400/403/404/409/422 semantics); system failures are logged and returned as a generic **500** `internal_error` (no detail leaked). The backend never emits localized strings — the frontend resolves codes via its `da`/`en` catalog. Contract documented in `docs/01`; mechanism split in `docs/07`.
-5. **Test safety net.** An xUnit project (`NextAtlet.Application.Tests`) dispatches through a real MediatR + repository pipeline backed by EF Core InMemory, pinning behaviour across the refactor.
+- **MediatR is pinned to v13** (Community). Handler/`IRequest` code is portable to MediatR 12 (MIT) or a hand-rolled `ISender` if licensing policy changes.
+- **There are NO MediatR pipeline behaviours.** No cross-cutting validation, logging, or transaction behaviour was added. Validation is hand-rolled inside each handler; mapping uses static mappers. If you want validation/logging behaviours, they are not there yet.
+- **There is NO explicit transaction API.** `EfUnitOfWork.SaveChangesAsync` just calls `DbContext.SaveChangesAsync`. Atomicity relies on EF's implicit single-`SaveChanges` transaction over the shared scoped `DbContext`. **Anything spanning two `SaveChangesAsync` calls is not atomic** — keep a handler's writes in one save.
+- Each handler **owns its own commit** — it calls `SaveChangesAsync` once at the end. The base registration handler stages but never commits; the concrete handler commits.
+- The **editor read/write split** (public cached path vs authenticated editor path) is an orthogonal design goal that is only partly realised — the public render path and the draft-write path are not built.
 
-## MediatR licensing
+## Alternatives considered
 
-MediatR went commercial on **2 July 2025** (v13+, dual RPL-1.5 / commercial). It is **free under the Community edition** for organizations under $5M gross annual revenue, non-profits, education, and non-production use; above that threshold it requires a paid license key.
+- **Full CQRS with separate read/write models** — rejected as overkill for the MVP.
+- **Specification pattern for authorization** — not used; authorization is `PermissionResolver` + `ControlMode` presets in the Domain.
+- **FluentValidation / AutoMapper** — not referenced; validation and mapping are hand-written.
 
-**Decision:** start with **MediatR v13 Community**. The choice is reversible and does not lock us in — every feature is just a class implementing `IRequestHandler<TReq,TRes>`. If licensing policy changes, the portable fallbacks are:
+## Related
 
-- Pin **MediatR 12.x** (last MIT release) — identical API, frozen.
-- **`martinothamar/Mediator`** (MIT, source-generated) — near-identical API, minor namespace changes.
-- A ~40-line hand-rolled `ISender` over DI.
-
-## Consequences
-
-- **Positive:** testable handlers without a DB; query logic isolated in repositories; API contract decoupled from persistence; consistent error responses; correct layering.
-- **Cost:** a small amount of plumbing (repository interfaces + impls, UoW) and one third-party dependency (MediatR) with the licensing caveat above.
-- **Unchanged:** `EnsureCreated()` startup, the jsonb value conversions, and the DB schema — repositories sit on top of the same `DbContext`/EF config. No migration was required by this refactor.
-
-## Not done (deliberately)
-
-- `MediaAsset` repository — deferred until a feature needs it.
-- FluentValidation / a MediatR `ValidationBehavior` — deferred (Q-D); add when validation grows beyond the in-handler checks.
-- Moving slug/reserved/minor invariants into the domain (Q-C) — left in the handler for now.
+- [`01-architecture.md`](01-architecture.md) · [`07-patterns-and-build-order.md`](07-patterns-and-build-order.md) · [`confluence/02-architecture.md`](confluence/02-architecture.md)

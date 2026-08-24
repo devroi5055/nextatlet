@@ -3,20 +3,25 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest",
-    "test-e2e": "pm2 start \"yarn run-mock-server\" --name server && yarn playwright test",
+    "test-e2e": "pm2 start \"pnpm run-mock-server\" --name server && pnpm exec playwright test",
     "prepare": "husky",
     "check-types": "tsc --project tsconfig.json --pretty --noEmit",
     "generate": "plop",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "run-mock-server": "tsx ./mock-server.ts",
-    "gen:api": "npm run gen:spec && npm run gen:types",
+    "gen:api": "pnpm gen:spec && pnpm gen:types",
     "gen:spec": "dotnet swagger tofile --output ./openapi/swagger.json ../NextAtlet.Api/bin/Debug/net10.0/NextAtlet.Api.dll v1",
     "gen:types": "openapi-typescript ./openapi/swagger.json -o ./src/types/api.ts"
   },

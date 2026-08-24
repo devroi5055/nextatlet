@@ -15,13 +15,13 @@ Originally scaffolded from [bulletproof-react](https://github.com/alan2207/bulle
 
 ## Getting started
 
-Prerequisites: **Node 20+**, and the backend API running (see `../../BACKEND_QUICK_START.md`).
+Prerequisites: **Node 20+**, **pnpm 9+** (`corepack enable` will provide it), and the backend API running (see `../../BACKEND_QUICK_START.md`).
 
 ```bash
 cd apps/NextAtlet.Client
 cp .env.example .env      # then fill in the values below
-yarn install
-yarn dev                  # http://localhost:3000
+pnpm install
+pnpm dev                  # http://localhost:3000
 ```
 
 ### Environment
@@ -38,12 +38,12 @@ Auth0 SDK vars (read directly by `@auth0/nextjs-auth0`): `AUTH0_DOMAIN`, `AUTH0_
 
 | Script | What it does |
 |--------|--------------|
-| `yarn dev` / `build` / `start` | Next dev / production build / serve |
-| `yarn check-types` | `tsc --noEmit` |
-| `yarn test` | Vitest unit tests |
-| `yarn test-e2e` | Playwright (starts the MSW mock server via pm2) |
-| `yarn storybook` | Component workshop on :6006 |
-| `yarn gen:api` | Regenerate `src/types/api.ts` from the backend Swagger doc (`gen:spec` → `gen:types`) |
+| `pnpm dev` / `build` / `start` | Next dev / production build / serve |
+| `pnpm check-types` | `tsc --noEmit` |
+| `pnpm test` | Vitest unit tests |
+| `pnpm test-e2e` | Playwright (starts the MSW mock server via pm2) |
+| `pnpm storybook` | Component workshop on :6006 |
+| `pnpm gen:api` | Regenerate `src/types/api.ts` from the backend Swagger doc (`gen:spec` → `gen:types`) |
 
 > **Note on `gen:api`:** `gen:spec` reads `../NextAtlet.Api/bin/Debug/net10.0/NextAtlet.Api.dll`, so build the backend first. The committed `src/types/api.ts` was produced by **swagger-typescript-api** (it exports an `Api` class used by `api-client.ts`), but `gen:types` currently runs **openapi-typescript** — the two formats are incompatible. Reconcile the generator before running `gen:api`.
 

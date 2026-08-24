@@ -1,284 +1,97 @@
-# NextAtlet Backend — Step 1 Quick Start
+# NextAtlet Backend — Quick Start
 
-**Status:** ✅ Build complete. Database and API ready for integration testing.
-
-> **⚠️ Updated after the CQRS/MediatR refactor (2026-06-03).** The architecture now uses
-> **MediatR** (`IRequest`/handlers via `ISender`) over a **repository + Unit of Work** layer,
-> with the dependency direction inverted (`Infrastructure → Application`). Section payloads are
-> **typed polymorphic DTOs** (the `type` discriminator lives inside `data`), not dictionaries.
-> **For current request/response shapes use `NextAtlet.Api/NextAtlet.Api.http`** — some JSON
-> examples below predate the typed-section + MediatR changes. See `docs/08` (ADR) and `CLAUDE.md`.
+Get the .NET backend building, running, and seeded locally. For the full onboarding docs see [`docs/confluence/`](docs/confluence/README.md); for the frontend see [`apps/NextAtlet.Client`](apps/NextAtlet.Client).
 
 ## Prerequisites
 
-- .NET 10 SDK
-- PostgreSQL 14+
-- (Optional) Visual Studio Code, Rider, or Visual Studio
+| Tool | Version | For |
+|------|---------|-----|
+| .NET SDK | **10.0** | All projects target `net10.0` |
+| PostgreSQL | 14+ | The database |
+| Google Chrome | any | *Only* if you call `POST /api/clubs/scrape` (Playwright uses `Channel = "chrome"`) |
+| Auth0 tenant | — | Anything requiring login (everything except `/api/clubs/*`) |
 
-## Setup
+## 1. Database
 
-### 1. PostgreSQL Database
+The committed connection string in `appsettings.json` uses a **Docker-mapped port 32768**, not 5432:
 
-```bash
-# Create databases
-createdb nextatlet          # production
-createdb nextatlet_dev      # development
-
-# Connection strings in appsettings.json already configured
-# Default: Host=localhost;Port=5432;Database=nextatlet;Username=postgres;Password=postgres
+```
+Host=localhost;Port=32768;Database=nextatlet;Username=postgres;Password=postgres
 ```
 
-### 2. Restore & Build
+Either run Postgres on 32768, or edit `ConnectionStrings:DefaultConnection`. Quick container:
 
 ```bash
-cd apps/NextAtlet.Server
-
-# Restore NuGet packages
-dotnet restore
-
-# Build
-dotnet build
+docker run --name nextatlet-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=nextatlet -p 32768:5432 -d postgres:16
 ```
 
-### 3. Create & Apply Database Migration
+## 2. Secrets (optional)
+
+Two settings default to empty and aren't in any appsettings file:
 
 ```bash
-# Generate migration from DbContext
-dotnet ef migrations add InitialCreate \
-  --project NextAtlet.Infrastructure \
-  --startup-project NextAtlet.Api
+cd apps/NextAtlet.Server/NextAtlet.Api
+dotnet user-secrets set "Resend:InviteApiKey" "<resend-key>"   # empty ⇒ emails are only logged (fine for dev)
+dotnet user-secrets set "CvrApi:AccessToken"  "<cvr-token>"    # CVR lookup is currently unused anyway
+```
 
-# Apply to database
+## 3. Build & run
+
+```bash
+# repo root
+dotnet restore NextAtlet.slnx
+dotnet build   NextAtlet.slnx
+
+dotnet run --project apps/NextAtlet.Server/NextAtlet.Api            # http  → http://localhost:5278
+dotnet run --project apps/NextAtlet.Server/NextAtlet.Api -lp https  # https → https://localhost:7162
+```
+
+Swagger UI (Development only): **http://localhost:5278/swagger**.
+
+> ### ⚠️ Development startup DROPS the database on every run
+> In Development, `Program.cs` calls `Database.EnsureDeleted()` → `Database.Migrate()` → seed on every startup. **Every `dotnet run` wipes and recreates the DB.** Don't keep anything precious in it, and don't bother running `dotnet ef database update` manually while in Development.
+
+## 4. What gets seeded
+
+[`DevelopmentDataSeeder`](apps/NextAtlet.Server/NextAtlet.Api/Seeding/DevelopmentDataSeeder.cs) (idempotent — skips if any Site exists):
+
+- Adults: `ada-jensen`, `bjorn-madsen`, `david-sorensen`
+- Minors: `clara-holm`, `emma-lund` (each with a live consent token); one guardian invite on the first minor
+- 5 organizations (2 clubs, academy, training centre, national team), all `Pending`
+- 1 registry `Club` + chairman `ClubOfficial` + one live org-verification token
+
+Auth subjects: `seed|{slug}`; emails: `{slug}@seed.nextatlet.dk`.
+
+## 5. Migrations
+
+```bash
+dotnet ef migrations add <Name> \
+  --project apps/NextAtlet.Server/NextAtlet.Infrastructure \
+  --startup-project apps/NextAtlet.Server/NextAtlet.Api
+
 dotnet ef database update \
-  --project NextAtlet.Infrastructure \
-  --startup-project NextAtlet.Api
+  --project apps/NextAtlet.Server/NextAtlet.Infrastructure \
+  --startup-project apps/NextAtlet.Server/NextAtlet.Api
 ```
 
-### 4. Run API
+## 6. Tests
 
 ```bash
-dotnet run --project NextAtlet.Api
-
-# API listens on:
-# https://localhost:5001
-# http://localhost:5000
+dotnet test NextAtlet.slnx
 ```
 
-## API Testing
+Only `tests/NextAtlet.Application.Tests` has real source (~113 xUnit facts). The Api/Domain/Infrastructure test projects are empty shells.
 
-### Create an Athlete (Minor with Guardian)
+## Smoke test
 
-```bash
-curl -X POST http://localhost:5000/api/athletes \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "maria@example.dk",
-    "displayName": "Maria Jensen",
-    "slug": "maria-jensen",
-    "dateOfBirth": "2007-06-15",
-    "defaultLocale": "da",
-    "guardianEmail": "aunt@example.dk"
-  }'
-```
+1. Run Postgres + the API.
+2. Open Swagger, authorize with an Auth0 token whose audience is `https://api.nextatlet.dk`.
+3. `GET /api/Me` → `{ registered: false }` for a brand-new subject.
+4. `POST /api/IndividualSites/self-register` with a slug + adult DOB → 200 `SiteResponse`.
+5. `GET /api/Me` again → `{ registered: true, role: "owner", … }`.
 
-Response:
-```json
-{
-  "id": "uuid...",
-  "slug": "maria-jensen",
-  "displayName": "Maria Jensen",
-  "dateOfBirth": "2007-06-15T00:00:00",
-  "isMinor": true,
-  "defaultLocale": "da"
-}
-```
+## Known caveats
 
-### Get Draft Config
-
-```bash
-curl http://localhost:5000/api/athletes/{id}/config/draft
-```
-
-### Update Draft Config
-
-```bash
-curl -X PUT http://localhost:5000/api/athletes/{id}/config/draft \
-  -H "Content-Type: application/json" \
-  -d '{
-    "layout": {
-      "sections": [
-        {
-          "id": "hero-1",
-          "type": "hero",
-          "order": 0,
-          "data": {
-            "headline": { "da": "Velkommen", "en": "Welcome" },
-            "subheading": { "da": "Min judoprofil", "en": "My judo profile" },
-            "backgroundImageAssetId": null
-          }
-        },
-        {
-          "id": "bio-1",
-          "type": "bio",
-          "order": 1,
-          "data": {
-            "bio": { "da": "Jeg er...", "en": "I am..." },
-            "highlightItems": [
-              { "label": { "da": "Bælte", "en": "Belt" }, "value": "2. dan" }
-            ]
-          }
-        }
-      ]
-    },
-    "globalSettings": {
-      "colors": { "primary": "#000000", "secondary": "#ffffff", "accent": "#ffd700" },
-      "fonts": { "headingFont": "Inter", "bodyFont": "Inter" }
-    },
-    "expectedVersion": 1
-  }'
-```
-
-## Architecture
-
-### Layers
-
-- **Domain** — Entities, enums, value objects (incl. typed `SectionData` hierarchy, `LocalizedText`)
-- **Application** — MediatR `IRequest`/handlers (CreateAthlete, UpdateDraftConfig, GetDraftConfig), repository + `IUnitOfWork` **interfaces**, service interfaces, DTOs. No EF here.
-- **Infrastructure** — `NextAtletDbContext`, repository + `EfUnitOfWork` implementations, section registry, sanitization service. References Application.
-- **API** — Controllers (thin, inject `ISender`), `GlobalExceptionHandler`, DI wiring in `Program.cs`
-
-> Dependency direction: `Api → Application ← Infrastructure`, both → `Domain`. Handlers never touch `DbContext`. See `docs/08`.
-
-### Section Registry Pattern
-
-Extensible validator pattern for layout sections:
-
-```csharp
-// ISectionValidator lives in Infrastructure; ValidationResult is an Application abstraction.
-// Validators receive the already-typed, polymorphically-deserialized payload.
-public interface ISectionValidator
-{
-    string SectionType { get; }
-    ValidationResult Validate(SectionData data);
-}
-
-// In registry:
-registry.Register(new HeroSectionValidator());
-registry.Register(new BioSectionValidator());
-// Step 4+: registry.Register(new ResultsSectionValidator());
-
-// Application talks to ISectionTypeRegistry (IsSupported + Validate), not to individual validators.
-```
-
-### Supported Section Types (Step 1)
-
-- **hero** — headline + subheading + optional background image
-- **bio** — bio text + highlight items
-
-## Key Features
-
-✅ **External IdP Auth** — Auth0 (OIDC), dual-scheme (JWT bearer + cookie); just-in-time `UserProvisioner`
-✅ **Guardian Model** — Minors get a linked guardian (consent via `ActionToken`); `ControlMode` + `PermissionResolver`
-✅ **Draft/Published schema** — `Site` points at draft + published `SiteSnapshot`; publish flow is still Step 3
-✅ **XSS Sanitization** — `SanitizationService` available for text/layout (wired in once the editor write path returns)
-✅ **Bilingual Ready** — Locale maps (`{ "da": "...", "en": "..." }`) persisted; rendering deferred
-✅ **Validation Seam** — Section registry scales to new types without schema changes
-
-## Project Structure
-
-```
-apps/NextAtlet.Server/
-├── NextAtlet.Domain/                — Entities & interfaces
-├── NextAtlet.Infrastructure/        — DbContext, services, validators
-├── NextAtlet.Application/           — Commands, queries, DTOs
-├── NextAtlet.Api/                   — Controllers, Program.cs
-└── NextAtlet.Server.slnx            — Solution file
-```
-
-## Configuration
-
-### appsettings.json
-
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Port=5432;Database=nextatlet;..."
-  },
-  "Logging": { ... }
-}
-```
-
-Override in `appsettings.Development.json` or environment variables:
-
-```bash
-export ConnectionStrings__DefaultConnection="Host=prod-db;..."
-```
-
-## Development
-
-### Add a New Section Type (Example: Results)
-
-1. Create `ResultsSectionValidator : ISectionValidator` in Infrastructure/Services/SectionRegistry
-2. Register in `SectionTypeRegistry` constructor
-3. Add to Theme.Manifest supportedSections
-4. API immediately validates the new type
-
-No migration or controller changes needed!
-
-### Auth Integration (Step 2+)
-
-Currently uses placeholder `authProviderId`. To integrate real Entra/Auth0:
-
-1. Add JWT validation middleware in Program.cs
-2. Extract claims from token → lookup/create User
-3. Scoped authorization checks in controllers
-4. Full implementation in Step 2
-
-## Troubleshooting
-
-### Build Fails: NuGet Package Not Found
-
-```bash
-dotnet nuget locals all --clear
-dotnet restore
-```
-
-### Migration Failed
-
-```bash
-# Rollback last migration
-dotnet ef migrations remove --project NextAtlet.Infrastructure
-
-# Re-apply
-dotnet ef database update
-```
-
-### API Won't Start: Database Connection Error
-
-- Check PostgreSQL is running
-- Verify connection string in appsettings.json
-- Ensure database exists: `createdb nextatlet_dev`
-
-## Next Steps
-
-- **Step 2:** Public render endpoint (GET /api/athletes/{slug}/public)
-- **Step 3:** Publish flow (draft → published)
-- **Step 4:** Add `results` + `gallery` section types
-- **Step 5:** Theme picker + multiple themes
-- **Step 6:** Tiers + subscription gating
-
-## References
-
-- Global context + implemented-vs-planned status: `CLAUDE.md`
-- Architecture: `docs/01-architecture.md`
-- Data model: `docs/02-data-model.md`
-- Accounts & permissions: `docs/03-accounts-and-permissions.md`
-- ADR (CQRS/MediatR, layering): `docs/08-adr-cqrs-mediatr-and-layering.md`
-- Live request/response shapes: `NextAtlet.Api/NextAtlet.Api.http`
-
-> The build has progressed well past "Step 1": auth, the two-gate registration (self/guardian/org), action-token flows, consent, the control model, the club registry, and the `GET /api/Me` decision gate all exist. See the status note in `CLAUDE.md` for what's built vs planned. (The numbered "Step N" docs in `apps/NextAtlet.Server/` are point-in-time session notes from the initial build, not current status.)
-
----
-
-**Built with:** ASP.NET Core, EF Core, Npgsql, .NET 10
-**Database:** PostgreSQL 14+
+- CI (`.github/workflows/dotnet.yml`) installs .NET 8 against net10.0 projects and **cannot pass**.
+- Several endpoints have known auth gaps — see [`docs/06-features-and-problems.md`](docs/06-features-and-problems.md).
+- `infra/` is empty (no IaC); there is a Railway `Dockerfile` under `apps/NextAtlet.Server`.
