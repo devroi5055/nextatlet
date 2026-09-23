@@ -7,26 +7,30 @@ This guide gets both halves of NextAtlet — the .NET backend and the Next.js fr
 | Tool | Version | Needed for |
 |------|---------|-----------|
 | **.NET SDK** | **10.0** | All backend projects target `net10.0` |
-| **PostgreSQL** | 14+ | The database |
+| **Podman** | 5+ (plus a compose provider — see below) | Runs the dev PostgreSQL container |
 | **Node.js** | 20+ (with **pnpm 9+**; `corepack enable` provides it) | The frontend |
 | **Google Chrome** | any | *Only* if you call the club scraper (`POST /api/clubs/scrape`), which uses Playwright with `Channel = "chrome"` |
 | **Auth0 tenant** | — | Anything that requires login (everything except `/api/clubs/*`) |
 
 ## Backend
 
-### 1. Configure the database connection
+### 1. Start the dev database (Podman)
 
-The committed connection string in [`appsettings.json`](https://github.com/devroi5055/nextatlet/blob/main/apps/NextAtlet.Server/NextAtlet.Api/appsettings.json) points at a **Docker-mapped port** rather than the default:
+The dev database is a Postgres 16 container run by **Podman**, defined in [`compose.yaml`](https://github.com/devroi5055/nextatlet/blob/main/compose.yaml) at the repo root:
+
+```bash
+podman machine init && podman machine start   # one-time, if you don't have a Podman machine yet
+podman compose up -d --wait                   # from the repo root — returns once Postgres is healthy
+podman compose down                           # stop it (add -v to also delete the data volume)
+```
+
+The container publishes Postgres on **`127.0.0.1:32768`** only (not reachable from your network). Every dev connection string — [`appsettings.json`](https://github.com/devroi5055/nextatlet/blob/main/apps/NextAtlet.Server/NextAtlet.Api/appsettings.json), `appsettings.Development.json`, the `Program.cs` fallback and the EF design-time factory — points at it:
 
 ```
 Host=localhost;Port=32768;Database=nextatlet;Username=postgres;Password=postgres
 ```
 
-Either run PostgreSQL on port **32768**, or edit `ConnectionStrings:DefaultConnection` to match your local Postgres (usually `Port=5432`). A quick way to get a matching Postgres:
-
-```bash
-docker run --name nextatlet-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=nextatlet -p 32768:5432 -d postgres:16
-```
+> `podman compose` delegates to a compose provider. Install either `docker-compose` (`winget install Docker.DockerCompose` — Apache-2.0, does **not** require Docker Desktop) or `podman-compose` (`pip install podman-compose`).
 
 ### 2. (Optional) Set secrets via user-secrets
 
@@ -75,7 +79,7 @@ Auth subjects are `seed|{slug}`; emails are `{slug}@seed.nextatlet.dk`.
 
 ### 5. EF migrations
 
-The design-time factory is [`NextAtletDbContextFactory`](https://github.com/devroi5055/nextatlet/blob/main/apps/NextAtlet.Server/NextAtlet.Infrastructure/Persistence/NextAtletDbContextFactory.cs) (it hardcodes `localhost:5432` for tooling only).
+The design-time factory is [`NextAtletDbContextFactory`](https://github.com/devroi5055/nextatlet/blob/main/apps/NextAtlet.Server/NextAtlet.Infrastructure/Persistence/NextAtletDbContextFactory.cs) (it hardcodes `localhost:32768`, the Podman dev DB — `dotnet ef database update` uses this, not `appsettings.json`).
 
 ```bash
 dotnet ef migrations add <Name> \
@@ -144,7 +148,7 @@ pnpm storybook      # http://localhost:6006
 
 ```mermaid
 flowchart LR
-    A["Start Postgres\n(port 32768)"] --> B["dotnet run API\n(drops+seeds DB)"]
+    A["podman compose up -d --wait\n(Postgres on 127.0.0.1:32768)"] --> B["dotnet run API\n(drops+seeds DB)"]
     B --> C["pnpm dev frontend\n(localhost:3000)"]
     C --> D["Log in via Auth0"]
     D --> E["Onboarding → register\n→ dashboard"]
@@ -152,4 +156,4 @@ flowchart LR
 
 ## Deployment note
 
-`infra/` is an **empty directory** — there is no infrastructure-as-code. There is a [`Dockerfile`](https://github.com/devroi5055/nextatlet/blob/main/apps/NextAtlet.Server/Dockerfile) for the API (targets Railway, build context must be `apps/NextAtlet.Server`). CI ([`.github/workflows/dotnet.yml`](https://github.com/devroi5055/nextatlet/blob/main/.github/workflows/dotnet.yml)) is the stock template and **currently cannot pass** — it installs the .NET 8 SDK against `net10.0` projects.
+`infra/` is an **empty directory** — there is no infrastructure-as-code. There is a [`Dockerfile`](https://github.com/devroi5055/nextatlet/blob/main/apps/NextAtlet.Server/Dockerfile) for the API (targets Railway, build context must be `apps/NextAtlet.Server`; build it locally with `podman build apps/NextAtlet.Server`). CI ([`.github/workflows/dotnet.yml`](https://github.com/devroi5055/nextatlet/blob/main/.github/workflows/dotnet.yml)) is the stock template and **currently cannot pass** — it installs the .NET 8 SDK against `net10.0` projects.

@@ -14,7 +14,7 @@ public class NextAtletDbContextFactory : IDesignTimeDbContextFactory<NextAtletDb
     public NextAtletDbContext CreateDbContext(string[] args)
     {
         var options = new DbContextOptionsBuilder<NextAtletDbContext>()
-            .UseNpgsql("Host=localhost;Port=5432;Database=nextatlet;Username=postgres;Password=postgres")
+            .UseNpgsql("Host=localhost;Port=32768;Database=nextatlet;Username=postgres;Password=postgres")
             .Options;
 
         return new NextAtletDbContext(options, new SystemClock());

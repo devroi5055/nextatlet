@@ -137,7 +137,7 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 // Configure PostgreSQL DbContext
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? "Host=localhost;Port=5432;Database=nextatlet;Username=postgres;Password=postgres";
+    ?? "Host=localhost;Port=32768;Database=nextatlet;Username=postgres;Password=postgres";
 
 builder.Services.AddDbContext<NextAtletDbContext>(options =>
 {

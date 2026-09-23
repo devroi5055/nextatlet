@@ -6,7 +6,7 @@ Everything you can configure in the backend, where it's read, and which options 
 
 | Key | Purpose | Bound by |
 |-----|---------|----------|
-| `ConnectionStrings:DefaultConnection` | Npgsql connection. **Committed default uses port 32768** (a Docker-mapped port), not 5432. | `Program.cs` |
+| `ConnectionStrings:DefaultConnection` | Npgsql connection. **Committed default uses port 32768** — the Podman dev DB from `compose.yaml`, not 5432. | `Program.cs` |
 | `Authentication:Authority` | Auth0 tenant URL (trailing slash required) | read via indexer (no options class) |
 | `Authentication:Audience` | JWT audience — must equal the frontend's `AUTH0_AUDIENCE` | indexer |
 | `Authentication:EmailClaimType` | Namespaced email claim added by an Auth0 Action (`https://nextatlet.dk/email`) | `ClaimsPrincipalExtensions.ConfiguredEmailClaimType` |

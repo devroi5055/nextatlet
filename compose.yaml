@@ -1,0 +1,31 @@
+# Local development services, run with Podman:
+#   podman compose up -d --wait     # start (waits until Postgres is healthy)
+#   podman compose down             # stop  (add -v to also delete the data volume)
+#
+# The API's committed connection string (appsettings*.json) points at localhost:32768.
+# Dev-only credentials — never reuse them outside this container.
+name: nextatlet
+
+services:
+  db:
+    image: docker.io/library/postgres:16-alpine
+    container_name: nextatlet-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: nextatlet
+    ports:
+      # Bound to 127.0.0.1 so the database is not reachable from the local network.
+      - "127.0.0.1:32768:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d nextatlet"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  db-data:

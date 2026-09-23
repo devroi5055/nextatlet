@@ -7,23 +7,25 @@ Get the .NET backend building, running, and seeded locally. For the full onboard
 | Tool | Version | For |
 |------|---------|-----|
 | .NET SDK | **10.0** | All projects target `net10.0` |
-| PostgreSQL | 14+ | The database |
+| Podman | 5+ (plus a compose provider — see below) | Runs the dev PostgreSQL container |
 | Google Chrome | any | *Only* if you call `POST /api/clubs/scrape` (Playwright uses `Channel = "chrome"`) |
 | Auth0 tenant | — | Anything requiring login (everything except `/api/clubs/*`) |
 
 ## 1. Database
 
-The committed connection string in `appsettings.json` uses a **Docker-mapped port 32768**, not 5432:
+The dev database runs in **Podman**, defined in [`compose.yaml`](compose.yaml) at the repo root (Postgres 16, bound to `127.0.0.1:32768` only). Every dev connection string — `appsettings*.json`, the `Program.cs` fallback, and the EF design-time factory — points at it:
 
 ```
 Host=localhost;Port=32768;Database=nextatlet;Username=postgres;Password=postgres
 ```
 
-Either run Postgres on 32768, or edit `ConnectionStrings:DefaultConnection`. Quick container:
-
 ```bash
-docker run --name nextatlet-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=nextatlet -p 32768:5432 -d postgres:16
+podman machine init && podman machine start   # one-time, if you don't have a Podman machine yet
+podman compose up -d --wait                   # start the DB (repo root) — waits until it's healthy
+podman compose down                           # stop it (add -v to also delete the data volume)
 ```
+
+`podman compose` delegates to a compose provider — install either `docker-compose` (`winget install Docker.DockerCompose`, Apache-2.0, no Docker Desktop needed) or `podman-compose` (`pip install podman-compose`).
 
 ## 2. Secrets (optional)
 
@@ -84,7 +86,7 @@ Only `tests/NextAtlet.Application.Tests` has real source (~113 xUnit facts). The
 
 ## Smoke test
 
-1. Run Postgres + the API.
+1. `podman compose up -d --wait`, then run the API.
 2. Open Swagger, authorize with an Auth0 token whose audience is `https://api.nextatlet.dk`.
 3. `GET /api/Me` → `{ registered: false }` for a brand-new subject.
 4. `POST /api/IndividualSites/self-register` with a slug + adult DOB → 200 `SiteResponse`.
@@ -94,4 +96,4 @@ Only `tests/NextAtlet.Application.Tests` has real source (~113 xUnit facts). The
 
 - CI (`.github/workflows/dotnet.yml`) installs .NET 8 against net10.0 projects and **cannot pass**.
 - Several endpoints have known auth gaps — see [`docs/06-features-and-problems.md`](docs/06-features-and-problems.md).
-- `infra/` is empty (no IaC); there is a Railway `Dockerfile` under `apps/NextAtlet.Server`.
+- `infra/` is empty (no IaC); there is a Railway `Dockerfile` under `apps/NextAtlet.Server` (builds locally with `podman build apps/NextAtlet.Server`).

@@ -105,13 +105,14 @@ Per-command detail: [`docs/confluence/backend/commands/`](docs/confluence/backen
 ## Build / run / test
 
 ```bash
+podman compose up -d --wait                                 # dev Postgres (compose.yaml) on 127.0.0.1:32768
 dotnet restore NextAtlet.slnx && dotnet build NextAtlet.slnx
 dotnet run --project apps/NextAtlet.Server/NextAtlet.Api    # http://localhost:5278, Swagger at /swagger
 dotnet test NextAtlet.slnx
 cd apps/NextAtlet.Client && pnpm install && pnpm dev         # http://localhost:3000 (/ → /en)
 ```
 
-**⚠️ Development startup runs `Database.EnsureDeleted()` then `Database.Migrate()` then seeds — the DB is dropped on EVERY `dotnet run`.** Committed connection string uses port **32768**. Set `Resend:InviteApiKey` via user-secrets for real email (else emails are only logged).
+**⚠️ Development startup runs `Database.EnsureDeleted()` then `Database.Migrate()` then seeds — the DB is dropped on EVERY `dotnet run`.** The dev DB runs in **Podman** (no Docker); every dev connection string, incl. the EF design-time factory, uses port **32768**. Set `Resend:InviteApiKey` via user-secrets for real email (else emails are only logged).
 
 ---
 
