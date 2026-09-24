@@ -8,7 +8,7 @@ namespace NextAtlet.Domain.Entities.Sites;
 public class IndividualProfile : AuditableEntity
 {
 
-
+    // fake comment
     public required Guid SiteId { get; set; }
     /// <summary>
     /// Sport this athlete competes in. Defaults to judo at launch.
