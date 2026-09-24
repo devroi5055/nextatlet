@@ -7,7 +7,7 @@ namespace NextAtlet.Domain.Entities.Sites;
 
 public class IndividualProfile : AuditableEntity
 {
-
+    // fake commit with work
     // fake comment
     public required Guid SiteId { get; set; }
     /// <summary>
